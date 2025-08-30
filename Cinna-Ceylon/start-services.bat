@@ -23,3 +23,4 @@ echo 🎨 Frontend: http://localhost:3002
 echo.
 echo Press any key to close this window...
 pause > nul
+

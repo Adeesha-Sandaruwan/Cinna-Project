@@ -22,3 +22,4 @@ Write-Host "🎨 Frontend: http://localhost:3002" -ForegroundColor Blue
 Write-Host ""
 Write-Host "Press any key to close this window..." -ForegroundColor Gray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+

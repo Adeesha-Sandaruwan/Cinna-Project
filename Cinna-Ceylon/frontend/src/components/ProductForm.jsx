@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
@@ -41,7 +42,7 @@ const ProductForm = () => {
     } else {
       setFormData({ ...formData, [name]: value });
     }
-  };const validateForm = () => {
+  };  const validateForm = () => {
     let errs = {};
   
     if (!formData.name) {
@@ -50,23 +51,17 @@ const ProductForm = () => {
     if (!formData.price || formData.price <= 0) {
       errs.price = "Price must be greater than 0";
     }
-    if (!formData.description || formData.description.trim().length < 10) {
-      errs.description = "Description must be at least 10 characters";
+    if (!formData.description || formData.description.trim().length < 5) {
+      errs.description = "Description must be at least 5 characters";
     }
     if (!formData.expiryDate) {
       errs.expiryDate = "Expiry date is required";
-    } else {
-      const today = new Date();
-      const expDate = new Date(formData.expiryDate);
-      if (expDate < today.setHours(0, 0, 0, 0)) {
-        errs.expiryDate = "Expiry date cannot be in the past";
-      }
     }
     if (!formData.image) {
-      errs.image = "Product image must be chosen";
+      errs.image = "Product image is required";
     }
-    if (!formData.stock || formData.stock < 5) {   // ✅ new check
-      errs.stock = "Stock level must be at least 5";
+    if (!formData.stock || formData.stock < 1) {
+      errs.stock = "Stock must be at least 1";
     }
   
     setErrors(errs);
@@ -143,12 +138,21 @@ const ProductForm = () => {
         className="w-full max-w-lg rounded-2xl shadow-xl p-8"
         style={{ backgroundColor: COLORS.SOFT_WHITE }}
       >
-        <h2
-          className="text-2xl font-bold text-center mb-6"
-          style={{ color: COLORS.DARK_SLATE }}
-        >
-          🍂 Add New Product
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2
+            className="text-2xl font-bold"
+            style={{ color: COLORS.DARK_SLATE }}
+          >
+            🍂 Add New Product
+          </h2>
+          <Link
+            to="/admin/products"
+            className="text-sm px-4 py-2 rounded-lg border transition-colors"
+            style={{ borderColor: COLORS.RICH_GOLD, color: COLORS.RICH_GOLD }}
+          >
+            View All Products
+          </Link>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
@@ -222,7 +226,7 @@ const ProductForm = () => {
       onChange={handleChange}
       className="w-full border p-3 rounded"
       style={{ borderColor: COLORS.RICH_GOLD }}
-      min="5"   // ✅ ensures stock >= 5
+      min="1"
     />
     {errors.stock && (
       <p className="text-red-600 text-sm">{errors.stock}</p>
