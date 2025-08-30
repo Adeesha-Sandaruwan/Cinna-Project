@@ -16,10 +16,15 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [reviews, setReviews] = useState({ rating: 4.8, count: 156, sold: 500 });
+  const [reviews, setReviews] = useState({ rating: 4.5, count: 50 });
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -147,12 +152,7 @@ const ProductDetails = () => {
                     e.target.src = 'https://via.placeholder.com/600x600/f5efe6/cc7722?text=Cinnamon+Product';
                   }}
                 />
-                {/* Product Badge */}
-                <div className="absolute top-4 left-4">
-                  <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    Premium Quality
-                  </span>
-                </div>
+                {/* Product Badge - Removed for cleaner look */}
               </div>
             </div>
 
@@ -164,37 +164,25 @@ const ProductDetails = () => {
                   <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.DARK_SLATE }}>
                     {product.name}
                   </h1>
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="flex items-center">
-                      <div className="flex text-yellow-400">
-                        {[...Array(5)].map((_, i) => (
-                          <svg key={i} className={`w-5 h-5 ${i < Math.floor(reviews.rating) ? 'fill-current' : 'fill-gray-300'}`} viewBox="0 0 20 20">
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                          </svg>
-                        ))}
-                      </div>
-                      <span className="ml-2 text-sm text-gray-600">{reviews.rating} ({reviews.count} reviews)</span>
-                    </div>
-                    <span className="text-sm text-gray-500">• {reviews.sold}+ sold</span>
-                  </div>
+                                     <div className="flex items-center mb-4">
+                     <div className="flex text-yellow-400">
+                       {[...Array(5)].map((_, i) => (
+                         <svg key={i} className={`w-5 h-5 ${i < Math.floor(reviews.rating) ? 'fill-current' : 'fill-gray-300'}`} viewBox="0 0 20 20">
+                           <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                         </svg>
+                       ))}
+                     </div>
+                     <span className="ml-2 text-sm text-gray-600">{reviews.rating} ({reviews.count} reviews)</span>
+                   </div>
                 </div>
 
                 {/* Price Section */}
                 <div className="border-b border-gray-200 pb-4">
-                  <div className="flex items-baseline space-x-3">
+                  <div className="flex items-baseline">
                     <span className="text-3xl font-bold" style={{ color: COLORS.DEEP_CINNAMON }}>
                       LKR {product.price.toLocaleString()}
                     </span>
-                    <span className="text-lg text-gray-500 line-through">
-                      LKR {(product.price * 1.2).toLocaleString()}
-                    </span>
-                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-sm font-semibold">
-                      Save 20%
-                    </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Free shipping over LKR 2,000 • Tax included
-                  </p>
                 </div>
 
                 {/* Product Info */}
@@ -295,13 +283,7 @@ const ProductDetails = () => {
                   </button>
                 </div>
 
-                {/* Policies */}
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex space-x-6 text-sm">
-                    <a href="#" className="text-blue-600 hover:underline">Return & Refund Policy</a>
-                    <a href="#" className="text-blue-600 hover:underline">Security & Privacy</a>
-                  </div>
-                </div>
+                {/* Policies - Removed for cleaner look */}
               </div>
             </div>
           </div>
@@ -402,7 +384,7 @@ const ProductDetails = () => {
                </div>
                <p className="text-2xl font-bold text-gray-900">{reviews.rating} out of 5</p>
                <p className="text-gray-600">Based on {reviews.count} reviews</p>
-               <p className="text-sm text-gray-500 mt-2">{reviews.sold}+ customers have purchased this product</p>
+                               <p className="text-sm text-gray-500 mt-2">Quality cinnamon products</p>
              </div>
            </div>
          </div>

@@ -6,6 +6,7 @@ import ContactUs from './components/ContactUs';
 import ProductForm from './components/ProductForm';
 import ProductList from "./components/ProductList.jsx";
 import ProductDetails from "./components/ProductDetails.jsx";
+import ProductManagement from "./components/ProductManagement.jsx";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/product_form" element={<ProductForm />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/:id" element={<ProductDetails />} />
+        <Route path="/admin/products" element={<ProductManagement />} />
       </Routes>
     </Router>
   );

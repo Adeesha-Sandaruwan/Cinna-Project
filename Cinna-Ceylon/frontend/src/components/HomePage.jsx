@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BeakerIcon, GlobeAltIcon, LockClosedIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import Carousel from './Carousel';
@@ -22,12 +22,7 @@ const carouselImages = [
   { src: 'https://ideogram.ai/assets/image/lossless/response/_oV9SELRTsG6t1ZTMd1uTQ', alt: 'Ground cinnamon powder' },
 ];
 
-const featuredProducts = [
-  { name: 'Heirloom Cinnamon Sticks (50g)', img: 'https://ideogram.ai/assets/image/lossless/response/FbtY0nh9TI2Fid0jXDEThg', price: '$14.99' },
-  { name: 'Organic Cinnamon Powder (100g)', img: 'https://ideogram.ai/assets/image/lossless/response/vJN8Oy7lS3Kgz677SmYsZw', price: '$10.99' },
-  { name: 'Spiced Chai Tea Blend', img: 'https://ideogram.ai/assets/image/lossless/response/fhvkwQWpQoe-ZYTpBc4aGQ', price: '$18.50' },
-  { name: 'Luxury Spice Gift Box', img: 'https://ideogram.ai/assets/image/lossless/response/W8ClVmfjRnOfsmW_A_1Z1Q', price: '$39.99' },
-];
+// Remove static featuredProducts - will be fetched from database
 
 /* ---------------- Simple Carousel component ----------------
    - Easy to read, autoplay + manual controls
@@ -37,6 +32,29 @@ const featuredProducts = [
 
 /* ------------------ Main HomePage ------------------ */
 function HomePage() {
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/products');
+        const data = await response.json();
+        // Get the first 4 products for featured section
+        const featured = data.slice(0, 4);
+        setFeaturedProducts(featured);
+      } catch (error) {
+        console.error('Error fetching featured products:', error);
+        // Fallback to empty array if fetch fails
+        setFeaturedProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+  }, []);
+
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased">
       <Header />
@@ -188,21 +206,50 @@ function HomePage() {
             </div>
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((p) => (
-                <div key={p.name} className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition">
-                  <img src={p.img} alt={p.name} className="w-full h-48 object-cover" />
-                  <div className="p-4">
-                    <h4 className="font-semibold text-gray-800">{p.name}</h4>
-                    <p className="mt-2 font-bold" style={{ color: COLORS.RICH_GOLD }}>{p.price}</p>
-                    <button
-                      className="mt-4 w-full px-3 py-2 rounded-full text-white font-medium"
-                      style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
-                    >
-                      Add to cart
-                    </button>
+              {loading ? (
+                // Loading skeleton
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="bg-white rounded-lg overflow-hidden shadow animate-pulse">
+                    <div className="w-full h-48 bg-gray-200"></div>
+                    <div className="p-4">
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-8 bg-gray-200 rounded mt-4"></div>
+                    </div>
                   </div>
+                ))
+              ) : featuredProducts.length > 0 ? (
+                featuredProducts.map((product) => (
+                  <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition">
+                    <img 
+                      src={`http://localhost:5000/uploads/${product.image}`} 
+                      alt={product.name} 
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x300/f5efe6/cc7722?text=Cinnamon+Product';
+                      }}
+                    />
+                    <div className="p-4">
+                      <h4 className="font-semibold text-gray-800">{product.name}</h4>
+                      <p className="mt-2 font-bold" style={{ color: COLORS.RICH_GOLD }}>
+                        LKR {product.price?.toLocaleString()}
+                      </p>
+                      <Link
+                        to={`/products/${product._id}`}
+                        className="mt-4 w-full px-3 py-2 rounded-full text-white font-medium block text-center"
+                        style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // No products available
+                <div className="col-span-full text-center py-8">
+                  <p className="text-gray-500">No products available at the moment.</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </AnimatedSection>
