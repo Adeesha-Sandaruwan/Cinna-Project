@@ -1,32 +1,25 @@
 {
-  "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "joi": "^18.0.1",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.0"
-  },
-  "name": "cinna-at-final",
+  "name": "cinnaceylon-fullstack",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "CinnaCeylon Full Stack Application",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install-all": "npm install && cd Cinna-Ceylon/backend && npm install && cd ../frontend && npm install",
+    "backend": "cd Cinna-Ceylon/backend && npm run dev",
+    "frontend": "cd Cinna-Ceylon/frontend && npm start",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "build": "cd Cinna-Ceylon/frontend && npm run build",
+    "start:all": "concurrently \"npm --prefix Cinna-Ceylon/backend start\" \"npm --prefix Cinna-Ceylon/frontend start\""
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Adeesha-Sandaruwan/Cinna-Project.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Adeesha-Sandaruwan/Cinna-Project/issues"
-  },
-  "homepage": "https://github.com/Adeesha-Sandaruwan/Cinna-Project#readme",
-  "description": "",
   "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "cinnamon",
+    "ceylon",
+    "fullstack",
+    "react",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "ISC"
 }

@@ -4,6 +4,8 @@ import HomePage from './components/HomePage';
 import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
 import ProductForm from './components/ProductForm';
+import ProductList from "./components/ProductList.jsx";
+import ProductDetails from "./components/ProductDetails.jsx";
 
 function App() {
   return (
@@ -13,6 +15,8 @@ function App() {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/product_form" element={<ProductForm />} />
+        <Route path="/products" element={<ProductList />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
       </Routes>
     </Router>
   );
