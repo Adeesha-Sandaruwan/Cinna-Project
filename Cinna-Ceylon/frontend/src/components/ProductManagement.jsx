@@ -1,518 +1,309 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Header from './Header';
-import Footer from './Footer';
-import { PencilIcon, TrashIcon, PlusIcon, MagnifyingGlassIcon, EyeIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import Header from "./Header";
+import Footer from "./Footer";
+import {
+  PencilIcon,
+  TrashIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  EyeIcon,
+} from "@heroicons/react/24/outline";
 
 const COLORS = {
-  RICH_GOLD: '#c5a35a',
-  DEEP_CINNAMON: '#CC7722',
-  WARM_BEIGE: '#F5EFE6',
-  DARK_SLATE: '#2d2d2d',
-  SOFT_WHITE: '#FCFBF8',
+  RICH_GOLD: "#c5a35a",
+  DEEP_CINNAMON: "#CC7722",
 };
 
-const ProductManagement = () => {
+// Reusable small components
+const Modal = ({ open, onClose, children }) =>
+  !open ? null : (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg animate-fadeIn">
+        {children}
+        <div className="flex justify-end mt-4">
+          <button
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-xl"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+const StockStatus = ({ stock }) => {
+  const status =
+    stock <= 5
+      ? { text: "Low", color: "bg-red-100 text-red-700" }
+      : stock <= 20
+      ? { text: "Medium", color: "bg-yellow-100 text-yellow-700" }
+      : { text: "Good", color: "bg-green-100 text-green-700" };
+  return (
+    <span className={`px-2 py-1 rounded-full text-sm font-medium ${status.color}`}>
+      {status.text}
+    </span>
+  );
+};
+
+export default function ProductManagement() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(10);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [productToDelete, setProductToDelete] = useState(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const perPage = 10;
 
-  // Fetch products
+  const [editProduct, setEditProduct] = useState(null);
+  const [deleteProduct, setDeleteProduct] = useState(null);
+
+  // API helper
+  const apiRequest = async (url, options, successMsg) => {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) {
+        setMessage(successMsg);
+        fetchProducts();
+        return true;
+      }
+    } catch {
+      setMessage("❌ Something went wrong");
+    }
+    return false;
+  };
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/products");
+      setProducts(await res.json());
+    } catch {
+      setMessage("❌ Error loading products");
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/products');
-      const data = await response.json();
-      setProducts(data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setMessage('❌ Error loading products');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Filter + paginate
+  const filtered = products.filter(
+    (p) =>
+      (p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(search.toLowerCase()) ||
+        p.description?.toLowerCase().includes(search.toLowerCase())) &&
+      (filter === "all" || p.type === filter)
+  );
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const current = filtered.slice((page - 1) * perPage, page * perPage);
 
-  // Filter and search products
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'all' || product.type === filterType;
-    return matchesSearch && matchesType;
-  });
-
-  // Pagination
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-
-  // Handle edit
-  const handleEdit = (product) => {
-    setEditingProduct({ ...product });
-  };
-
-  // Handle save edit
-  const handleSaveEdit = async () => {
-    try {
-      const formData = new FormData();
-      Object.keys(editingProduct).forEach(key => {
-        if (key !== '_id' && key !== 'createdAt' && key !== 'updatedAt') {
-          formData.append(key, editingProduct[key]);
-        }
-      });
-
-      const response = await fetch(`http://localhost:5000/api/products/${editingProduct._id}`, {
-        method: 'PUT',
-        body: formData,
-      });
-
-      if (response.ok) {
-        setMessage('✅ Product updated successfully!');
-        fetchProducts();
-        setEditingProduct(null);
-      } else {
-        const error = await response.json();
-        setMessage(`❌ Error: ${error.error}`);
-      }
-    } catch (error) {
-      setMessage(`❌ Error updating product: ${error.message}`);
-    }
-  };
-
-  // Handle delete
-  const handleDelete = (product) => {
-    setProductToDelete(product);
-    setShowDeleteModal(true);
+  // Handlers
+  const saveEdit = async () => {
+    const fd = new FormData();
+    Object.entries(editProduct).forEach(([k, v]) =>
+      !["_id", "createdAt", "updatedAt"].includes(k) && fd.append(k, v)
+    );
+    if (
+      await apiRequest(
+        `http://localhost:5000/api/products/${editProduct._id}`,
+        { method: "PUT", body: fd },
+        "✅ Product updated"
+      )
+    )
+      setEditProduct(null);
   };
 
   const confirmDelete = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/products/${productToDelete._id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setMessage('✅ Product deleted successfully!');
-        fetchProducts();
-      } else {
-        setMessage('❌ Error deleting product');
-      }
-    } catch (error) {
-      setMessage(`❌ Error: ${error.message}`);
-    } finally {
-      setShowDeleteModal(false);
-      setProductToDelete(null);
-    }
+    if (
+      await apiRequest(
+        `http://localhost:5000/api/products/${deleteProduct._id}`,
+        { method: "DELETE" },
+        "✅ Product deleted"
+      )
+    )
+      setDeleteProduct(null);
   };
-
-  // Format date
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  // Get stock status
-  const getStockStatus = (stock) => {
-    if (stock <= 5) return { text: 'Low', color: 'text-red-600' };
-    if (stock <= 20) return { text: 'Medium', color: 'text-yellow-600' };
-    return { text: 'Good', color: 'text-green-600' };
-  };
-
-  if (loading) {
-    return (
-      <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="min-h-screen">
-        <Header />
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: COLORS.DEEP_CINNAMON }}></div>
-            <p className="mt-4" style={{ color: COLORS.DARK_SLATE }}>Loading products...</p>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
-    <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="min-h-screen">
+    <div className="bg-gray-50 min-h-screen flex flex-col">
       <Header />
-      
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 
-                className="text-3xl font-bold"
-                style={{ color: COLORS.DARK_SLATE, fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                🍂 Product Management
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Manage your cinnamon products inventory
-              </p>
-            </div>
-            <Link
-              to="/product_form"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white transition transform hover:scale-105"
-              style={{ backgroundColor: COLORS.RICH_GOLD }}
-            >
-              <PlusIcon className="w-5 h-5" />
-              Add New Product
-            </Link>
-          </div>
-        </div>
-
-        {/* Message Display */}
+      <div className="p-6 flex-1">
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${message.includes('✅') ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-            <p className={message.includes('✅') ? 'text-green-800' : 'text-red-800'}>{message}</p>
+          <div className="mb-4 text-center font-medium text-green-700 bg-green-100 py-2 rounded-xl">
+            {message}
           </div>
         )}
 
-        {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-              />
-            </div>
-
-            {/* Type Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              <option value="spice">Spice</option>
-              <option value="powder">Powder</option>
-              <option value="other">Other</option>
-            </select>
-
-            {/* Results Count */}
-            <div className="flex items-center justify-end text-gray-600">
-              {filteredProducts.length} of {products.length} products
-            </div>
+        {/* Controls */}
+        <div className="flex flex-wrap gap-3 mb-6 items-center">
+          <div className="flex border p-2 rounded-xl bg-white shadow-sm w-full md:w-1/3">
+            <MagnifyingGlassIcon className="w-5 mr-2 text-gray-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, SKU, or description..."
+              className="flex-1 outline-none"
+            />
           </div>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border p-2 rounded-xl bg-white shadow-sm"
+          >
+            <option value="all">All Types</option>
+            <option value="spice">Spice</option>
+            <option value="powder">Powder</option>
+          </select>
+          <Link
+            to="/product_form"
+            className="ml-auto bg-orange-700 hover:bg-orange-800 text-white px-4 py-2 rounded-xl flex items-center shadow-md"
+          >
+            <PlusIcon className="w-5 mr-1" /> Add Product
+          </Link>
         </div>
 
-        {/* Products Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Table */}
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead style={{ backgroundColor: COLORS.WARM_BEIGE }}>
+            <table className="w-full border rounded-xl overflow-hidden bg-white shadow-md">
+              <thead className="bg-gray-300">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    Product
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    SKU
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    Type
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    Price
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    Stock
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    Expiry
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                    Actions
-                  </th>
+                  <th className="p-3">Name</th>
+                  <th className="p-3">SKU</th>
+                  <th className="p-3">Type</th>
+                  <th className="p-3">Price</th>
+                  <th className="p-3">Stock</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {currentProducts.map((product) => (
-                  <tr key={product._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{product.name}</div>
-                      <div className="text-sm text-gray-500">{product.grade} Grade</div>
+              <tbody>
+                {current.map((p) => (
+                  <tr key={p._id} className="text-center border-t hover:bg-gray-50">
+                    <td className="p-3 font-medium">{p.name}</td>
+                    <td className="p-3">{p.sku}</td>
+                    <td className="p-3 capitalize">{p.type}</td>
+                    <td className="p-3">${p.price}</td>
+                    <td className="p-3">{p.stock}</td>
+                    <td className="p-3"><StockStatus stock={p.stock} /></td>
+                    <td className="p-3 flex justify-center gap-3">
+                      <button onClick={() => setEditProduct(p)} className="text-blue-600 hover:text-blue-800">
+                        <PencilIcon className="w-5" />
+                      </button>
+                      <button onClick={() => setDeleteProduct(p)} className="text-red-600 hover:text-red-800">
+                        <TrashIcon className="w-5" />
+                      </button>
+                      <Link to={`/products/${p._id}`} className="text-gray-600 hover:text-gray-900">
+                        <EyeIcon className="w-5" />
+                      </Link>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {product.sku || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        {product.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold" style={{ color: COLORS.RICH_GOLD }}>
-                      LKR {product.price?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {product.stock}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {formatDate(product.expiryDate)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStockStatus(product.stock).color} bg-opacity-10`}>
-                        {getStockStatus(product.stock).text}
-                      </span>
-                    </td>
-                                         <td className="px-6 py-4">
-                       <div className="flex items-center justify-center space-x-2">
-                         <button
-                           onClick={() => handleEdit(product)}
-                           className="p-2 text-gray-400 hover:text-yellow-600 transition-colors"
-                           title="Edit"
-                         >
-                           <PencilIcon className="w-5 h-5" />
-                         </button>
-                         <button
-                           onClick={() => handleDelete(product)}
-                           className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                           title="Delete"
-                         >
-                           <TrashIcon className="w-5 h-5" />
-                         </button>
-                       </div>
-                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          {/* Empty State */}
-          {currentProducts.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-500 mb-4">
-                {searchTerm || filterType !== 'all' 
-                  ? 'Try adjusting your search or filter criteria.'
-                  : 'Get started by adding your first product.'
-                }
-              </p>
-              {!searchTerm && filterType === 'all' && (
-                <Link
-                  to="/product_form"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white"
-                  style={{ backgroundColor: COLORS.RICH_GOLD }}
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  Add Product
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
-              Showing {indexOfFirstProduct + 1} to {Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} results
+        <div className="mt-4 flex justify-center gap-3 items-center">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            className="px-3 py-1 rounded-xl bg-gray-200 disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span className="font-medium">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(page + 1)}
+            className="px-3 py-1 rounded-xl bg-gray-200 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      {/* Edit Modal */}
+      <Modal open={!!editProduct} onClose={() => setEditProduct(null)}>
+        {editProduct && (
+          <div>
+            <h2 className="text-lg font-bold mb-3">Edit Product</h2>
+            <div className="grid gap-2">
+              <input
+                value={editProduct.name}
+                onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })}
+                className="border p-2 rounded"
+                placeholder="Name"
+              />
+              <input
+                value={editProduct.sku}
+                onChange={(e) => setEditProduct({ ...editProduct, sku: e.target.value })}
+                className="border p-2 rounded"
+                placeholder="SKU"
+              />
+              <select
+                value={editProduct.type}
+                onChange={(e) => setEditProduct({ ...editProduct, type: e.target.value })}
+                className="border p-2 rounded"
+              >
+                <option value="spice">Spice</option>
+                <option value="powder">Powder</option>
+              </select>
+              <input
+                type="number"
+                value={editProduct.price}
+                onChange={(e) => setEditProduct({ ...editProduct, price: e.target.value })}
+                className="border p-2 rounded"
+                placeholder="Price"
+              />
+              <input
+                type="number"
+                value={editProduct.stock}
+                onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
+                className="border p-2 rounded"
+                placeholder="Stock"
+              />
+              <textarea
+                value={editProduct.description}
+                onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })}
+                className="border p-2 rounded"
+                placeholder="Description"
+              />
             </div>
-            <div className="flex space-x-2">
+            <div className="mt-4 flex justify-end gap-2">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                onClick={saveEdit}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl"
               >
-                Previous
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-2 text-sm border rounded-lg ${
-                    currentPage === page
-                      ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
-                      : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Next
+                Save
               </button>
             </div>
           </div>
         )}
-      </main>
+      </Modal>
 
-      {/* Edit Modal */}
-      {editingProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4" style={{ color: COLORS.DARK_SLATE }}>
-                Edit Product: {editingProduct.name}
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={editingProduct.name}
-                    onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={editingProduct.description || ''}
-                    onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
-                    rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                    <input
-                      type="number"
-                      value={editingProduct.price}
-                      onChange={(e) => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-                    <input
-                      type="number"
-                      value={editingProduct.stock}
-                      onChange={(e) => setEditingProduct({...editingProduct, stock: parseInt(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                    <select
-                      value={editingProduct.type}
-                      onChange={(e) => setEditingProduct({...editingProduct, type: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                    >
-                      <option value="spice">Spice</option>
-                      <option value="powder">Powder</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
-                    <select
-                      value={editingProduct.grade}
-                      onChange={(e) => setEditingProduct({...editingProduct, grade: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                    >
-                      <option value="A">Grade A</option>
-                      <option value="B">Grade B</option>
-                      <option value="C">Grade C</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                  <input
-                    type="date"
-                    value={editingProduct.expiryDate ? new Date(editingProduct.expiryDate).toISOString().split('T')[0] : ''}
-                    onChange={(e) => setEditingProduct({...editingProduct, expiryDate: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setEditingProduct(null)}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveEdit}
-                  className="px-4 py-2 text-white rounded-lg font-medium"
-                  style={{ backgroundColor: COLORS.RICH_GOLD }}
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* Delete Modal */}
+      <Modal open={!!deleteProduct} onClose={() => setDeleteProduct(null)}>
+        <p className="text-lg">Delete <span className="font-bold">{deleteProduct?.name}</span>?</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={confirmDelete}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl"
+          >
+            Confirm Delete
+          </button>
         </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <TrashIcon className="h-6 w-6 text-red-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Delete Product
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone.
-              </p>
-              <div className="flex justify-center space-x-3">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       <Footer />
     </div>
   );
-};
-
-export default ProductManagement;
+}
