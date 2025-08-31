@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";// brings react in to scope and use effect support fetching data
+import { Link } from "react-router-dom";//link navigates between routes without reloading the page.
 import Header from "./Header";
 import Footer from "./Footer";
 import {
@@ -8,17 +8,17 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   EyeIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/outline";//import some visual icons from hereicons(delete , search and view)
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
-};
+}; // using this we can centrelize the brand colors later reuse instead of hex values
 
 // Reusable small components
-const Modal = ({ open, onClose, children }) =>
+const Modal = ({ open, onClose, children }) =>//open - whether to show the model,onclose - calls when user closes, children - jsx
   !open ? null : (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">//
       <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg animate-fadeIn">
         {children}
         <div className="flex justify-end mt-4">
@@ -35,96 +35,99 @@ const Modal = ({ open, onClose, children }) =>
 
 const StockStatus = ({ stock }) => {
   const status =
-    stock <= 5
-      ? { text: "Low", color: "bg-red-100 text-red-700" }
+    stock <= 5 //if stock returns lower than 5
+      ? { text: "Low", color: "bg-red-100 text-red-700" } //display low
       : stock <= 20
       ? { text: "Medium", color: "bg-yellow-100 text-yellow-700" }
       : { text: "Good", color: "bg-green-100 text-green-700" };
   return (
     <span className={`px-2 py-1 rounded-full text-sm font-medium ${status.color}`}>
       {status.text}
-    </span>
+    </span> //returns a pill like status tag
   );
 };
 
-export default function ProductManagement() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const perPage = 10;
+export default function ProductManagement() { // defines and exports the main page component
+  const [products, setProducts] = useState([]); //holds full products list from the backend
+  const [loading, setLoading] = useState(true); //Controls the loading state (spinner/message).
+  const [message, setMessage] = useState(""); // Holds feedback text (e.g., “✅ Product updated”, errors, etc.
+  const [search, setSearch] = useState(""); //current text in the search box
+  const [filter, setFilter] = useState("all"); //filter type "all","spice","powder"
+  const [page, setPage] = useState(1); //current page in the pagination
+  const perPage = 10; //10 products per page
 
-  const [editProduct, setEditProduct] = useState(null);
-  const [deleteProduct, setDeleteProduct] = useState(null);
+  const [editProduct, setEditProduct] = useState(null); // holds the product which is about to be updated part. null if model is closed
+  const [deleteProduct, setDeleteProduct] = useState(null); // holds product user intends to delete.
 
   // API helper
-  const apiRequest = async (url, options, successMsg) => {
+  const apiRequest = async (url, options, successMsg) => { //define const apiRequest it will hold an asynchronous function that takes three parameters: url, options, and successMsg.
     try {
-      const res = await fetch(url, options);
+      const res = await fetch(url, options); // use await to wait for the fetch to complete
       if (res.ok) {
-        setMessage(successMsg);
-        fetchProducts();
+        setMessage(successMsg); //if response is okay display success msg
+        fetchProducts(); // refresh the table
         return true;
       }
     } catch {
-      setMessage("❌ Something went wrong");
+      setMessage("❌ Something went wrong");// if fails displays this msg
     }
-    return false;
+    return false; //otherwise return false
   };
 
-  const fetchProducts = async () => {
-    setLoading(true);
+  const fetchProducts = async () => { //get products from the backend, makes it asynchronus to use await inside the function
+    setLoading(true); //This shows a spinner/loader in the UI while waiting.
     try {
-      const res = await fetch("http://localhost:5000/api/products");
-      setProducts(await res.json());
-    } catch {
+      const res = await fetch("http://localhost:5000/api/products"); //fetch products from the backend and store response in res
+      setProducts(await res.json()); //updates the products state with the fetched data. React component will re-render with the new product data.
+    } catch { //If something goes wrong (like no internet, server down, invalid JSON), the catch block runs.
       setMessage("❌ Error loading products");
     }
-    setLoading(false);
+    setLoading(false); //hides the spinner
   };
 
-  useEffect(() => {
+  useEffect(() => { // a react hook to call fetchProducts when the component loads first.
     fetchProducts();
   }, []);
 
   // Filter + paginate
-  const filtered = products.filter(
+  const filtered = products.filter( //takes full products list and returns only matches
     (p) =>
-      (p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(search.toLowerCase()) ||
+      (p.name.toLowerCase().includes(search.toLowerCase()) || //Everything is converted to lowercase
+        p.sku.toLowerCase().includes(search.toLowerCase()) ||
         p.description?.toLowerCase().includes(search.toLowerCase())) &&
-      (filter === "all" || p.type === filter)
+      (filter === "all" || p.type === filter) //If the user’s filter is "all" → all product types are allowed.
   );
-  const totalPages = Math.ceil(filtered.length / perPage);
-  const current = filtered.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.ceil(filtered.length / perPage); //total number of filtered products / how many pages you need. Math.ceil → rounds up number
+  const current = filtered.slice((page - 1) * perPage, page * perPage);//slice(start, end) cuts out a portion of the array
+//page - 1 starts from 0 for the first page, so we multiply by perPage to get the correct starting index.
 
-  // Handlers
-  const saveEdit = async () => {
-    const fd = new FormData();
-    Object.entries(editProduct).forEach(([k, v]) =>
-      !["_id", "createdAt", "updatedAt"].includes(k) && fd.append(k, v)
-    );
+  
+// Handlers
+  const saveEdit = async () => {//This will run when the user saves changes to a product.
+    const fd = new FormData(); //Creates a new FormData object and it lets you append key/value pairs
+    Object.entries(editProduct).forEach(([k, v]) => //Turns the editProduct object into an array of [key, value] pairs and loop through each [key,value]
+      !["_id", "createdAt", "updatedAt"].includes(k) && fd.append(k, v) //fd.append(k, v) Adds the remaining key/value pairs into the FormData object.
+    ); //This condition excludes some keys that don’t want to send (like _id, createdAt, updatedAt
     if (
-      await apiRequest(
-        `http://localhost:5000/api/products/${editProduct._id}`,
-        { method: "PUT", body: fd },
+      await apiRequest( //Calls your apiRequest helper.
+        `http://localhost:5000/api/products/${editProduct._id}`, //updates a specific product
+        { method: "PUT", body: fd }, //method: "PUT" → because of trying to update. body: fd → sending the form data.
         "✅ Product updated"
       )
     )
-      setEditProduct(null);
-  };
+      setEditProduct(null); //closes the edit form
+  };//inshort collects all updated product fields (except DB-only ones) → sends them to backend via PUT → if successful, clears edit mode.
 
-  const confirmDelete = async () => {
+
+  const confirmDelete = async () => { //runs when user confirms the delete . Marked async because it makes an API call
     if (
       await apiRequest(
-        `http://localhost:5000/api/products/${deleteProduct._id}`,
-        { method: "DELETE" },
-        "✅ Product deleted"
+        `http://localhost:5000/api/products/${deleteProduct._id}`,//inserts specific id into the URL
+        { method: "DELETE" }, //HTTP method is "DELETE"
+        "✅ Product deleted" // display
       )
     )
-      setDeleteProduct(null);
+      setDeleteProduct(null);//close the confirmation dialog / modal,
   };
 
   return (
