@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "express": "^5.1.0",
     "framer-motion": "^12.23.12",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
@@ -31,5 +32,10 @@
   "scripts": {
     "start": "webpack serve --mode development --open",
     "build": "webpack --mode production"
-  }
+  },
+  "description": "",
+  "main": "postcss.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
