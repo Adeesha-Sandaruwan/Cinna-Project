@@ -7,6 +7,8 @@ import ProductForm from './components/ProductForm';
 import ProductList from "./components/ProductList.jsx";
 import ProductDetails from "./components/ProductDetails.jsx";
 import ProductManagement from "./components/ProductManagement.jsx";
+import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
+
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/admin/products" element={<ProductManagement />} />
+        <Route path="/leaverequestform" element={<LeaveRequestForm />} />
+
       </Routes>
     </Router>
   );
