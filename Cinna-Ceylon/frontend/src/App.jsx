@@ -8,6 +8,8 @@ import ProductList from "./components/ProductList.jsx";
 import ProductDetails from "./components/ProductDetails.jsx";
 import ProductManagement from "./components/ProductManagement.jsx";
 import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
+import SuplierForm from "./components/SupplierForm.jsx";
+
 
 
 function App() {
@@ -22,6 +24,8 @@ function App() {
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/admin/products" element={<ProductManagement />} />
         <Route path="/leaverequestform" element={<LeaveRequestForm />} />
+        <Route path="/supplierform" element={<SuplierForm />} />
+        
 
       </Routes>
     </Router>
