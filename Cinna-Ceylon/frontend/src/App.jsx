@@ -8,6 +8,8 @@ import ProductList from "./components/ProductList.jsx";
 import ProductDetails from "./components/ProductDetails.jsx";
 import ProductManagement from "./components/ProductManagement.jsx";
 import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
+import Cart from "./components/Cart.jsx";
+import Checkout from "./components/Checkout.jsx";
 
 
 function App() {
@@ -20,9 +22,10 @@ function App() {
         <Route path="/product_form" element={<ProductForm />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/:id" element={<ProductDetails />} />
+        <Route path="/cart/:userId?" element={<Cart />} />
+        <Route path="/checkout/:userId?" element={<Checkout />} />
         <Route path="/admin/products" element={<ProductManagement />} />
         <Route path="/leaverequestform" element={<LeaveRequestForm />} />
-
       </Routes>
     </Router>
   );

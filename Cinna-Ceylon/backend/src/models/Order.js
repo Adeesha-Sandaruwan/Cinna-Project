@@ -1,17 +1,28 @@
 import mongoose from 'mongoose';
 const { Schema, model, Types } = mongoose;
 
-const orderItemSchema = new Schema({
-  product: { type: Types.ObjectId, ref: 'Product', required: true },
-  qty: { type: Number, required: true },
-  price: { type: Number, required: true }
-}, { _id: false });
-
 const orderSchema = new Schema({
-  user: { type: Types.ObjectId, required: true },
-  items: [orderItemSchema],
+  user: { type: String, required: true },
+  items: [{
+    product: { type: Types.ObjectId, ref: 'Product', required: true },
+    qty: { type: Number, required: true },
+    price: { type: Number, required: true }
+  }],
   total: { type: Number, required: true },
-  status: { type: String, enum: ['pending','paid','shipped','completed','cancelled'], default: 'pending' }
-}, { timestamps: true });
+  shippingAddress: {
+    firstName: String,
+    lastName: String,
+    email: String,
+    phone: String,
+    address: String,
+    city: String,
+    postalCode: String
+  },
+  paymentMethod: String,
+  status: { type: String, default: 'pending' }
+}, { 
+  timestamps: true,
+  autoIndex: false // Disable automatic indexing
+});
 
 export default model('Order', orderSchema);

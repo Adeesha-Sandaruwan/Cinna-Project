@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import Header from "./Header.jsx";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import HeaderAfterLogin from "./HeaderAfterLogin.jsx";
 import Footer from "./Footer.jsx";
 
 const COLORS = {
@@ -13,6 +13,7 @@ const COLORS = {
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -20,6 +21,9 @@ const ProductDetails = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState('');
+  const [buyingNow, setBuyingNow] = useState(false);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -81,10 +85,110 @@ const ProductDetails = () => {
     }
   }, [product, id]);
 
+  const addToCart = async () => {
+    if (!product || product.availableStock === 0) return;
+    
+    try {
+      setAddingToCart(true);
+      setCartMessage('');
+      
+      const requestBody = {
+        user: 'default',
+        productId: product._id,
+        qty: quantity
+      };
+      
+      console.log('Adding to cart:', requestBody);
+      
+      const response = await fetch('http://localhost:5000/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Cart updated successfully:', result);
+        setCartMessage('✅ Added to cart successfully!');
+        setTimeout(() => setCartMessage(''), 3000);
+        // Dispatch event to update cart count in header
+        window.dispatchEvent(new Event('cartUpdated'));
+      } else {
+        const errorData = await response.json();
+        console.error('Cart error response:', errorData);
+        setCartMessage(`❌ ${errorData.error || 'Failed to add to cart'}`);
+        setTimeout(() => setCartMessage(''), 3000);
+      }
+    } catch (err) {
+      console.error('Error adding to cart:', err);
+      setCartMessage('❌ Network error - please try again');
+      setTimeout(() => setCartMessage(''), 3000);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const buyNow = async () => {
+    if (!product || product.availableStock === 0) return;
+    
+    try {
+      setBuyingNow(true);
+      
+      // Create order data directly
+      const orderData = {
+        user: 'default',
+        items: [{
+          product: product._id,
+          qty: quantity,
+          price: product.price
+        }],
+        total: quantity * product.price,
+        shippingAddress: {
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          address: '',
+          city: '',
+          postalCode: ''
+        },
+        paymentMethod: 'Credit Card',
+        status: 'pending'
+      };
+      
+      // Create the order
+      const response = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+      
+      if (response.ok) {
+        const order = await response.json();
+        // Redirect to checkout with the order details
+        navigate(`/checkout/default?orderId=${order._id}&buyNow=true`);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to create order: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Error creating order:', err);
+      alert('Network error - please try again');
+    } finally {
+      setBuyingNow(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <Header />
+        <HeaderAfterLogin />
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cinnamon mx-auto mb-4"></div>
@@ -99,7 +203,7 @@ const ProductDetails = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <Header />
+        <HeaderAfterLogin />
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.DARK_SLATE }}>
@@ -117,7 +221,7 @@ const ProductDetails = () => {
   if (!product) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <Header />
+        <HeaderAfterLogin />
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.DARK_SLATE }}>
@@ -132,10 +236,10 @@ const ProductDetails = () => {
   }
 
     return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <Header />
-      
-      <div className="container mx-auto px-4 py-8">
+         <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+       <HeaderAfterLogin />
+       
+       <div className="container mx-auto px-4 py-8">
         {/* Product Header Section */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-7xl mx-auto mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
@@ -200,9 +304,15 @@ const ProductDetails = () => {
                     <span className="font-semibold capitalize">{product.grade}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Stock:</span>
-                    <span className={`font-semibold ${product.stock > 10 ? 'text-green-600' : 'text-red-600'}`}>
-                      {product.stock > 10 ? `${product.stock} available` : `Low stock (${product.stock})`}
+                    <span className="text-gray-600">Available Stock:</span>
+                    <span className={`font-semibold ${product.availableStock > 10 ? 'text-green-600' : product.availableStock > 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                      {product.availableStock > 0 ? `${product.availableStock} available` : 'Out of stock'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Stock:</span>
+                    <span className="font-semibold text-gray-700">
+                      {product.stock} (Safety: {product.safetyStock || 5})
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -227,37 +337,37 @@ const ProductDetails = () => {
                     <input
                       type="number"
                       min="1"
-                      max={product.stock}
+                      max={product.availableStock || 0}
                       value={quantity}
                       onChange={(e) => {
                         const value = parseInt(e.target.value) || 1;
-                        setQuantity(Math.max(1, Math.min(product.stock, value)));
+                        setQuantity(Math.max(1, Math.min(product.availableStock || 0, value)));
                       }}
                       className="w-16 px-2 py-2 text-center border-x border-gray-300 focus:outline-none focus:ring-2 focus:ring-cinnamon focus:border-transparent"
                     />
                     <button
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(product.availableStock || 0, quantity + 1))}
                       className="px-3 py-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={quantity >= product.stock}
+                      disabled={quantity >= (product.availableStock || 0)}
                     >
                       +
                     </button>
                   </div>
                   <span className="text-sm text-gray-500">
-                    Max {product.stock} available
+                    Max {product.availableStock || 0} available
                   </span>
                 </div>
 
                 {/* Stock Warning */}
-                {product.stock <= 5 && product.stock > 0 && (
+                {product.availableStock <= 5 && product.availableStock > 0 && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                     <p className="text-yellow-800 text-sm">
-                      ⚠️ Only {product.stock} items left in stock!
+                      ⚠️ Only {product.availableStock} items available for purchase!
                     </p>
                   </div>
                 )}
                 
-                {product.stock === 0 && (
+                {product.availableStock === 0 && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <p className="text-red-800 text-sm">
                       ❌ This product is currently out of stock
@@ -265,21 +375,45 @@ const ProductDetails = () => {
                   </div>
                 )}
 
+                {/* Cart Message */}
+                {cartMessage && (
+                  <div className={`mt-3 p-3 rounded-lg text-sm font-medium ${
+                    cartMessage.includes('✅') 
+                      ? 'bg-green-50 text-green-800 border border-green-200' 
+                      : 'bg-red-50 text-red-800 border border-red-200'
+                  }`}>
+                    {cartMessage}
+                    {cartMessage.includes('✅') && (
+                      <div className="mt-2">
+                        <Link
+                          to="/cart"
+                          className="text-sm underline hover:no-underline"
+                          style={{ color: COLORS.DEEP_CINNAMON }}
+                        >
+                          View Cart →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex space-x-4 pt-4">
                   <button
+                    onClick={addToCart}
+                    disabled={product.availableStock === 0 || addingToCart}
                     className="flex-1 py-3 px-6 rounded-lg font-semibold border-2 border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: COLORS.DARK_SLATE }}
-                    disabled={product.stock === 0}
                   >
-                    Add to Cart
+                    {addingToCart ? 'Adding...' : 'Add to Cart'}
                   </button>
                   <button
+                    onClick={buyNow}
+                    disabled={product.availableStock === 0 || buyingNow}
                     className="flex-1 py-3 px-6 rounded-lg font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
-                    disabled={product.stock === 0}
                   >
-                    Buy Now
+                    {buyingNow ? 'Processing...' : 'Buy Now'}
                   </button>
                 </div>
 
@@ -421,20 +555,20 @@ const ProductDetails = () => {
                            e.target.src = 'https://via.placeholder.com/400x300/f5efe6/cc7722?text=Cinnamon+Product';
                          }}
                        />
-                       {relatedProduct.stock <= 5 && relatedProduct.stock > 0 && (
-                         <div className="absolute top-2 right-2">
-                           <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                             Low Stock
-                           </span>
-                         </div>
-                       )}
-                       {relatedProduct.stock === 0 && (
-                         <div className="absolute top-2 right-2">
-                           <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                             Out of Stock
-                           </span>
-                         </div>
-                       )}
+                                               {relatedProduct.availableStock <= 5 && relatedProduct.availableStock > 0 && (
+                          <div className="absolute top-2 right-2">
+                            <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                              Low Stock
+                            </span>
+                          </div>
+                        )}
+                        {relatedProduct.availableStock === 0 && (
+                          <div className="absolute top-2 right-2">
+                            <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                              Out of Stock
+                            </span>
+                          </div>
+                        )}
                      </div>
                      
                      <div className="p-4">
@@ -451,12 +585,12 @@ const ProductDetails = () => {
                          </span>
                        </div>
                        
-                       <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                         <span className="capitalize">Grade: {relatedProduct.grade}</span>
-                         <span className={relatedProduct.stock > 10 ? 'text-green-600' : 'text-red-600'}>
-                           {relatedProduct.stock > 10 ? `${relatedProduct.stock} in stock` : `Only ${relatedProduct.stock} left`}
-                         </span>
-                       </div>
+                                               <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                          <span className="capitalize">Grade: {relatedProduct.grade}</span>
+                          <span className={relatedProduct.availableStock > 10 ? 'text-green-600' : relatedProduct.availableStock > 0 ? 'text-orange-600' : 'text-red-600'}>
+                            {relatedProduct.availableStock > 0 ? `${relatedProduct.availableStock} available` : 'Out of stock'}
+                          </span>
+                        </div>
                        
                        <a
                          href={`/products/${relatedProduct._id}`}
