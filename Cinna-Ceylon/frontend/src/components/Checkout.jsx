@@ -1,161 +1,287 @@
+// Import React and useful hooks
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import HeaderAfterLogin from "./HeaderAfterLogin.jsx";
 import Footer from "./Footer.jsx";
-import { FaLock, FaCheckCircle } from "react-icons/fa";
-
-const COLORS = { DEEP_CINNAMON: "#CC7722", DARK_SLATE: "#2d2d2d" };
-
+import { FaCreditCard, FaLock, FaCheckCircle } from "react-icons/fa";
+// Define some custom colors we will use for buttons and highlights
+const COLORS = {
+  RICH_GOLD: "#c5a35a",
+  DEEP_CINNAMON: "#CC7722",
+  DARK_SLATE: "#2d2d2d",
+};
+// Main checkout component
 const Checkout = () => {
+  // Get userId from URL if available
   const { userId } = useParams();
+  // Allows us to programmatically go to another page
   const navigate = useNavigate();
+  // To read query parameters from the URL (example: ?orderId=123)
   const [searchParams] = useSearchParams();
 
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [order, setOrder] = useState(null);
+  // === STATE VARIABLES ===
+  const [cart, setCart] = useState(null);           // Store shopping cart details
+  const [loading, setLoading] = useState(true);     // Show loading text until data is ready
+  const [processing, setProcessing] = useState(false); // Show "processing..." during payment
+  const [orderComplete, setOrderComplete] = useState(false); // True when order is successfully placed
+  const [orderDetails, setOrderDetails] = useState(null);    // Store final order details for receipt
+  const [isBuyNow, setIsBuyNow] = useState(false);   // Flag if this is a "Buy Now" order
+  const [buyNowOrder, setBuyNowOrder] = useState(null); // Store that "Buy Now" order if it exists
 
-  const [paymentMethod, setPaymentMethod] = useState("payNow");
+  // Save customer details from form
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", phone: "",
     address: "", city: "", postalCode: "",
     cardNumber: "", cardName: "", expiryDate: "", cvv: ""
   });
 
-  const orderId = searchParams.get("orderId");
-  const isBuyNow = searchParams.get("buyNow") === "true";
+  // Which payment method the customer chose
+  const [paymentMethod, setPaymentMethod] = useState("payNow"); // "payNow" or "payAtDelivery"
 
+  //LOAD CART OR ORDER WHEN PAGE OPENS
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const url = isBuyNow ? `/api/orders/${orderId}` : `/api/cart/${userId || "default"}`;
-        const res = await fetch(`http://localhost:5000${url}`);
-        if (!res.ok) throw new Error("Fetch failed");
-        const data = await res.json();
-        setCart(isBuyNow ? { items: data.items, total: data.total } : data);
-      } catch {
-        navigate(isBuyNow ? "/" : "/cart");
-      } finally { setLoading(false); }
-    })();
-  }, [userId, orderId, isBuyNow]);
+    // Check if URL has orderId and "buyNow=true"
+    const orderId = searchParams.get("orderId");
+    const buyNow = searchParams.get("buyNow");
 
-  const handleInput = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (orderId && buyNow === "true") {
+      // If yes → this is a Buy Now flow
+      setIsBuyNow(true);
+      loadBuyNowOrder(orderId);
+    } else {
+      // Otherwise → normal cart checkout
+      loadCart();
+    }
+  }, [userId, searchParams]);
 
-  const validate = () => {
-    const required = ["firstName","lastName","email","phone","address","city","postalCode"];
-    if (required.some(f => !formData[f])) return alert("Fill all fields");
-    if (!validEmail.test(formData.email)) return alert("Invalid email");
-    if (paymentMethod === "payNow" && (formData.cardNumber.length < 16 || formData.cvv.length < 3))
-      return alert("Invalid card details");
+  // FUNCTION: Load Buy Now order as a fake cart
+  const loadBuyNowOrder = async (id) => {
+    try {
+      setLoading(true); // Show loading
+      const res = await fetch(`http://localhost:5000/api/orders/${id}`); // Get order details from API
+      if (!res.ok) throw new Error("Failed to fetch order"); // Error if fetch fails
+      const order = await res.json(); // Convert response to JSON
+
+      // Set the order into cart format so UI can display it
+      setBuyNowOrder(order);
+      setCart({
+        items: order.items.map(i => ({ product: i.product, qty: i.qty, priceAtAdd: i.price })),
+        total: order.total,
+        subtotal: order.total,
+      });
+    } catch {
+      alert("Error loading order"); // Show alert if error
+      navigate("/"); // Send back to homepage
+    } finally {
+      setLoading(false); // Stop loading
+    }
+  };
+
+  // FUNCTION: Load normal cart
+  const loadCart = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:5000/api/cart/${userId || "default"}`); // Get cart from API
+      if (!res.ok) throw new Error("Cart not found");
+      setCart(await res.json()); // Save cart data
+    } catch {
+      navigate("/cart"); // If failed → go back to cart page
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // FUNCTION: Handle input changes in form 
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  //FUNCTION: Validate form before checkout
+  const validateForm = () => {
+    // Required fields list
+    const required = ["firstName", "lastName", "email", "phone", "address", "city", "postalCode"];
+    for (let f of required) if (!formData[f]) return alert(`Please enter ${f}`), false;
+
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return alert("Invalid email"), false;
+
+    // Extra checks if user is paying now with card
+    if (paymentMethod === "payNow") {
+      if (formData.cardNumber.length < 16) return alert("Invalid card number"), false;
+      if (formData.cvv.length < 3) return alert("Invalid CVV"), false;
+    }
     return true;
   };
 
-  const placeOrder = async () => {
-    if (!validate()) return;
-    setProcessing(true);
+  // FUNCTION: Handle checkout (place order) 
+  const handleCheckout = async () => {
+    if (!validateForm()) return; // Stop if form is invalid
+    setProcessing(true); // Show processing
+
     try {
-      if (paymentMethod === "payNow") await new Promise(r => setTimeout(r, 1000));
-      const data = {
-        items: cart.items.map(i => ({ product: i.product._id || i.product, qty: i.qty, price: i.priceAtAdd || i.price })),
-        total: cart.total,
-        shippingAddress: formData,
-        paymentMethod: paymentMethod === "payNow" ? "Credit Card" : "Pay at Delivery",
-        status: paymentMethod === "payNow" ? "paid" : "pending"
-      };
-      const url = isBuyNow ? `/api/orders/${orderId}` : "/api/orders";
-      const method = isBuyNow ? "PUT" : "POST";
-      const res = await fetch(`http://localhost:5000${url}`, {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data)
-      });
-      if (!res.ok) throw new Error("Order failed");
-      const newOrder = await res.json();
-      setOrder(newOrder);
-      if (!isBuyNow) await fetch(`http://localhost:5000/api/cart/${userId || "default"}`, { method: "DELETE" });
-    } catch (err) { alert(err.message); }
-    finally { setProcessing(false); }
+      // Fake wait time if user pays now (simulate payment process)
+      if (paymentMethod === "payNow") await new Promise(r => setTimeout(r, 2000));
+
+      // If it's Buy Now flow → update the existing order
+      if (isBuyNow && buyNowOrder) {
+        const res = await fetch(`http://localhost:5000/api/orders/${buyNowOrder._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shippingAddress: formData,
+            paymentMethod: paymentMethod === "payNow" ? "Credit Card" : "Pay at Delivery",
+            status: paymentMethod === "payNow" ? "paid" : "pending",
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to update order");
+        setOrderDetails(await res.json()); // Save updated order
+      }
+
+      // Otherwise - create a new order from the cart
+      else {
+        const res = await fetch("http://localhost:5000/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user: userId || "default",
+            items: cart.items.map(i => ({ product: i.product._id, qty: i.qty, price: i.priceAtAdd })),
+            total: cart.total,
+            shippingAddress: formData,
+            paymentMethod: paymentMethod === "payNow" ? "Credit Card" : "Pay at Delivery",
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to create order");
+        const newOrder = await res.json();
+        setOrderDetails(newOrder);
+
+        // Clear the cart after placing order
+        await fetch(`http://localhost:5000/api/cart/${userId || "default"}`, { method: "DELETE" });
+        window.dispatchEvent(new Event("cartUpdated")); // Update cart icon in header
+      }
+      // Mark order as complete so we can show success page
+      setOrderComplete(true);
+    } catch (err) {
+      alert("Checkout failed: " + err.message);
+    } finally {
+      setProcessing(false); // Stop processing
+    }
   };
 
-  if (loading) return <Screen><p>Loading checkout...</p></Screen>;
-  if (!cart?.items?.length) return navigate("/cart");
-  if (order) return <Success order={order} navigate={navigate} />;
+  //UI
+  if (loading) return <p className="text-center p-10">Loading checkout...</p>; // Show loading text
+  if (!cart?.items?.length) return navigate("/cart"); // If cart empty → go back to cart
 
+  //ORDER RECEIPT PAGE
+  if (orderComplete && orderDetails) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAfterLogin />
+        <div className="max-w-lg mx-auto p-8 bg-white rounded-2xl shadow-lg text-center mt-10">
+          {/* Green success tick */}
+          <FaCheckCircle className="mx-auto text-green-600" size={70} />
+          <h1 className="text-3xl font-bold mt-4 text-gray-800">
+            {orderDetails.status === "paid" ? "🎉 Order Successful!" : "✅ Order Placed!"}
+          </h1>
+          <p className="text-gray-600 mt-2 mb-6">
+            {orderDetails.status === "paid"
+              ? "Thank you for your purchase. Your payment has been received."
+              : "Your order is confirmed. Please pay at delivery."}
+          </p>
+          {/* Small receipt box */}
+          <div className="bg-gray-100 p-4 rounded-xl text-left">
+            <p><b>Order ID:</b> {orderDetails._id}</p>
+            <p><b>Total:</b> LKR {orderDetails.total}</p>
+            <p><b>Payment:</b> {orderDetails.paymentMethod}</p>
+            <p><b>Status:</b> {orderDetails.status}</p>
+          </div>
+          {/* Continue shopping button */}
+          <button onClick={() => navigate("/")} className="mt-6 px-6 py-3 rounded-xl text-white font-semibold shadow-md" style={{ background: COLORS.DEEP_CINNAMON }}>
+            Continue Shopping
+          </button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // MAIN CHECKOUT SCREEN (FORM + SUMMARY)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+    <div className="min-h-screen bg-gray-50">
       <HeaderAfterLogin />
-      <div className="container mx-auto px-8 max-w-6xl grid lg:grid-cols-2 gap-8">
-        <Form formData={formData} onChange={handleInput} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
-        <Summary cart={cart} placeOrder={placeOrder} processing={processing} paymentMethod={paymentMethod} isBuyNow={isBuyNow} navigate={navigate} />
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 p-6">
+        
+        {/* LEFT SIDE: SHIPPING FORM + PAYMENT METHOD */}
+        <div className="space-y-8">
+          
+          {/* Shipping info box */}
+          <div className="bg-white p-6 rounded-2xl shadow-md">
+            <h2 className="font-semibold text-xl mb-4 border-b pb-2">📦 Shipping Information</h2>
+            {["firstName","lastName","email","phone","address","city","postalCode"].map(f => (
+              <input key={f} name={f} value={formData[f]} onChange={handleChange}
+                placeholder={f.charAt(0).toUpperCase()+f.slice(1)} 
+                className="w-full mb-3 p-3 border rounded-lg focus:ring-2 focus:ring-orange-400" />
+            ))}
+          </div>
+
+          {/* Payment method box */}
+          <div className="bg-white p-6 rounded-2xl shadow-md">
+            <h2 className="font-semibold text-xl mb-4 border-b pb-2">💳 Payment Method</h2>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2">
+                <input type="radio" value="payNow" checked={paymentMethod==="payNow"} onChange={e=>setPaymentMethod(e.target.value)} />
+                <FaCreditCard /> Pay Now
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" value="payAtDelivery" checked={paymentMethod==="payAtDelivery"} onChange={e=>setPaymentMethod(e.target.value)} />
+                🚚 Pay at Delivery
+              </label>
+            </div>
+
+            {/* Show card details if Pay Now selected */}
+            {paymentMethod==="payNow" && (
+              <div className="mt-4 space-y-3">
+                <input name="cardNumber" placeholder="Card Number" maxLength="16" value={formData.cardNumber} onChange={handleChange} className="w-full p-3 border rounded-lg" />
+                <input name="cardName" placeholder="Cardholder Name" value={formData.cardName} onChange={handleChange} className="w-full p-3 border rounded-lg" />
+                <div className="flex gap-3">
+                  <input name="expiryDate" placeholder="MM/YY" value={formData.expiryDate} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" />
+                  <input name="cvv" placeholder="CVV" maxLength="4" value={formData.cvv} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" />
+                </div>
+                <p className="text-sm text-gray-600 flex items-center"><FaLock className="mr-2"/> Secure Payment</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: ORDER SUMMARY */}
+        <div className="bg-white p-6 rounded-2xl shadow-md h-fit">
+          <h2 className="font-semibold text-xl mb-4 border-b pb-2">🧾 Order Summary</h2>
+          <div className="space-y-3">
+            {cart.items.map((i, idx) => (
+              <div key={idx} className="flex justify-between text-gray-700">
+                <span>{i.product.name} <span className="text-sm text-gray-500">x{i.qty}</span></span>
+                <span className="font-medium">LKR {(i.qty*i.priceAtAdd).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+          <hr className="my-4"/>
+          <div className="flex justify-between text-lg font-bold text-gray-800">
+            <span>Total</span>
+            <span>LKR {cart.total}</span>
+          </div>
+          {/* Checkout button */}
+          <button onClick={handleCheckout} disabled={processing}
+            className="w-full mt-6 p-3 rounded-xl text-white font-semibold shadow-md hover:opacity-90"
+            style={{ background: COLORS.DEEP_CINNAMON }}>
+            {processing ? "Processing..." :
+              paymentMethod==="payNow"
+              ? `Pay LKR ${cart.total} Now`
+              : `Place Order - Pay at Delivery`}
+          </button>
+          {/* Back button */}
+          <button onClick={()=>navigate(isBuyNow?"/":"/cart")}
+            className="mt-4 text-gray-600 text-sm hover:underline">← Back</button>
+        </div>
       </div>
       <Footer />
     </div>
   );
 };
-
-const Screen = ({ children }) => (
-  <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50 to-orange-100">
-    <HeaderAfterLogin />
-    <div className="flex flex-1 justify-center items-center">{children}</div>
-    <Footer />
-  </div>
-);
-
-const Success = ({ order, navigate }) => (
-  <Screen>
-    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 text-center">
-      <FaCheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-      <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.DARK_SLATE }}>
-        {order.status === "paid" ? "Order Successful!" : "Order Placed!"}
-      </h1>
-      <p className="mb-6 text-gray-600">{order.status === "paid" ? "Thank you for your purchase" : "Pay at delivery."}</p>
-      <p><b>Order ID:</b> {order._id}</p>
-      <p><b>Total:</b> LKR {order.total}</p>
-      <p><b>Status:</b> {order.status}</p>
-      <button onClick={() => navigate("/")} className="mt-6 w-full py-3 rounded-lg text-white" style={{ backgroundColor: COLORS.DEEP_CINNAMON }}>Continue Shopping</button>
-    </div>
-  </Screen>
-);
-
-const Form = ({ formData, onChange, paymentMethod, setPaymentMethod }) => (
-  <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6">
-    <h2 className="text-xl font-semibold" style={{ color: COLORS.DARK_SLATE }}>Shipping Info</h2>
-    {Object.entries({ firstName:"First Name", lastName:"Last Name", email:"Email", phone:"Phone", address:"Address", city:"City", postalCode:"Postal Code" }).map(([name, label]) => (
-      <input key={name} placeholder={label} name={name} value={formData[name]} onChange={onChange} className="w-full px-3 py-2 border rounded-lg" />
-    ))}
-
-    <h2 className="text-xl font-semibold" style={{ color: COLORS.DARK_SLATE }}>Payment</h2>
-    {[{ value: "payNow", label: "Pay Now (Credit Card)" }, { value: "payAtDelivery", label: "Pay at Delivery" }].map(opt => (
-      <label key={opt.value} className="flex items-center space-x-2">
-        <input type="radio" name="paymentMethod" value={opt.value} checked={paymentMethod === opt.value} onChange={e => setPaymentMethod(e.target.value)} />
-        <span>{opt.label}</span>
-      </label>
-    ))}
-
-    {paymentMethod === "payNow" && (
-      <div className="space-y-3">
-        {["cardNumber","cardName","expiryDate","cvv"].map(f => (
-          <input key={f} placeholder={f} name={f} value={formData[f]} onChange={onChange} className="w-full px-3 py-2 border rounded-lg" />
-        ))}
-        <div className="flex items-center text-sm text-gray-600"><FaLock className="mr-2" /> Your info is secure</div>
-      </div>
-    )}
-  </div>
-);
-
-const Summary = ({ cart, placeOrder, processing, paymentMethod, isBuyNow, navigate }) => (
-  <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6 sticky top-8">
-    <h2 className="text-xl font-semibold">Order Summary</h2>
-    {cart.items.map((i, idx) => (
-      <div key={idx} className="flex justify-between"><span>{i.product.name} x {i.qty}</span><span>LKR {i.qty * (i.priceAtAdd || i.price)}</span></div>
-    ))}
-    <div className="font-bold">Total: LKR {cart.total}</div>
-    <button onClick={placeOrder} disabled={processing} className="w-full py-3 rounded-lg text-white" style={{ backgroundColor: COLORS.DEEP_CINNAMON }}>
-      {processing ? "Processing..." : paymentMethod === "payNow" ? `Pay LKR ${cart.total}` : `Place Order - LKR ${cart.total}`}
-    </button>
-    <button onClick={() => navigate(isBuyNow ? "/" : "/cart")} className="text-sm text-gray-600">← Back</button>
-  </div>
-);
-
 export default Checkout;
