@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import HeaderAfterLogin from "./HeaderAfterLogin.jsx";
 import Footer from "./Footer.jsx";
-// import  Review from "./Review";
 
 // Theme colors
 const COLORS = {
@@ -172,7 +171,12 @@ const ProductDetails = () => {
         {/* Product Info Section */}
         <div className="bg-white rounded-2xl shadow-xl max-w-7xl mx-auto mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Product Image */}
-          <div className="flex justify-center items-center p-6 bg-gray-50 rounded-2xl">
+          <div className="relative flex justify-center items-center p-6 bg-gray-50 rounded-2xl">
+            {product.availableStock === 0 && (
+              <span className="absolute top-4 left-4 bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md">
+                Out of Stock
+              </span>
+            )}
             <img
               src={`http://localhost:5000/uploads/${product.image}`}
               alt={product.name}
@@ -220,7 +224,7 @@ const ProductDetails = () => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
+                disabled={quantity <= 1 || product.availableStock === 0}
                 className="px-3 py-2 border rounded-lg"
               >
                 -
@@ -231,13 +235,14 @@ const ProductDetails = () => {
                 max={product.availableStock}
                 value={quantity}
                 onChange={(e) => setQuantity(Number(e.target.value))}
+                disabled={product.availableStock === 0}
                 className="w-16 text-center border rounded-lg"
               />
               <button
                 onClick={() =>
                   setQuantity(Math.min(product.availableStock, quantity + 1))
                 }
-                disabled={quantity >= product.availableStock}
+                disabled={quantity >= product.availableStock || product.availableStock === 0}
                 className="px-3 py-2 border rounded-lg"
               >
                 +
@@ -250,14 +255,14 @@ const ProductDetails = () => {
               <button
                 onClick={addToCart}
                 disabled={addingToCart || product.availableStock === 0}
-                className="flex-1 py-3 px-6 rounded-lg border font-semibold"
+                className="flex-1 py-3 px-6 rounded-lg border font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {addingToCart ? "Adding..." : "Add to Cart"}
               </button>
               <button
                 onClick={buyNow}
                 disabled={buyingNow || product.availableStock === 0}
-                className="flex-1 py-3 px-6 rounded-lg text-white font-semibold"
+                className="flex-1 py-3 px-6 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
               >
                 {buyingNow ? "Processing..." : "Buy Now"}
@@ -276,8 +281,6 @@ const ProductDetails = () => {
           </div>
         )}
 
-        {/* Reviews <Review productId={product._id} currentUser="default" /> */}
-
         {/* Related Products */}
         <div className="bg-white rounded-2xl shadow-xl max-w-7xl mx-auto p-8">
           <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.DARK_SLATE }}>
@@ -290,14 +293,21 @@ const ProductDetails = () => {
               {relatedProducts.map((item) => (
                 <div
                   key={item._id}
-                  className="border rounded-lg shadow-sm overflow-hidden"
+                  className="border rounded-lg shadow-sm overflow-hidden flex flex-col"
                 >
-                  <img
-                    src={`http://localhost:5000/uploads/${item.image}`}
-                    alt={item.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
+                  {/* Image container with square ratio */}
+                  <div className="w-full aspect-square bg-white flex items-center justify-center">
+                    <img
+                      src={`http://localhost:5000/uploads/${item.image}`}
+                      alt={item.name}
+                      className="max-h-full max-w-full object-contain"
+                      onError={(e) =>
+                        (e.target.src =
+                          "https://via.placeholder.com/400x400/f5efe6/cc7722?text=Cinnamon+Product")
+                      }
+                    />
+                  </div>
+                  <div className="p-4 flex flex-col flex-grow text-center">
                     <h3 className="font-semibold">{item.name}</h3>
                     <p style={{ color: COLORS.DEEP_CINNAMON }}>
                       LKR {item.price.toLocaleString()}
