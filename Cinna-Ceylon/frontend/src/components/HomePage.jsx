@@ -22,15 +22,6 @@ const carouselImages = [
   { src: 'https://ideogram.ai/assets/image/lossless/response/_oV9SELRTsG6t1ZTMd1uTQ', alt: 'Ground cinnamon powder' },
 ];
 
-// Remove static featuredProducts - will be fetched from database
-
-/* ---------------- Simple Carousel component ----------------
-   - Easy to read, autoplay + manual controls
-   - Pauses on hover
-   - Simple CSS (Tailwind) so you can explain each class later.
-*/
-
-/* ------------------ Main HomePage ------------------ */
 function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +36,6 @@ function HomePage() {
         setFeaturedProducts(featured);
       } catch (error) {
         console.error('Error fetching featured products:', error);
-        // Fallback to empty array if fetch fails
         setFeaturedProducts([]);
       } finally {
         setLoading(false);
@@ -112,27 +102,26 @@ function HomePage() {
           </div>
         </section>
 
-        {/* ---------- About / Business details (detailed but simple) ---------- */}
+        {/* ---------- About / Business details ---------- */}
         <AnimatedSection className="py-16">
           <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-            
               <p className="mt-4 text-gray-700 leading-relaxed">
-              Cinna Ceylon is a supply chain management system designed to support Sri Lanka’s authentic Ceylon cinnamon
+                Cinna Ceylon is a supply chain management system designed to support Sri Lanka’s authentic Ceylon cinnamon
               </p>
 
               <ul className="mt-6 space-y-3 text-gray-700">
                 <li>
-                  <strong>Provenance:</strong>Single-origin traceability from smallholder farms in the central highlands — ensuring authenticity and transparency at every stage.
+                  <strong>Provenance:</strong> Single-origin traceability from smallholder farms in the central highlands.
                 </li>
                 <li>
-                  <strong>Processing:</strong> Digital tracking of cinnamon harvesting, peeling, and drying practices to maintain quality standards and preserve natural value.
+                  <strong>Processing:</strong> Digital tracking of harvesting, peeling, and drying practices.
                 </li>
                 <li>
-                  <strong>Quality:</strong> Data-driven monitoring and batch verification to prevent cassia mixing, ensuring product integrity, aroma, and flavor.
+                  <strong>Quality:</strong> Batch verification to prevent cassia mixing, ensuring aroma and flavor.
                 </li>
                 <li>
-                  <strong>Community:</strong> Empowering farmers through fair trade, transparent records, and tools that promote sustainable agricultural practices.
+                  <strong>Community:</strong> Empowering farmers through fair trade and sustainable practices.
                 </li>
               </ul>
 
@@ -145,7 +134,6 @@ function HomePage() {
               </Link>
             </div>
 
-            {/* Visual + quick facts */}
             <div className="space-y-6">
               <img
                 src="https://cinoceylon.wordpress.com/wp-content/uploads/2017/03/newly-planted-cinnamon.jpg"
@@ -159,15 +147,15 @@ function HomePage() {
                 </div>
                 <div className="bg-white rounded-lg p-4 shadow">
                   <h4 className="text-sm font-semibold" style={{ color: COLORS.DEEP_CINNAMON }}>Certified partners</h4>
-                  <p className="text-xs text-gray-600 mt-2">Working with local certifiers and quality auditors.</p>
+                  <p className="text-xs text-gray-600 mt-2">Working with certifiers and quality auditors.</p>
                 </div>
               </div>
             </div>
           </div>
         </AnimatedSection>
 
-        {/* ---------- Why choose us (features) ---------- */}
-        <AnimatedSection className="py-12" >
+        {/* ---------- Why choose us ---------- */}
+        <AnimatedSection className="py-12">
           <div className="max-w-7xl mx-auto px-6 md:px-8 text-center">
             <h3 className="text-xl font-semibold" style={{ color: COLORS.RICH_GOLD }}>Why choose CinnaCeylon?</h3>
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -196,7 +184,7 @@ function HomePage() {
         </AnimatedSection>
 
         {/* ---------- Featured Products ---------- */}
-        <AnimatedSection className="py-16" >
+        <AnimatedSection className="py-16">
           <div className="max-w-7xl mx-auto px-6 md:px-8">
             <div className="text-center max-w-2xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}>
@@ -207,10 +195,9 @@ function HomePage() {
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {loading ? (
-                // Loading skeleton
                 Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className="bg-white rounded-lg overflow-hidden shadow animate-pulse">
-                    <div className="w-full h-48 bg-gray-200"></div>
+                    <div className="w-full aspect-square bg-gray-200"></div>
                     <div className="p-4">
                       <div className="h-4 bg-gray-200 rounded mb-2"></div>
                       <div className="h-6 bg-gray-200 rounded w-1/2"></div>
@@ -220,18 +207,20 @@ function HomePage() {
                 ))
               ) : featuredProducts.length > 0 ? (
                 featuredProducts.map((product) => (
-                  <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition">
-                    <img 
-                      src={`http://localhost:5000/uploads/${product.image}`} 
-                      alt={product.name} 
-                      className="w-full h-48 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/400x300/f5efe6/cc7722?text=Cinnamon+Product';
-                      }}
-                    />
-                    <div className="p-4">
-                      <h4 className="font-semibold text-gray-800">{product.name}</h4>
-                      <p className="mt-2 font-bold" style={{ color: COLORS.RICH_GOLD }}>
+                  <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition flex flex-col">
+                    <div className="w-full aspect-square bg-white flex items-center justify-center">
+                      <img
+                        src={`http://localhost:5000/uploads/${product.image}`}
+                        alt={product.name}
+                        className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/400x400/f5efe6/cc7722?text=Cinnamon+Product';
+                        }}
+                      />
+                    </div>
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h4 className="font-semibold text-gray-800 text-center">{product.name}</h4>
+                      <p className="mt-2 font-bold text-center" style={{ color: COLORS.RICH_GOLD }}>
                         LKR {product.price?.toLocaleString()}
                       </p>
                       <Link
@@ -245,7 +234,6 @@ function HomePage() {
                   </div>
                 ))
               ) : (
-                // No products available
                 <div className="col-span-full text-center py-8">
                   <p className="text-gray-500">No products available at the moment.</p>
                 </div>
@@ -254,7 +242,7 @@ function HomePage() {
           </div>
         </AnimatedSection>
 
-        {/* ---------- Newsletter (simple & clear) ---------- */}
+        {/* ---------- Newsletter ---------- */}
         <section className="py-16 bg-gradient-to-r from-white to-white">
           <div className="max-w-3xl mx-auto px-6">
             <h3 className="text-2xl font-bold" style={{ color: COLORS.DARK_SLATE }}>Join the Spice Route</h3>

@@ -31,31 +31,47 @@ const ProductList = () => {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
       <Header />
       <div className="p-10">
-        <h1 className="text-3xl font-bold text-center mb-8" style={{ color: COLORS.DARK_SLATE }}>
+        <h1
+          className="text-3xl font-bold text-center mb-8"
+          style={{ color: COLORS.DARK_SLATE }}
+        >
           🌿 Our Products
         </h1>
+
+        {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <div
               key={product._id}
               className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col"
             >
-                           <img
-               src={`http://localhost:5000/uploads/${product.image}`}
-               alt={product.name}
-               className="h-48 w-full object-cover"
-               onError={(e) => {
-                 console.error(`Failed to load image: ${product.image}`);
-                 e.target.src = 'https://via.placeholder.com/400x300/f5efe6/cc7722?text=Cinnamon+Product';
-               }}
-             />
+              {/* Image container (keeps square ratio) */}
+              <div className="w-full aspect-square bg-white flex items-center justify-center">
+                <img
+                  src={`http://localhost:5000/uploads/${product.image}`}
+                  alt={product.name}
+                  className="max-h-full max-w-full object-contain"
+                  onError={(e) => {
+                    console.error(`Failed to load image: ${product.image}`);
+                    e.target.src =
+                      "https://via.placeholder.com/400x400/f5efe6/cc7722?text=Cinnamon+Product";
+                  }}
+                />
+              </div>
+
+              {/* Product Info */}
               <div className="p-4 flex flex-col flex-grow">
-                <h2 className="text-lg font-semibold mb-2 text-gray-800">
+                <h2 className="text-lg font-semibold mb-2 text-gray-800 text-center">
                   {product.name}
                 </h2>
-                <p className="text-md font-bold mb-4" style={{ color: COLORS.DEEP_CINNAMON }}>
+                <p
+                  className="text-md font-bold mb-4 text-center"
+                  style={{ color: COLORS.DEEP_CINNAMON }}
+                >
                   LKR {product.price.toLocaleString()}
                 </p>
+
+                {/* Button */}
                 <div className="mt-auto">
                   <Link
                     to={`/products/${product._id}`}
