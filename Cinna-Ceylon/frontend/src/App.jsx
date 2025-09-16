@@ -11,6 +11,7 @@ import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
 import Cart from "./components/Cart.jsx";
 import Checkout from "./components/Checkout.jsx";
 import SuplierForm from "./components/SupplierForm.jsx";
+
 function App() {
   return (
     <Router>
@@ -26,6 +27,8 @@ function App() {
         <Route path="/admin/products" element={<ProductManagement />} />
         <Route path="/leaverequestform" element={<LeaveRequestForm />} />
         <Route path="/supplierform" element={<SuplierForm />} />
+        <Route path="/supplierform" element={<SuplierForm />} />
+
       </Routes>
     </Router>
   );
