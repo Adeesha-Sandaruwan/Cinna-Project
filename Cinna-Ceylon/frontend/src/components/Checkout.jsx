@@ -83,10 +83,20 @@ const Checkout = () => {
 
   const validateForm = () => {
     const required = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'postalCode'];
-    for (let f of required) if (!formData[f].trim()) return alert(`Please fill in ${f}`), false;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return alert('Invalid email'), false;
-    if (paymentMethod === 'payNow' && (formData.cardNumber.length < 16 || formData.cvv.length < 3))
-      return alert('Invalid card details'), false;
+    for (let f of required) {
+      if (!formData[f].trim()) {
+        alert(`Please fill in ${f}`);
+        return false;
+      }
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      alert('Invalid email');
+      return false;
+    }
+    if (paymentMethod === 'payNow' && (formData.cardNumber.length < 16 || formData.cvv.length < 3)) {
+      alert('Invalid card details');
+      return false;
+    }
     return true;
   };
 
@@ -127,7 +137,10 @@ const Checkout = () => {
   };
 
   if (loading) return <div className="min-h-screen flex justify-center items-center">Loading checkout...</div>;
-  if (!cart?.items?.length) return navigate('/cart'), null;
+  if (!cart?.items?.length) {
+    navigate('/cart');
+    return null;
+  }
 
   if (orderComplete && orderDetails)
     return (

@@ -14,6 +14,13 @@ import orderRoutes from './routes/OrderRoutes.js';
 import supplierRoutes from './routes/SupplierRoutes.js';
 import supplyRecordRoutes from './routes/SupplyRecordRoutes.js';
 import leaveReqRoutes from './routes/LeaveReqRoutes.js';
+// Vehicle Management Routes
+import vehicleRoutes from './routes/vehicleRoutes.js';
+import accidentRoutes from './routes/accidentRoutes.js';
+import deliveryRoutes from './routes/deliveryRoutes.js';
+import emergencyRoutes from './routes/emergencyRoutes.js';
+import maintenanceRoutes from './routes/maintenanceRoutes.js';
+
 
 dotenv.config();
 
@@ -43,6 +50,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/supply-records', supplyRecordRoutes);
 app.use('/api/leave-requests', leaveReqRoutes);
+// Vehicle Management Routes
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/accidents', accidentRoutes);
+app.use('/api/deliveries', deliveryRoutes);
+app.use('/api/emergencies', emergencyRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 // Root test endpoint
 app.get('/', (req, res) => {
