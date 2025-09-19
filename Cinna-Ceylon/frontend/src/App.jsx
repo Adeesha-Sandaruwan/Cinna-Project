@@ -12,6 +12,9 @@ import SuplierForm from "./components/SupplierForm.jsx";
 
 
 
+
+
+
 function App() {
   return (
     <Router>
@@ -25,6 +28,8 @@ function App() {
         <Route path="/admin/products" element={<ProductManagement />} />
         <Route path="/leaverequestform" element={<LeaveRequestForm />} />
         <Route path="/supplierform" element={<SuplierForm />} />
+        
+        
         
 
       </Routes>
