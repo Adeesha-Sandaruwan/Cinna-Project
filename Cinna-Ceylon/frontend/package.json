@@ -12,12 +12,8 @@
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.12",
-<<<<<<< Updated upstream
-    "jspdf": "^3.0.3",
-=======
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.2",
->>>>>>> Stashed changes
     "lucide-react": "^0.542.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

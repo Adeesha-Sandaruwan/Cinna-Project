@@ -21,7 +21,6 @@ import SalaryForm from './components/SalaryForm';
 import FinancialReportForm from './components/FinancialReportForm';
 import SupPaymentForm from './components/SupPaymentForm';
 import DeliveryPayoutForm from './components/DeliveryPayoutForm';
-import SalaryDashoard from './components/SalaryDashboard';
 
 // Offers
 import OfferCard from './components/OfferCard';
@@ -69,7 +68,6 @@ function App() {
         <Route path='/offer-form' element={<OfferForm />} />
         <Route path='/offer-page' element={<OffersPage />} />
         <Route path='/buyer-offers' element={<BuyerOffersPage />} />
-        <Route path='/salary-dashboard' element={<SalaryDashoard />} />
         
         {/* Vehicle Management Routes */}
         <Route path="/vehicles" element={<VehicleManagerDashboard />} />

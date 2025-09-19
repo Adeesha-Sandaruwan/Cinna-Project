@@ -5,7 +5,6 @@ import {
   PencilIcon,
   TrashIcon,
   DocumentArrowDownIcon,
-  TruckIcon,
   CalendarIcon,
   CurrencyDollarIcon,
   ArrowPathIcon,
@@ -26,11 +25,9 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   const [payouts, setPayouts] = useState([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState([]);
   const [emergencyRecords, setEmergencyRecords] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [formData, setFormData] = useState({
     referenceType: 'Maintenance',
     referenceId: '',
-    vehicle: '',
     payoutDate: new Date().toISOString().split('T')[0],
     amount: '',
     paymentStatus: 'Pending',
@@ -59,7 +56,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     fetchPayouts();
     fetchMaintenanceRecords();
     fetchEmergencyRecords();
-    fetchVehicles();
   }, []);
 
   useEffect(() => {
@@ -100,13 +96,33 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     }
   };
 
-  const fetchVehicles = async () => {
+  // ---------- PDF Download ----------
+  const handleDownloadPDF = async (payoutId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/vehicles`);
-      setVehicles(response.data || []);
+      const response = await axios.get(
+        `${API_BASE_URL}/delivery-payouts/${payoutId}/pdf`, 
+        { responseType: 'blob' }
+      );
+      
+      // Create a blob from the PDF stream
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element and trigger the download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DeliveryPayout_${payoutId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
-      console.error('Error fetching vehicles:', error);
-      setVehicles([]);
+      console.error('Error downloading PDF:', error);
+      alert('Failed to download PDF. Please try again.');
     }
   };
 
@@ -157,7 +173,7 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
 
     if (name === 'referenceType') {
-      setFormData(prev => ({ ...prev, referenceId: '', vehicle: '', amount: '' }));
+      setFormData(prev => ({ ...prev, referenceId: '', amount: '' }));
     }
 
     if (name === 'referenceId' && value) {
@@ -166,7 +182,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
         if (rec) {
           setFormData(prev => ({
             ...prev,
-            vehicle: rec.vehicle?._id || rec.vehicle,
             amount: rec.serviceCost || '0'
           }));
         }
@@ -175,7 +190,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
         if (rec) {
           setFormData(prev => ({
             ...prev,
-            vehicle: rec.vehicle?._id || rec.vehicle,
             amount: prev.amount || '0'
           }));
         }
@@ -188,7 +202,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.referenceId) newErrors.referenceId = 'Reference record is required';
-    if (!formData.vehicle) newErrors.vehicle = 'Vehicle is required';
     if (!formData.amount || formData.amount <= 0) newErrors.amount = 'Valid amount is required';
     if (!formData.payoutDate) newErrors.payoutDate = 'Payout date is required';
     setErrors(newErrors);
@@ -223,7 +236,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     setFormData({
       referenceType: payout.referenceType,
       referenceId: payout.referenceId?._id || payout.referenceId,
-      vehicle: payout.vehicle?._id || payout.vehicle,
       payoutDate: new Date(payout.payoutDate).toISOString().split('T')[0],
       amount: payout.amount,
       paymentStatus: payout.paymentStatus,
@@ -254,7 +266,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     setFormData({
       referenceType: 'Maintenance',
       referenceId: '',
-      vehicle: '',
       payoutDate: new Date().toISOString().split('T')[0],
       amount: '',
       paymentStatus: 'Pending',
@@ -269,10 +280,10 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   const filteredPayouts = payouts.filter(p => {
     const term = searchTerm.toLowerCase();
     const matchesSearch =
-      p.vehicle?.make?.toLowerCase().includes(term) ||
-      p.vehicle?.model?.toLowerCase().includes(term) ||
-      p.vehicle?.licensePlate?.toLowerCase().includes(term) ||
       p.referenceId?.description?.toLowerCase().includes(term) ||
+      p.referenceId?.vehicle?.make?.toLowerCase().includes(term) ||
+      p.referenceId?.vehicle?.model?.toLowerCase().includes(term) ||
+      p.referenceId?.vehicle?.licensePlate?.toLowerCase().includes(term) ||
       false;
 
     const matchesStatus = !filterStatus || p.paymentStatus === filterStatus;
@@ -367,7 +378,7 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
                 <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search vehicles or descriptions..."
+                  placeholder="Search descriptions or vehicles..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -514,30 +525,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
               </button>
             </div>
 
-            {/* Vehicle */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                <TruckIcon className="w-4 h-4 mr-2" />
-                Vehicle *
-              </label>
-              <select
-                name="vehicle"
-                value={formData.vehicle}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.vehicle ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select Vehicle</option>
-                {vehicles.map(vehicle => (
-                  <option key={vehicle._id} value={vehicle._id}>
-                    {vehicle.make} {vehicle.model} - {vehicle.licensePlate}
-                  </option>
-                ))}
-              </select>
-              {errors.vehicle && <p className="text-red-500 text-xs mt-1">{errors.vehicle}</p>}
-            </div>
-
             {/* Payout Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
@@ -631,6 +618,7 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
                     <p><strong>Description:</strong> {maintenanceRecords.find(m => m._id === formData.referenceId)?.description}</p>
                     <p><strong>Service Cost:</strong> Rs. {maintenanceRecords.find(m => m._id === formData.referenceId)?.serviceCost}</p>
                     <p><strong>Service Date:</strong> {new Date(maintenanceRecords.find(m => m._id === formData.referenceId)?.serviceDate).toLocaleDateString()}</p>
+                    <p><strong>Vehicle:</strong> {maintenanceRecords.find(m => m._id === formData.referenceId)?.vehicle?.make} {maintenanceRecords.find(m => m._id === formData.referenceId)?.vehicle?.model} - {maintenanceRecords.find(m => m._id === formData.referenceId)?.vehicle?.licensePlate}</p>
                   </div>
                 )}
                 {formData.referenceType === 'Emergency' && emergencyRecords.find(e => e._id === formData.referenceId) && (
@@ -638,6 +626,7 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
                     <p><strong>Description:</strong> {emergencyRecords.find(e => e._id === formData.referenceId)?.description}</p>
                     <p><strong>Accident Date:</strong> {new Date(emergencyRecords.find(e => e._id === formData.referenceId)?.accidentDate).toLocaleDateString()}</p>
                     <p><strong>Driver:</strong> {emergencyRecords.find(e => e._id === formData.referenceId)?.driver?.name || 'N/A'}</p>
+                    <p><strong>Vehicle:</strong> {emergencyRecords.find(e => e._id === formData.referenceId)?.vehicle?.make} {emergencyRecords.find(e => e._id === formData.referenceId)?.vehicle?.model} - {emergencyRecords.find(e => e._id === formData.referenceId)?.vehicle?.licensePlate}</p>
                   </div>
                 )}
               </div>
@@ -716,7 +705,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
@@ -741,12 +729,6 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
                           {payout.referenceType}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {payout.vehicle?.make} {payout.vehicle?.model}
-                        </div>
-                        <div className="text-sm text-gray-500">{payout.vehicle?.licensePlate}</div>
-                      </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                         {getReferenceDetails(payout)}
                       </td>
@@ -769,6 +751,13 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
                           >
                             <PencilIcon className="w-4 h-4 mr-1" />
                             Edit
+                          </button>
+                          <button
+                            onClick={() => handleDownloadPDF(payout._id)}
+                            className="text-green-600 hover:text-green-800 flex items-center transition-colors"
+                          >
+                            <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
+                            Download PDF
                           </button>
                           <button
                             onClick={() => handleDelete(payout._id)}

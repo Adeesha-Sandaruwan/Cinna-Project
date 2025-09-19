@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import HeaderAfterLogin from './HeaderAfterLogin.jsx';
@@ -7,15 +6,6 @@ import { FaCreditCard, FaLock, FaCheckCircle } from 'react-icons/fa';
 import { generateReceiptPDF } from './ReceiptPDF';
 
 
-=======
-// Import React and useful hooks
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import HeaderAfterLogin from "./HeaderAfterLogin.jsx";
-import Footer from "./Footer.jsx";
-import { FaCreditCard, FaLock, FaCheckCircle } from "react-icons/fa";
-// Define some custom colors we will use for buttons and highlights
->>>>>>> Stashed changes
 const COLORS = {
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
@@ -203,7 +193,6 @@ const Checkout = () => {
             <p><b>Payment:</b> {orderDetails.paymentMethod}</p>
             <p><b>Status:</b> {orderDetails.status}</p>
           </div>
-<<<<<<< Updated upstream
           <h1 className="text-3xl font-bold mb-2">{orderDetails.status === 'paid' ? 'Order Successful!' : 'Order Placed!'}</h1>
           <p className="mb-6">{orderDetails.status === 'paid' ? 'Thank you for your purchase' : 'Pay at delivery'}</p>
           <p><strong>Order ID:</strong> {orderDetails._id}</p>
@@ -219,10 +208,6 @@ const Checkout = () => {
             className="mt-4 w-full py-3 rounded-lg text-white font-semibold" 
             style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
           >
-=======
-          {/* Continue shopping button */}
-          <button onClick={() => navigate("/")} className="mt-6 px-6 py-3 rounded-xl text-white font-semibold shadow-md" style={{ background: COLORS.DEEP_CINNAMON }}>
->>>>>>> Stashed changes
             Continue Shopping
           </button>
         </div>

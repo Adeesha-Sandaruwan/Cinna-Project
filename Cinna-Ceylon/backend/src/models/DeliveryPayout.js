@@ -1,3 +1,4 @@
+// models/DeliveryPayout.js
 import mongoose from "mongoose";
 
 const deliveryPayoutSchema = new mongoose.Schema({
@@ -10,11 +11,6 @@ const deliveryPayoutSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: true,
     refPath: 'referenceType'
-  },
-  vehicle: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Vehicle",
-    required: true,
   },
   payoutDate: {
     type: Date,
@@ -43,7 +39,6 @@ const deliveryPayoutSchema = new mongoose.Schema({
 
 // Index for better query performance
 deliveryPayoutSchema.index({ referenceType: 1, referenceId: 1 });
-deliveryPayoutSchema.index({ vehicle: 1 });
 deliveryPayoutSchema.index({ payoutDate: 1 });
 
 export default mongoose.model("DeliveryPayout", deliveryPayoutSchema);

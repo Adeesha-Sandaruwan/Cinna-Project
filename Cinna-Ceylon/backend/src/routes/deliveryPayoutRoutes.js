@@ -1,3 +1,4 @@
+// routes/deliveryPayoutRoutes.js
 import express from "express";
 import * as deliveryPayoutController from "../controllers/deliveryPayoutController.js";
 
@@ -9,6 +10,7 @@ router.get("/", deliveryPayoutController.getDeliveryPayouts);
 router.get("/:id", deliveryPayoutController.getDeliveryPayoutById);
 router.put("/:id", deliveryPayoutController.updateDeliveryPayout);
 router.delete("/:id", deliveryPayoutController.deleteDeliveryPayout);
+router.get("/:id/pdf", deliveryPayoutController.generateDeliveryPayoutPDF); // PDF route
 
 // Utility routes
 router.get("/references/available", deliveryPayoutController.getAvailableReferences);
