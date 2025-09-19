@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import HeaderAfterLogin from './HeaderAfterLogin.jsx';
 import Footer from './Footer.jsx';
 import { FaCreditCard, FaLock, FaCheckCircle } from 'react-icons/fa';
+import { generateReceiptPDF } from './ReceiptPDF';
+
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
@@ -154,7 +156,19 @@ const Checkout = () => {
           <p className="mb-6">{orderDetails.status === 'paid' ? 'Thank you for your purchase' : 'Pay at delivery'}</p>
           <p><strong>Order ID:</strong> {orderDetails._id}</p>
           <p><strong>Total:</strong> LKR {orderDetails.total.toLocaleString()}</p>
-          <button onClick={() => navigate('/')} className="mt-6 w-full py-3 rounded-lg text-white font-semibold" style={{ backgroundColor: COLORS.DEEP_CINNAMON }}>Continue Shopping</button>
+          <button 
+            onClick={() => generateReceiptPDF(orderDetails, cart)}
+            className="mt-4 w-full py-3 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700"
+          >
+            Download Receipt
+          </button>
+          <button 
+            onClick={() => navigate('/')} 
+            className="mt-4 w-full py-3 rounded-lg text-white font-semibold" 
+            style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
+          >
+            Continue Shopping
+          </button>
         </div>
         <Footer />
       </div>
