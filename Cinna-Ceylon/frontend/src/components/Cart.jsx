@@ -41,25 +41,15 @@ const Cart = () => {
 
   const updateQuantity = async (productId, newQty) => {
     if (newQty < 1) return;
-    
+
     try {
       const response = await fetch(`http://localhost:5000/api/cart`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: userId || 'default',
-          productId,
-          qty: newQty
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: userId || 'default', productId, qty: newQty }),
       });
-      
-      if (response.ok) {
-        fetchCart(); // Refresh cart
-        // Dispatch event to update cart count in header
-        window.dispatchEvent(new Event('cartUpdated'));
-      }
+      if (response.ok) fetchCart();
+      window.dispatchEvent(new Event('cartUpdated'));
     } catch (err) {
       console.error('Error updating quantity:', err);
     }
@@ -69,21 +59,11 @@ const Cart = () => {
     try {
       const response = await fetch(`http://localhost:5000/api/cart`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: userId || 'default',
-          productId,
-          qty: 0 // Setting qty to 0 removes the item
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: userId || 'default', productId, qty: 0 }),
       });
-      
-      if (response.ok) {
-        fetchCart(); // Refresh cart
-        // Dispatch event to update cart count in header
-        window.dispatchEvent(new Event('cartUpdated'));
-      }
+      if (response.ok) fetchCart();
+      window.dispatchEvent(new Event('cartUpdated'));
     } catch (err) {
       console.error('Error removing item:', err);
     }
@@ -94,10 +74,8 @@ const Cart = () => {
       const response = await fetch(`http://localhost:5000/api/cart/${userId || 'default'}`, {
         method: 'DELETE',
       });
-      
       if (response.ok) {
         setCart(null);
-        // Dispatch event to update cart count in header
         window.dispatchEvent(new Event('cartUpdated'));
       }
     } catch (err) {
@@ -167,6 +145,9 @@ const Cart = () => {
     );
   }
 
+  // Calculate subtotal dynamically based on priceAtAdd
+  const subtotal = cart.items.reduce((sum, item) => sum + item.priceAtAdd * item.qty, 0);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
       <HeaderAfterLogin />
@@ -220,7 +201,7 @@ const Cart = () => {
                             {item.product.type} • {item.product.grade}
                           </p>
                           <p className="text-lg font-semibold mt-1" style={{ color: COLORS.DEEP_CINNAMON }}>
-                            ${item.priceAtAdd}
+                            Rs: {item.priceAtAdd.toFixed(2)}
                           </p>
                         </div>
                         
@@ -245,7 +226,7 @@ const Cart = () => {
                         
                         <div className="text-right">
                           <p className="text-lg font-semibold" style={{ color: COLORS.DEEP_CINNAMON }}>
-                            ${(item.qty * item.priceAtAdd).toFixed(2)}
+                            Rs: {(item.qty * item.priceAtAdd).toFixed(2)}
                           </p>
                           <button
                             onClick={() => removeItem(item.product._id)}
@@ -280,7 +261,7 @@ const Cart = () => {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-semibold">${cart.subtotal?.toFixed(2) || '0.00'}</span>
+                    <span className="font-semibold">Rs: {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
@@ -292,7 +273,7 @@ const Cart = () => {
                         Total
                       </span>
                       <span className="text-lg font-bold" style={{ color: COLORS.DEEP_CINNAMON }}>
-                        ${cart.total?.toFixed(2) || '0.00'}
+                        Rs: {subtotal.toFixed(2)}
                       </span>
                     </div>
                   </div>

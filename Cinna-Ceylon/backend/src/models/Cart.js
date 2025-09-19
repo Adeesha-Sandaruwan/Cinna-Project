@@ -18,27 +18,11 @@ const cartItemSchema = new Schema({
 
 // Main Cart schema
 const cartSchema = new Schema({
-  // User ID (or username/email). Indexed for faster queries.
   user: { type: String, required: true, index: true },
-
-  // Cart status
-  // - active: ongoing cart
-  // - abandoned: user left cart without checkout
-  // - checked_out: cart completed and converted into an order
   status: { type: String, enum: ['active','abandoned','checked_out'], default: 'active' },
-
-  // Array of items in the cart
   items: [cartItemSchema],
-
-  // Subtotal (before taxes/discounts/shipping)
   subtotal: { type: Number, default: 0 },
-
-  // Total (final price after all adjustments)
   total: { type: Number, default: 0 }
-}, { 
-  // Adds createdAt and updatedAt timestamps
-  timestamps: true 
-});
+}, { timestamps: true });
 
-// Export Cart model
 export default model('Cart', cartSchema);

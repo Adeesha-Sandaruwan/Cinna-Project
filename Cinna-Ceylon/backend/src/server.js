@@ -14,6 +14,12 @@ import orderRoutes from './routes/OrderRoutes.js';
 import supplierRoutes from './routes/SupplierRoutes.js';
 import supplyRecordRoutes from './routes/SupplyRecordRoutes.js';
 import leaveReqRoutes from './routes/LeaveReqRoutes.js';
+import salaryRoutes from './routes/salaryRoutes.js';
+import supPaymentRoutes from "./routes/supPaymentRoutes.js";
+import deliveryPayoutRoutes from "./routes/deliveryPayoutRoutes.js";
+import financialReportRoutes from "./routes/financialReportRoutes.js";
+import offerRoutes from "./routes/offerRoutes.js";
+
 // Vehicle Management Routes
 import vehicleRoutes from './routes/vehicleRoutes.js';
 import accidentRoutes from './routes/accidentRoutes.js';
@@ -28,7 +34,12 @@ const app = express();
 
 // Enhanced CORS configuration for frontend
 app.use(cors({
-  origin: ['http://localhost:3002', 'http://127.0.0.1:3002'],
+  origin: [
+    'http://localhost:3000',    // Your React app's URL
+    'http://127.0.0.1:3000',    // Also allow the IP version
+    'http://localhost:3002',    // Keep your existing one if needed
+    'http://127.0.0.1:3002'     // Keep your existing one if needed
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -56,6 +67,11 @@ app.use('/api/accidents', accidentRoutes);
 app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/emergencies', emergencyRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use("/api/salaries", salaryRoutes);
+app.use("/api/supplier-payments", supPaymentRoutes);
+app.use("/api/delivery-payouts", deliveryPayoutRoutes);
+app.use("/api/financial-reports", financialReportRoutes);
+app.use("/api/offers", offerRoutes);
 
 // Root test endpoint
 app.get('/', (req, res) => {
