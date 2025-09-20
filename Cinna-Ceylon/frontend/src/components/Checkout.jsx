@@ -4,7 +4,16 @@ import HeaderAfterLogin from './HeaderAfterLogin.jsx';
 import Footer from './Footer.jsx';
 import { FaCreditCard, FaLock, FaCheckCircle } from 'react-icons/fa';
 import { generateReceiptPDF } from './ReceiptPDF';
-
+import {
+  validateCardNumber,
+  validateCardExpiry,
+  validateCVV,
+  validatePhone,
+  validatePostalCode,
+  validateEmail,
+  validateName,
+  validateAddress
+} from '../utils/validations';
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
@@ -139,137 +148,37 @@ const Checkout = () => {
 
   const handleChange = e => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  // Validation helper functions
-  const validateName = (name) => {
-    return /^[A-Za-z\s]{2,50}$/.test(name.trim());
-  };
-
-  const validateEmail = (email) => {
-    return /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
-  };
-
-  const validatePhone = (phone) => {
-    // Allow either +94 followed by 9 digits, or just 10 digits
-    return /^(\+94\d{9}|\d{10})$/.test(phone);
-  };
-
-  const validatePostalCode = (code) => {
-    // Exactly 5 digits
-    return /^\d{5}$/.test(code);
-  };
-
-  const validateAddress = (address) => {
-    return address.trim().length >= 10 && address.trim().length <= 200;
-  };
-
   const validateCity = (city) => {
-    return city.trim().length >= 2 && city.trim().length <= 50;
-  };
-
-  const validateCardNumber = (number) => {
-    // Luhn algorithm for card number validation
-    const digits = number.replace(/\s/g, '').split('').map(Number);
-    const checkDigit = digits.pop();
-    const sum = digits.reverse()
-      .map((digit, i) => i % 2 === 0 ? digit * 2 : digit)
-      .map(digit => digit > 9 ? digit - 9 : digit)
-      .reduce((acc, digit) => acc + digit, 0);
-    return (sum + checkDigit) % 10 === 0;
-  };
-
-  const validateCardExpiry = (expiry) => {
-    // Check basic format (MM/YY)
-    if (!/^\d{2}\/\d{2}$/.test(expiry)) {
-      throw new Error('Expiry date must be in MM/YY format');
+    if (city.trim().length < 2 || city.trim().length > 50) {
+      throw new Error('City name must be between 2 and 50 characters');
     }
-
-    const [month, year] = expiry.split('/').map(part => parseInt(part.trim()));
-    const currentYear = new Date().getFullYear() % 100;
-    const currentMonth = new Date().getMonth() + 1;
-    
-    // Validate month
-    if (month < 1 || month > 12) {
-      throw new Error('Month must be between 01 and 12');
-    }
-
-    // Validate year
-    if (year < currentYear) {
-      throw new Error('Card has expired');
-    }
-
-    // If it's current year, check if month has passed
-    if (year === currentYear && month < currentMonth) {
-      throw new Error('Card has expired');
-    }
-
-    // Check if date is too far in the future (optional, most cards are valid for 5 years)
-    if (year > currentYear + 5) {
-      throw new Error('Invalid expiry date - too far in the future');
-    }
-    
     return true;
-  };
-
-  const validateCVV = (cvv) => {
-    return /^\d{3,4}$/.test(cvv.trim());
   };
 
   const validateForm = () => {
-    // Name validations
-    if (!validateName(formData.firstName)) {
-      alert('First name should only contain letters and be between 2-50 characters');
-      return false;
-    }
-    if (!validateName(formData.lastName)) {
-      alert('Last name should only contain letters and be between 2-50 characters');
-      return false;
-    }
+    try {
+      // Basic information validation
+      validateName(formData.firstName);
+      validateName(formData.lastName);
+      validateEmail(formData.email);
+      validatePhone(formData.phone);
+      validateAddress(formData.address);
+      validateCity(formData.city);
+      validatePostalCode(formData.postalCode);
 
-    // Contact validations
-    if (!validateEmail(formData.email)) {
-      alert('Please enter a valid email address');
-      return false;
-    }
-    if (!validatePhone(formData.phone)) {
-      alert('Please enter a valid Sri Lankan phone number (e.g., 0771234567 or +94771234567)');
-      return false;
-    }
+      // Payment validations for credit card
+      if (paymentMethod === 'payNow') {
+        validateCardNumber(formData.cardNumber);
+        validateName(formData.cardName); // Validate cardholder name
+        validateCardExpiry(formData.expiryDate);
+        validateCVV(formData.cvv);
+      }
 
-    // Address validations
-    if (!validateAddress(formData.address)) {
-      alert('Please enter a complete address (10-200 characters)');
+      return true;
+    } catch (error) {
+      alert(error.message);
       return false;
     }
-    if (!validateCity(formData.city)) {
-      alert('Please enter a valid city name (2-50 characters)');
-      return false;
-    }
-    if (!validatePostalCode(formData.postalCode)) {
-      alert('Please enter a valid 5-digit postal code');
-      return false;
-    }
-
-    // Payment validations for credit card
-    if (paymentMethod === 'payNow') {
-      if (!validateCardNumber(formData.cardNumber)) {
-        alert('Please enter a valid credit card number');
-        return false;
-      }
-      if (!validateName(formData.cardName)) {
-        alert('Please enter the cardholder name as it appears on the card');
-        return false;
-      }
-      if (!validateCardExpiry(formData.expiryDate)) {
-        alert('Please enter a valid expiry date (MM/YY)');
-        return false;
-      }
-      if (!validateCVV(formData.cvv)) {
-        alert('Please enter a valid CVV (3-4 digits)');
-        return false;
-      }
-    }
-
-    return true;
   };
 
   const processPayment = async () => {
