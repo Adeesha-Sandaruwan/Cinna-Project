@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";// brings react in to scope and use effect support fetching data
 import { Link } from "react-router-dom";//link navigates between routes without reloading the page.
-import Header from "./Header";
+import HeaderAfterLogin from "./HeaderAfterLogin";
 import Footer from "./Footer";
 import {
   PencilIcon,
@@ -130,9 +130,11 @@ export default function ProductManagement() { // defines and exports the main pa
       setDeleteProduct(null);//close the confirmation dialog / modal,
   };
 
-  return (
-    <div className="bg-gray-50 min-h-screen flex flex-col">
-      <Header />
+//display the content part....................................................................................................
+
+  return ( // react component that returns JSX that defines what will render
+    <div className="bg-gray-50 min-h-screen flex flex-col">  
+      <HeaderAfterLogin /> 
       <div className="p-6 flex-1">
         {message && (
           <div className="mb-4 text-center font-medium text-green-700 bg-green-100 py-2 rounded-xl">

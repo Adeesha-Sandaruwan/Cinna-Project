@@ -11,7 +11,9 @@ import productRoutes from './routes/ProductRoutes.js';
 import cartRoutes from './routes/CartRoutes.js';
 import orderRoutes from './routes/OrderRoutes.js';
 import reviewRoutes from './routes/ReviewRoutes.js';
-//import supplierRoutes from './routes/SupplierRoutes.js';
+import supplierRoutes from './routes/SupplierRoutes.js';
+import supplyRecordRoutes from './routes/SupplyRecordRoutes.js';
+import rawMaterialRoutes from './routes/RawMaterialRoutes.js';
 import leaveReqRoutes from './routes/LeaveReqRoutes.js';
 
 
@@ -41,7 +43,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
-//app.use('/api/suppliers', supplierRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/supply-records', supplyRecordRoutes);
+app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/leave-requests', leaveReqRoutes);
 
 

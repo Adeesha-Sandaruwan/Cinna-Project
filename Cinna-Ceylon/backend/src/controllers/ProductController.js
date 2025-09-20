@@ -78,3 +78,61 @@ export const deleteProduct = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// ✅ Update stock levels
+export const updateStock = async (req, res) => {
+  try {
+    const { stock, safetyStock, reorderLevel } = req.body;
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Validate stock levels
+    if (stock < 0) {
+      return res.status(400).json({ error: "Stock cannot be negative" });
+    }
+
+    if (safetyStock < 0) {
+      return res.status(400).json({ error: "Safety stock cannot be negative" });
+    }
+
+    if (reorderLevel < 0) {
+      return res.status(400).json({ error: "Reorder level cannot be negative" });
+    }
+
+    // Update stock levels
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { stock, safetyStock, reorderLevel },
+      { new: true }
+    );
+
+    res.json(updatedProduct);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// ✅ Get inventory status
+export const getInventoryStatus = async (req, res) => {
+  try {
+    const products = await Product.find().select('name stock safetyStock reorderLevel availableStock');
+    
+    const inventoryStatus = products.map(product => ({
+      id: product._id,
+      name: product.name,
+      actualStock: product.stock,
+      safetyStock: product.safetyStock,
+      reorderLevel: product.reorderLevel,
+      availableStock: product.availableStock,
+      needsReorder: product.stock <= product.reorderLevel,
+      belowSafetyStock: product.stock <= product.safetyStock
+    }));
+
+    res.json(inventoryStatus);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

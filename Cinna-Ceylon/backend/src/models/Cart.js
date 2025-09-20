@@ -8,7 +8,7 @@ const cartItemSchema = new Schema({
 }, { _id: false });
 
 const cartSchema = new Schema({
-  user: { type: Types.ObjectId, required: true, index: true },
+  user: { type: String, required: true, index: true },
   status: { type: String, enum: ['active','abandoned','checked_out'], default: 'active' },
   items: [cartItemSchema],
   subtotal: { type: Number, default: 0 },

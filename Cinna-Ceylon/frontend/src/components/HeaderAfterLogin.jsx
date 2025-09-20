@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaUserCircle, FaBars, FaTimes } from 'react-icons/fa';
+import { FaShoppingCart, FaUserCircle, FaBars, FaTimes } from 'react-icons/fa';
 import logo from '../assets/images/logo.png';
 
 const navLinks = [
@@ -11,8 +11,40 @@ const navLinks = [
   { name: 'Contact Us', href: '/contact' },
 ];
 
-export default function Header() {
+export default function HeaderAfterLogin() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    fetchCartCount();
+  }, []);
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/cart/default');
+      if (response.ok) {
+        const cart = await response.json();
+        if (cart && cart.items) {
+          const totalItems = cart.items.reduce((sum, item) => sum + item.qty, 0);
+          setCartCount(totalItems);
+        } else {
+          setCartCount(0);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching cart count:', err);
+    }
+  };
+
+  // Listen for cart updates
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, []);
 
   return (
     <header className="w-full bg-[#8B4513] text-white sticky top-0 shadow-md z-50">
@@ -51,6 +83,14 @@ export default function Header() {
             </button>
           </form>
           {/* Icons */}
+          <Link to="/cart" className="relative p-2 rounded-full hover:bg-[#A0522D] transition" aria-label="Cart">
+            <FaShoppingCart size={22} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Link>
           <button className="p-2 rounded-full hover:bg-[#A0522D] transition" aria-label="Profile">
             <FaUserCircle size={22} />
           </button>
@@ -110,6 +150,14 @@ export default function Header() {
           </button>
         </form>
         <div className="flex items-center gap-4 mt-6">
+          <Link to="/cart" className="relative p-2 rounded-full hover:bg-[#A0522D] transition" aria-label="Cart">
+            <FaShoppingCart size={22} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Link>
           <button className="p-2 rounded-full hover:bg-[#A0522D] transition" aria-label="Profile">
             <FaUserCircle size={22} />
           </button>
