@@ -15,19 +15,75 @@ const COLORS = {
 };
 
 // Reusable input field
-const InputField = ({ label, name, type = "text", value, onChange, placeholder, maxLength }) => (
+const InputField = ({ 
+  label, 
+  name, 
+  type = "text", 
+  value, 
+  onChange, 
+  placeholder, 
+  maxLength,
+  pattern,
+  onBlur,
+  error
+}) => (
   <div className="mb-4">
     <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
     <input
       type={type}
       name={name}
       value={value}
-      onChange={onChange}
+      onChange={(e) => {
+        // For card number, only allow numbers and enforce 16 digits max
+        if (name === 'cardNumber') {
+          const numbersOnly = e.target.value.replace(/\D/g, '');
+          e.target.value = numbersOnly.substring(0, 16);
+        }
+        // Format expiry date
+        if (name === 'expiryDate') {
+          const formatted = e.target.value.replace(/\D/g, '').replace(/(\d{2})(?=\d)/, '$1/');
+          e.target.value = formatted.substring(0, 5);
+        }
+        // Postal code - only allow 5 digits
+        if (name === 'postalCode') {
+          const numbers = e.target.value.replace(/[^\d]/g, '');
+          e.target.value = numbers.substring(0, 5);
+        }
+        // Phone number - allow +94 prefix
+        if (name === 'phone') {
+          let value = e.target.value;
+          
+          // Allow typing '+'
+          if (value === '+') {
+            e.target.value = '+';
+            return;
+          }
+          
+          // Handle +94 format
+          if (value.startsWith('+')) {
+            // Keep the '+' and only numbers after it
+            const numbers = value.substring(1).replace(/[^\d]/g, '');
+            if (numbers.length <= 11) { // +94 plus 9 digits
+              e.target.value = '+' + numbers;
+            }
+          } else {
+            // No + prefix, just allow numbers up to 10 digits
+            const numbers = value.replace(/[^\d]/g, '');
+            e.target.value = numbers.substring(0, 10);
+          }
+        }
+        onChange(e);
+      }}
+      onBlur={onBlur}
       placeholder={placeholder}
       maxLength={maxLength}
+      pattern={pattern}
       required
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cinnamon"
+      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cinnamon ${
+        error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+      }`}
     />
+    {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
   </div>
 );
 
@@ -83,22 +139,136 @@ const Checkout = () => {
 
   const handleChange = e => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
 
+  // Validation helper functions
+  const validateName = (name) => {
+    return /^[A-Za-z\s]{2,50}$/.test(name.trim());
+  };
+
+  const validateEmail = (email) => {
+    return /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    // Allow either +94 followed by 9 digits, or just 10 digits
+    return /^(\+94\d{9}|\d{10})$/.test(phone);
+  };
+
+  const validatePostalCode = (code) => {
+    // Exactly 5 digits
+    return /^\d{5}$/.test(code);
+  };
+
+  const validateAddress = (address) => {
+    return address.trim().length >= 10 && address.trim().length <= 200;
+  };
+
+  const validateCity = (city) => {
+    return city.trim().length >= 2 && city.trim().length <= 50;
+  };
+
+  const validateCardNumber = (number) => {
+    // Luhn algorithm for card number validation
+    const digits = number.replace(/\s/g, '').split('').map(Number);
+    const checkDigit = digits.pop();
+    const sum = digits.reverse()
+      .map((digit, i) => i % 2 === 0 ? digit * 2 : digit)
+      .map(digit => digit > 9 ? digit - 9 : digit)
+      .reduce((acc, digit) => acc + digit, 0);
+    return (sum + checkDigit) % 10 === 0;
+  };
+
+  const validateCardExpiry = (expiry) => {
+    // Check basic format (MM/YY)
+    if (!/^\d{2}\/\d{2}$/.test(expiry)) {
+      throw new Error('Expiry date must be in MM/YY format');
+    }
+
+    const [month, year] = expiry.split('/').map(part => parseInt(part.trim()));
+    const currentYear = new Date().getFullYear() % 100;
+    const currentMonth = new Date().getMonth() + 1;
+    
+    // Validate month
+    if (month < 1 || month > 12) {
+      throw new Error('Month must be between 01 and 12');
+    }
+
+    // Validate year
+    if (year < currentYear) {
+      throw new Error('Card has expired');
+    }
+
+    // If it's current year, check if month has passed
+    if (year === currentYear && month < currentMonth) {
+      throw new Error('Card has expired');
+    }
+
+    // Check if date is too far in the future (optional, most cards are valid for 5 years)
+    if (year > currentYear + 5) {
+      throw new Error('Invalid expiry date - too far in the future');
+    }
+    
+    return true;
+  };
+
+  const validateCVV = (cvv) => {
+    return /^\d{3,4}$/.test(cvv.trim());
+  };
+
   const validateForm = () => {
-    const required = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'postalCode'];
-    for (let f of required) {
-      if (!formData[f].trim()) {
-        alert(`Please fill in ${f}`);
+    // Name validations
+    if (!validateName(formData.firstName)) {
+      alert('First name should only contain letters and be between 2-50 characters');
+      return false;
+    }
+    if (!validateName(formData.lastName)) {
+      alert('Last name should only contain letters and be between 2-50 characters');
+      return false;
+    }
+
+    // Contact validations
+    if (!validateEmail(formData.email)) {
+      alert('Please enter a valid email address');
+      return false;
+    }
+    if (!validatePhone(formData.phone)) {
+      alert('Please enter a valid Sri Lankan phone number (e.g., 0771234567 or +94771234567)');
+      return false;
+    }
+
+    // Address validations
+    if (!validateAddress(formData.address)) {
+      alert('Please enter a complete address (10-200 characters)');
+      return false;
+    }
+    if (!validateCity(formData.city)) {
+      alert('Please enter a valid city name (2-50 characters)');
+      return false;
+    }
+    if (!validatePostalCode(formData.postalCode)) {
+      alert('Please enter a valid 5-digit postal code');
+      return false;
+    }
+
+    // Payment validations for credit card
+    if (paymentMethod === 'payNow') {
+      if (!validateCardNumber(formData.cardNumber)) {
+        alert('Please enter a valid credit card number');
+        return false;
+      }
+      if (!validateName(formData.cardName)) {
+        alert('Please enter the cardholder name as it appears on the card');
+        return false;
+      }
+      if (!validateCardExpiry(formData.expiryDate)) {
+        alert('Please enter a valid expiry date (MM/YY)');
+        return false;
+      }
+      if (!validateCVV(formData.cvv)) {
+        alert('Please enter a valid CVV (3-4 digits)');
         return false;
       }
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      alert('Invalid email');
-      return false;
-    }
-    if (paymentMethod === 'payNow' && (formData.cardNumber.length < 16 || formData.cvv.length < 3)) {
-      alert('Invalid card details');
-      return false;
-    }
+
     return true;
   };
 
@@ -226,9 +396,15 @@ const Checkout = () => {
               <span>LKR {(i.qty * i.priceAtAdd).toLocaleString()}</span>
             </div>
           ))}
-          <div className="border-t pt-3 flex justify-between font-bold">
-            <span>Total</span>
-            <span style={{ color: COLORS.DEEP_CINNAMON }}>LKR {cart.total?.toLocaleString()}</span>
+          <div className="border-t pt-3">
+            <div className="flex justify-between mb-2">
+              <span>Delivery Cost</span>
+              <span className="text-green-600 font-semibold">Free</span>
+            </div>
+            <div className="flex justify-between font-bold">
+              <span>Total</span>
+              <span style={{ color: COLORS.DEEP_CINNAMON }}>LKR {cart.total?.toLocaleString()}</span>
+            </div>
           </div>
           <button onClick={processPayment} disabled={processing} className="w-full py-3 mt-4 rounded-lg text-white font-semibold" style={{ backgroundColor: COLORS.DEEP_CINNAMON }}>
             {processing ? 'Processing...' : paymentMethod === 'payNow' ? `Pay LKR ${cart.total}` : `Place Order - Pay at Delivery`}

@@ -109,13 +109,19 @@ export const generateReceiptPDF = (orderDetails, cart) => {
     yPos = 105;
   }
   
-  // Total
+  // Total section
   doc.setDrawColor("#CC7722");
   doc.line(20, yPos + 3, 190, yPos + 3);
+  doc.setFontSize(10);
+  doc.setTextColor("#000000");
+  doc.text("Delivery Cost:", 130, yPos + 13);
+  doc.text("Free", 170, yPos + 13);
+  
+  // Final Total
   doc.setFontSize(12);
   doc.setTextColor("#CC7722");
-  doc.text("Total:", 130, yPos + 13);
-  doc.text(`LKR ${orderDetails.total.toLocaleString()}`, 170, yPos + 13);
+  doc.text("Total:", 130, yPos + 23);
+  doc.text(`LKR ${orderDetails.total.toLocaleString()}`, 170, yPos + 23);
   
   // Footer
   doc.setFontSize(8);
