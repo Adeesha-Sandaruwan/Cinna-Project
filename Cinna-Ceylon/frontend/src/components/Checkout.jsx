@@ -53,7 +53,11 @@ const Checkout = () => {
 
       setBuyNowOrder(order);
       setCart({
-        items: order.items.map(i => ({ product: i.product, qty: i.qty, priceAtAdd: i.price })),
+        items: order.items.map(i => ({
+          product: i.product,
+          qty: i.qty,
+          priceAtAdd: i.price
+        })),
         total: order.total,
         subtotal: order.total,
       });
@@ -71,12 +75,12 @@ const Checkout = () => {
       const res = await fetch(`http://localhost:5000/api/cart/${userId || "default"}`);
       if (!res.ok) throw new Error("Cart not found");
       const cartData = await res.json();
-      
+
       // Calculate total with discounts
       const productSubtotal = cartData.items ? cartData.items.reduce((sum, item) => sum + (item.priceAtAdd || item.product.price) * item.qty, 0) : 0;
       const offerSubtotal = cartData.offerItems ? cartData.offerItems.reduce((sum, item) => sum + (item.discountedPrice || item.offer.discountedPrice) * item.qty, 0) : 0;
       const total = productSubtotal + offerSubtotal;
-      
+
       setCart({
         ...cartData,
         total: total,
@@ -101,6 +105,7 @@ const Checkout = () => {
       if (formData.cardNumber.length < 16) return alert("Invalid card number"), false;
       if (formData.cvv.length < 3) return alert("Invalid CVV"), false;
     }
+
     return true;
   };
 
@@ -124,37 +129,55 @@ const Checkout = () => {
         if (!res.ok) throw new Error("Failed to update order");
         setOrderDetails(await res.json());
       } else {
-        // Prepare items for order - both products and offers
+        // Merge product and offer items with proper itemType
         const productItems = cart.items ? cart.items.map(i => ({
           product: i.product._id,
           qty: i.qty,
           price: i.priceAtAdd || i.product.price,
-          type: 'product'
+          itemType: 'product'
         })) : [];
-        
+
         const offerItems = cart.offerItems ? cart.offerItems.map(i => ({
-          product: i.offer._id,
+          offer: i.offer._id,
           qty: i.qty,
           price: i.discountedPrice || i.offer.discountedPrice,
-          type: 'offer',
+          itemType: 'offer',
           originalPrice: i.originalPrice || i.offer.products.reduce((sum, product) => sum + product.price, 0)
         })) : [];
-        
+
         const allItems = [...productItems, ...offerItems];
-        
+
+        const orderData = {
+          user: userId || "default",
+          items: allItems,
+          total: cart.total,
+          shippingAddress: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            postalCode: formData.postalCode
+          },
+          paymentMethod: paymentMethod === "payNow" ? "Credit Card" : "Pay at Delivery",
+          status: paymentMethod === "payNow" ? "paid" : "pending"
+        };
+
+        console.log("Sending order data:", orderData);
+
         const res = await fetch("http://localhost:5000/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user: userId || "default",
-            items: allItems,
-            total: cart.total,
-            shippingAddress: formData,
-            paymentMethod: paymentMethod === "payNow" ? "Credit Card" : "Pay at Delivery",
-          }),
+          body: JSON.stringify(orderData),
         });
-        
-        if (!res.ok) throw new Error("Failed to create order");
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error("Order creation error:", errorData);
+          throw new Error(errorData.error || "Failed to create order");
+        }
+
         const newOrder = await res.json();
         setOrderDetails(newOrder);
 
@@ -162,10 +185,11 @@ const Checkout = () => {
         await fetch(`http://localhost:5000/api/cart/${userId || "default"}`, { method: "DELETE" });
         window.dispatchEvent(new Event("cartUpdated"));
       }
-      
+
       setOrderComplete(true);
     } catch (err) {
       alert("Checkout failed: " + err.message);
+      console.error("Checkout error:", err);
     } finally {
       setProcessing(false);
     }
@@ -193,6 +217,7 @@ const Checkout = () => {
             <p><b>Total:</b> LKR {orderDetails.total.toLocaleString()}</p>
             <p><b>Payment:</b> {orderDetails.paymentMethod}</p>
             <p><b>Status:</b> {orderDetails.status}</p>
+            <p><b>Items:</b> {orderDetails.items.length} total items</p>
           </div>
           <button 
             onClick={() => generateReceiptPDF(orderDetails, cart)}
@@ -217,14 +242,20 @@ const Checkout = () => {
     <div className="min-h-screen bg-gray-50">
       <HeaderAfterLogin />
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 p-6">
-        
+
         <div className="space-y-8">
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h2 className="font-semibold text-xl mb-4 border-b pb-2">📦 Shipping Information</h2>
             {["firstName","lastName","email","phone","address","city","postalCode"].map(f => (
-              <input key={f} name={f} value={formData[f]} onChange={handleChange}
-                placeholder={f.charAt(0).toUpperCase()+f.slice(1)} 
-                className="w-full mb-3 p-3 border rounded-lg focus:ring-2 focus:ring-orange-400" />
+              <input 
+                key={f} 
+                name={f} 
+                value={formData[f]} 
+                onChange={handleChange}
+                placeholder={f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')} 
+                className="w-full mb-3 p-3 border rounded-lg focus:ring-2 focus:ring-orange-400" 
+                required
+              />
             ))}
           </div>
 
@@ -243,11 +274,11 @@ const Checkout = () => {
 
             {paymentMethod==="payNow" && (
               <div className="mt-4 space-y-3">
-                <input name="cardNumber" placeholder="Card Number" maxLength="16" value={formData.cardNumber} onChange={handleChange} className="w-full p-3 border rounded-lg" />
-                <input name="cardName" placeholder="Cardholder Name" value={formData.cardName} onChange={handleChange} className="w-full p-3 border rounded-lg" />
+                <input name="cardNumber" placeholder="Card Number" maxLength="16" value={formData.cardNumber} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+                <input name="cardName" placeholder="Cardholder Name" value={formData.cardName} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
                 <div className="flex gap-3">
-                  <input name="expiryDate" placeholder="MM/YY" value={formData.expiryDate} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" />
-                  <input name="cvv" placeholder="CVV" maxLength="4" value={formData.cvv} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" />
+                  <input name="expiryDate" placeholder="MM/YY" value={formData.expiryDate} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" required />
+                  <input name="cvv" placeholder="CVV" maxLength="4" value={formData.cvv || ''} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" required />
                 </div>
                 <p className="text-sm text-gray-600 flex items-center"><FaLock className="mr-2"/> Secure Payment</p>
               </div>
@@ -264,16 +295,17 @@ const Checkout = () => {
                 <span className="font-medium">LKR {(i.qty * (i.priceAtAdd || i.product.price)).toLocaleString()}</span>
               </div>
             ))}
-            
+
             {cart.offerItems && cart.offerItems.map((i, idx) => {
               const discountedPrice = i.discountedPrice || i.offer.discountedPrice;
+              const originalPrice = i.originalPrice || i.offer.products.reduce((sum, p) => sum + p.price, 0);
               return (
                 <div key={`offer-${idx}`} className="flex justify-between text-gray-700">
                   <span>
                     {i.offer.name} (Bundle) 
                     <span className="text-sm text-gray-500"> x{i.qty}</span>
                     <div className="text-xs text-green-600">
-                      Save LKR {((i.originalPrice || i.offer.products.reduce((sum, p) => sum + p.price, 0)) - discountedPrice).toLocaleString()}
+                      Save LKR {(originalPrice - discountedPrice).toLocaleString()}
                     </div>
                   </span>
                   <span className="font-medium">LKR {(i.qty * discountedPrice).toLocaleString()}</span>
@@ -286,7 +318,7 @@ const Checkout = () => {
             <span>Total</span>
             <span>LKR {cart.total.toLocaleString()}</span>
           </div>
-          
+
           <button onClick={handleCheckout} disabled={processing}
             className="w-full mt-6 p-3 rounded-xl text-white font-semibold shadow-md hover:opacity-90"
             style={{ background: COLORS.DEEP_CINNAMON }}>
@@ -295,7 +327,7 @@ const Checkout = () => {
               ? `Pay LKR ${cart.total.toLocaleString()} Now`
               : `Place Order - Pay at Delivery`}
           </button>
-          
+
           <button onClick={()=>navigate(isBuyNow?"/":"/cart")}
             className="mt-4 text-gray-600 text-sm hover:underline">← Back</button>
         </div>
