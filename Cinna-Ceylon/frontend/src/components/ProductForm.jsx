@@ -1,4 +1,16 @@
 import React, { useState } from "react";
+import {
+  validateName,
+  validatePrice,
+  validateDescription,
+  validateExpiryDate,
+  validateImage,
+  validateStock,
+  validateSKU,
+  validateCategory,
+  validateGrade,
+  validateVisibility
+} from "../utils/product_form_validations";
 import { Link } from "react-router-dom";
 
 const COLORS = {
@@ -32,38 +44,78 @@ const ProductForm = () => {
 
     if (name === "image") {
       const file = files[0];
-      if (file && !file.type.startsWith("image/")) {
-        setErrors((prev) => ({ ...prev, image: "❌ Only image files allowed" }));
-        return;
-      }
       setFormData({ ...formData, image: file });
-      setPreview(URL.createObjectURL(file));
-      setErrors((prev) => ({ ...prev, image: "" }));
+      if (file) {
+        setPreview(URL.createObjectURL(file));
+      }
     } else {
       setFormData({ ...formData, [name]: value });
     }
-  };  const validateForm = () => {
+  };
+
+  // Validate single field on blur
+  const handleBlur = async (e) => {
+    const { name, value, files } = e.target;
+    let error = "";
+    
+    switch (name) {
+      case "name":
+        error = validateName(value);
+        break;
+      case "price":
+        error = validatePrice(value);
+        break;
+      case "description":
+        error = validateDescription(value);
+        break;
+      case "expiryDate":
+        error = validateExpiryDate(value);
+        break;
+      case "stock":
+        error = validateStock(value);
+        break;
+      case "sku":
+        error = validateSKU(value);
+        break;
+      case "type":
+        error = validateCategory(value === 'other' ? formData.customType : value);
+        break;
+      case "grade":
+        error = validateGrade(value);
+        break;
+      case "visibility":
+        error = validateVisibility(value);
+        break;
+      case "image":
+        error = await validateImage(files[0]);
+        break;
+    }
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+  };
+
+  const validateForm = async () => {
     let errs = {};
-  
-    if (!formData.name) {
-      errs.name = "Name is required";
-    }
-    if (!formData.price || formData.price <= 0) {
-      errs.price = "Price must be greater than 0";
-    }
-    if (!formData.description || formData.description.trim().length < 5) {
-      errs.description = "Description must be at least 5 characters";
-    }
-    if (!formData.expiryDate) {
-      errs.expiryDate = "Expiry date is required";
-    }
-    if (!formData.image) {
-      errs.image = "Product image is required";
-    }
-    if (!formData.stock || formData.stock < 1) {
-      errs.stock = "Stock must be at least 1";
-    }
-  
+    errs.name = validateName(formData.name);
+    errs.price = validatePrice(formData.price);
+    errs.description = validateDescription(formData.description);
+    errs.expiryDate = validateExpiryDate(formData.expiryDate);
+    errs.stock = validateStock(formData.stock);
+    errs.sku = validateSKU(formData.sku);
+    errs.category = validateCategory(formData.type === 'other' ? formData.customType : formData.type);
+    errs.grade = validateGrade(formData.grade);
+    errs.visibility = validateVisibility(formData.visibility);
+    
+    // Image validation is async due to dimension checking
+    errs.image = await validateImage(formData.image);
+
+    // Remove empty error messages
+    Object.keys(errs).forEach((key) => {
+      if (!errs[key]) delete errs[key];
+    });
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -71,7 +123,8 @@ const ProductForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) {
+    const isValid = await validateForm();
+    if (!isValid) {
       setMessage("❌ Please fix form errors before submitting");
       return;
     }
@@ -163,8 +216,9 @@ const ProductForm = () => {
               placeholder="Product Name"
               value={formData.name}
               onChange={handleChange}
+              onBlur={handleBlur}
               className="w-full border p-3 rounded focus:outline-none"
-              style={{ borderColor: COLORS.RICH_GOLD }}
+              style={{ borderColor: errors.name ? 'red' : COLORS.RICH_GOLD }}
             />
             {errors.name && <p className="text-red-600 text-sm">{errors.name}</p>}
           </div>
@@ -176,9 +230,10 @@ const ProductForm = () => {
     name="description"
     value={formData.description}
     onChange={handleChange}
+    onBlur={handleBlur}
     className="w-full border p-3 rounded h-28 resize-none"
-    style={{ borderColor: COLORS.RICH_GOLD }}
-    placeholder="Enter detailed product description..."
+    style={{ borderColor: errors.description ? 'red' : COLORS.RICH_GOLD }}
+    placeholder="Enter detailed product description (5-1000 characters)..."
   />
   {errors.description && (
     <p className="text-red-600 text-sm">{errors.description}</p>
@@ -190,11 +245,12 @@ const ProductForm = () => {
           <input
             type="text"
             name="sku"
-            placeholder="SKU"
+            placeholder="SKU (Format: CIN-XXXX-XXX)"
             value={formData.sku}
             onChange={handleChange}
+            onBlur={handleBlur}
             className="w-full border p-3 rounded"
-            style={{ borderColor: COLORS.RICH_GOLD }}
+            style={{ borderColor: errors.sku ? 'red' : COLORS.RICH_GOLD }}
           />
 
 {/* Price & Stock */}
@@ -204,12 +260,15 @@ const ProductForm = () => {
     <input
       type="number"
       name="price"
-      placeholder="Price"
+      placeholder="Price (Max: 999,999.99)"
       value={formData.price}
       onChange={handleChange}
+      onBlur={handleBlur}
+      step="0.01"
+      min="0.01"
+      max="999999.99"
       className="w-full border p-3 rounded"
-      style={{ borderColor: COLORS.RICH_GOLD }}
-      min="1"   // ✅ prevents price <= 0
+      style={{ borderColor: errors.price ? 'red' : COLORS.RICH_GOLD }}
     />
     {errors.price && (
       <p className="text-red-600 text-sm">{errors.price}</p>
@@ -221,12 +280,15 @@ const ProductForm = () => {
     <input
       type="number"
       name="stock"
-      placeholder="Stock"
+      placeholder="Stock (Min: 5, Max: 100,000)"
       value={formData.stock}
       onChange={handleChange}
+      onBlur={handleBlur}
+      min="5"
+      max="100000"
+      step="1"
       className="w-full border p-3 rounded"
-      style={{ borderColor: COLORS.RICH_GOLD }}
-      min="1"
+      style={{ borderColor: errors.stock ? 'red' : COLORS.RICH_GOLD }}
     />
     {errors.stock && (
       <p className="text-red-600 text-sm">{errors.stock}</p>

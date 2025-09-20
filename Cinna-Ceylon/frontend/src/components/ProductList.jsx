@@ -13,15 +13,31 @@ const COLORS = {
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/products");
+        setLoading(true);
+        // Using relative URL to work with webpack proxy
+        const res = await fetch("/api/products");
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const data = await res.json();
-        setProducts(data);
+        console.log("Fetched products:", data); // Debug log
+        // Filter out private products unless user is admin
+        const isAdmin = false; // TODO: Replace with actual admin check
+        const filteredProducts = isAdmin 
+          ? data 
+          : data.filter(product => product.visibility === "public");
+        setProducts(filteredProducts);
       } catch (err) {
         console.error("❌ Error fetching products:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
     fetchProducts();
