@@ -57,7 +57,7 @@ function HomePage() {
 
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased">
-      <Header />
+    
 
       <main className="text-gray-800">
         {/* ---------- HERO with Carousel ---------- */}
