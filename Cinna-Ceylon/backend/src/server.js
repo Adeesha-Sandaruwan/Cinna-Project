@@ -10,10 +10,17 @@ import connectDB from './config/db.js';
 import productRoutes from './routes/ProductRoutes.js';
 import cartRoutes from './routes/CartRoutes.js';
 import orderRoutes from './routes/OrderRoutes.js';
-import reviewRoutes from './routes/ReviewRoutes.js';
+//import reviewRoutes from './routes/ReviewRoutes.js';
 import supplierRoutes from './routes/SupplierRoutes.js';
 import supplyRecordRoutes from './routes/SupplyRecordRoutes.js';
 import leaveReqRoutes from './routes/LeaveReqRoutes.js';
+// Vehicle Management Routes
+import vehicleRoutes from './routes/vehicleRoutes.js';
+import accidentRoutes from './routes/accidentRoutes.js';
+import deliveryRoutes from './routes/deliveryRoutes.js';
+import emergencyRoutes from './routes/emergencyRoutes.js';
+import maintenanceRoutes from './routes/maintenanceRoutes.js';
+
 
 
 import userRoutes from "./routes/userRoutes.js";
@@ -45,10 +52,16 @@ app.use('/uploads', express.static(uploadsPath));
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/reviews', reviewRoutes);
+//app.use('/api/reviews', reviewRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/supply-records', supplyRecordRoutes);
 app.use('/api/leave-requests', leaveReqRoutes);
+// Vehicle Management Routes
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/accidents', accidentRoutes);
+app.use('/api/deliveries', deliveryRoutes);
+app.use('/api/emergencies', emergencyRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 // User routes
 app.use("/api/users", userRoutes);
