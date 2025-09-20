@@ -54,23 +54,22 @@ function HomePage() {
             <div className="max-w-3xl px-6 md:px-8 w-full md:ml-12">
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight"
                   style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.SOFT_WHITE }}>
-                CinnaCeylon — The Soul of Ceylon Spices {/* Main heading */}
+                CinnaCeylon — The Soul of Ceylon Spices
               </h1>
               <p className="mt-4 text-sm md:text-lg" style={{ color: COLORS.WARM_BEIGE }}>
-  At Cinna Ceylon, we responsibly source raw cinnamon from reputable family farmers in Sri Lanka
-  and carefully transform it into high-quality, value-added products.
-  Our commitment goes beyond flavor  we ensure sustainability, fair trade, and authenticity
-  in every step, delivering true Ceylon cinnamon to kitchens worldwide.
-</p>
-
+                At Cinna Ceylon, we responsibly source raw cinnamon from reputable family farmers in Sri Lanka
+                and carefully transform it into high-quality, value-added products.
+                Our commitment goes beyond flavor — we ensure sustainability, fair trade, and authenticity
+                in every step, delivering true Ceylon cinnamon to kitchens worldwide.
+              </p>
 
               <div className="mt-6 flex flex-wrap gap-3"> {/* Buttons */}
                 <a href="/products" className="inline-block px-6 py-3 rounded-full font-semibold shadow-lg transition transform hover:scale-[1.02]"
                    style={{ backgroundColor: COLORS.RICH_GOLD, color: '#111' }}>
-                  Explore Collection {/* CTA button */}
+                  Explore Collection
                 </a>
                 <Link to="/about" className="inline-block px-6 py-3 rounded-full border border-white/30 text-white hover:bg-white/10 transition">
-                  Our Story {/* Link to about */}
+                  Our Story
                 </Link>
               </div>
 
@@ -90,13 +89,13 @@ function HomePage() {
           <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="mt-4 text-gray-700 leading-relaxed">
-  Cinna Ceylon is a supply chain management system designed to support Sri Lanka’s authentic 
-  Ceylon cinnamon. By blending tradition with technology, we bring transparency from farm to shelf, 
-  giving customers confidence in purity and farmers the recognition they deserve. 
-  Our platform safeguards quality while strengthening the bond between growers and global markets.
-</p>
+                Cinna Ceylon is a supply chain management system designed to support Sri Lanka’s authentic 
+                Ceylon cinnamon. By blending tradition with technology, we bring transparency from farm to shelf, 
+                giving customers confidence in purity and farmers the recognition they deserve. 
+                Our platform safeguards quality while strengthening the bond between growers and global markets.
+              </p>
 
-              <ul className="mt-6 space-y-3 text-gray-700"> {/* Features list */}
+              <ul className="mt-6 space-y-3 text-gray-700">
                 <li><strong>Provenance:</strong> Single-origin traceability.</li>
                 <li><strong>Processing:</strong> Digital tracking of steps.</li>
                 <li><strong>Quality:</strong> Prevents cassia mixing.</li>
@@ -104,11 +103,11 @@ function HomePage() {
               </ul>
               <Link to="/about" className="mt-6 inline-block px-6 py-3 rounded-full text-white font-medium"
                     style={{ backgroundColor: COLORS.DEEP_CINNAMON }}>
-                Learn more about our process {/* About button */}
+                Learn more about our process
               </Link>
             </div>
 
-            <div className="space-y-6"> {/* Right side images */}
+            <div className="space-y-6">
               <img src="https://cinoceylon.wordpress.com/wp-content/uploads/2017/03/newly-planted-cinnamon.jpg"
                    alt="Cinnamon plantation" className="rounded-lg shadow-xl w-full object-cover h-64" />
               <div className="grid grid-cols-2 gap-4">
@@ -130,7 +129,7 @@ function HomePage() {
             <h3 className="text-xl font-semibold" style={{ color: COLORS.RICH_GOLD }}>Why choose CinnaCeylon?</h3>
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
               <div className="p-6 bg-white rounded-lg shadow text-left">
-                <GlobeAltIcon className="w-6 h-6" style={{ color: COLORS.DEEP_CINNAMON }} /> {/* Icon */}
+                <GlobeAltIcon className="w-6 h-6" style={{ color: COLORS.DEEP_CINNAMON }} />
                 <h4 className="mt-3 font-semibold">Traceable Sourcing</h4>
                 <p className="mt-2 text-sm text-gray-600">Know the farm & batch.</p>
               </div>
@@ -163,7 +162,7 @@ function HomePage() {
             </div>
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {loading ? ( // If loading, show skeleton
+              {loading ? (
                 Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className="bg-white rounded-lg overflow-hidden shadow animate-pulse">
                     <div className="w-full aspect-square bg-gray-200"></div>
@@ -174,7 +173,7 @@ function HomePage() {
                     </div>
                   </div>
                 ))
-              ) : featuredProducts.length > 0 ? ( // If products exist
+              ) : featuredProducts.length > 0 ? (
                 featuredProducts.map((product) => (
                   <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition flex flex-col">
                     <div className="w-full aspect-square bg-white flex items-center justify-center">
@@ -194,7 +193,7 @@ function HomePage() {
                     </div>
                   </div>
                 ))
-              ) : ( // If no products found
+              ) : (
                 <div className="col-span-full text-center py-8">
                   <p className="text-gray-500">No products available at the moment.</p>
                 </div>
@@ -209,10 +208,10 @@ function HomePage() {
             <p className="mt-2 text-gray-600">Sign up for offers, recipes & stories.</p>
             <form className="mt-6 flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
               <input type="email" required placeholder="Your email address"
-                     className="flex-grow px-4 py-3 rounded-full border border-gray-200 focus:ring-2 focus:ring-yellow-300 outline-none" /> {/* Input */}
+                     className="flex-grow px-4 py-3 rounded-full border border-gray-200 focus:ring-2 focus:ring-yellow-300 outline-none" />
               <button type="submit" className="px-6 py-3 rounded-full font-semibold"
                       style={{ backgroundColor: COLORS.RICH_GOLD }}>
-                Subscribe {/* Submit button */}
+                Subscribe
               </button>
             </form>
           </div>
@@ -224,4 +223,4 @@ function HomePage() {
   );
 }
 
-export default HomePage; // Export component
+export default HomePage;

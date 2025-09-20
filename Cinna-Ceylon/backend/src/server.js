@@ -22,6 +22,12 @@ import emergencyRoutes from './routes/emergencyRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
 
 
+
+import userRoutes from "./routes/userRoutes.js";
+import adminUserRoutes from "./routes/adminUserRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
+import attendanceAdminRoutes from "./routes/attendanceAdminRoutes.js";
+
 dotenv.config();
 
 const app = express();
@@ -56,6 +62,16 @@ app.use('/api/accidents', accidentRoutes);
 app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/emergencies', emergencyRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+
+// User routes
+app.use("/api/users", userRoutes);
+// Admin user management routes
+app.use("/api/admin/users", adminUserRoutes);
+
+// Attendance routes
+app.use("/api/attendance", attendanceRoutes);
+// Admin attendance management
+app.use("/api/admin/attendance", attendanceAdminRoutes);
 
 // Root test endpoint
 app.get('/', (req, res) => {
