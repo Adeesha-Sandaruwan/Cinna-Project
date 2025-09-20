@@ -27,8 +27,14 @@ export const createProduct = async (req, res) => { // define an async controller
 // Get all products
 export const getProducts = async (req, res) => { // define controller to fetch all products
   try { // start try block
-    const products = await Product.find().sort("-createdAt"); // query all products and sort them by creation date (newest first)
-    res.json(products); // return the list of products as JSON
+    // Check if request is from admin (you'll need to implement proper auth later)
+    const isAdmin = req.query.admin === 'true';
+    
+    // If not admin, only show public products
+    const query = isAdmin ? {} : { visibility: "public" };
+    
+    const products = await Product.find(query).sort("-createdAt"); // query filtered products and sort them
+    res.json(products); // return the filtered list of products as JSON
   } catch (err) { // catch any error
     res.status(500).json({ error: err.message }); // return 500 (Server Error) with the error message
   }

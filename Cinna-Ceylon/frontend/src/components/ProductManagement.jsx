@@ -77,7 +77,7 @@ export default function ProductManagement() { // defines and exports the main pa
   const fetchProducts = async () => { //get products from the backend, makes it asynchronus to use await inside the function
     setLoading(true); //This shows a spinner/loader in the UI while waiting.
     try {
-      const res = await fetch("http://localhost:5000/api/products"); //fetch products from the backend and store response in res
+      const res = await fetch("http://localhost:5000/api/products?admin=true"); //fetch ALL products (including private) for admin view
       setProducts(await res.json()); //updates the products state with the fetched data. React component will re-render with the new product data.
     } catch { //If something goes wrong (like no internet, server down, invalid JSON), the catch block runs.
       setMessage("❌ Error loading products");
@@ -128,6 +128,27 @@ export default function ProductManagement() { // defines and exports the main pa
       )
     )
       setDeleteProduct(null);//close the confirmation dialog / modal,
+  };
+
+  const toggleVisibility = async (product) => {
+    const newVisibility = product.visibility === 'public' ? 'private' : 'public';
+    const fd = new FormData();
+    fd.append('visibility', newVisibility);
+    
+    if (
+      await apiRequest(
+        `http://localhost:5000/api/products/${product._id}`,
+        { method: "PUT", body: fd },
+        `✅ Product is now ${newVisibility}`
+      )
+    ) {
+      // Update local state to reflect the change
+      setProducts(products.map(p => 
+        p._id === product._id 
+          ? { ...p, visibility: newVisibility }
+          : p
+      ));
+    }
   };
 
 //display the content part....................................................................................................
@@ -184,6 +205,7 @@ export default function ProductManagement() { // defines and exports the main pa
                   <th className="p-3">Price</th>
                   <th className="p-3">Stock</th>
                   <th className="p-3">Status</th>
+                  <th className="p-3">Visibility</th>
                   <th className="p-3">Actions</th>
                 </tr>
               </thead>
@@ -196,6 +218,18 @@ export default function ProductManagement() { // defines and exports the main pa
                     <td className="p-3">${p.price}</td>
                     <td className="p-3">{p.stock}</td>
                     <td className="p-3"><StockStatus stock={p.stock} /></td>
+                    <td className="p-3">
+                      <button
+                        onClick={() => toggleVisibility(p)}
+                        className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          p.visibility === 'public'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {p.visibility === 'public' ? 'Public' : 'Private'}
+                      </button>
+                    </td>
                     <td className="p-3 flex justify-center gap-3">
                       <button onClick={() => setEditProduct(p)} className="text-blue-600 hover:text-blue-800">
                         <PencilIcon className="w-5" />
@@ -282,6 +316,17 @@ export default function ProductManagement() { // defines and exports the main pa
                 className="border p-2 rounded"
                 placeholder="Description"
               />
+              <div className="flex items-center gap-2">
+                <label className="font-medium">Visibility:</label>
+                <select
+                  value={editProduct.visibility}
+                  onChange={(e) => setEditProduct({ ...editProduct, visibility: e.target.value })}
+                  className="border p-2 rounded flex-grow"
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                </select>
+              </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button
