@@ -1,36 +1,62 @@
 import SupplyRecord from '../models/SupplyRecord.js';
 import RawMaterial from '../models/RawMaterial.js';
+import mongoose from 'mongoose';
 
 // Create supply record
 export const createSupplyRecord = async (req, res) => {
   try {
-    const data = req.body;
+    const { supplier, rawMaterial, buyer, quantitySold, pricePerKg, notes } = req.body;
+
+    // Input validation
+    if (!supplier || !rawMaterial || !buyer || !quantitySold || !pricePerKg) {
+      return res.status(400).json({ 
+        error: "Missing required fields: supplier, rawMaterial, buyer, quantitySold, and pricePerKg are required" 
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(supplier)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(rawMaterial)) {
+      return res.status(400).json({ error: "Invalid raw material ID format" });
+    }
+
+    if (quantitySold <= 0) {
+      return res.status(400).json({ error: "Quantity sold must be greater than 0" });
+    }
+
+    if (pricePerKg <= 0) {
+      return res.status(400).json({ error: "Price per kg must be greater than 0" });
+    }
+
+    const data = { supplier, rawMaterial, buyer, quantitySold, pricePerKg, notes };
 
     // Check if raw material exists and is available
-    const rawMaterial = await RawMaterial.findById(data.rawMaterial);
-    if (!rawMaterial) {
+    const rawMaterialDoc = await RawMaterial.findById(rawMaterial);
+    if (!rawMaterialDoc) {
       return res.status(404).json({ error: "Raw material not found" });
     }
 
-    if (rawMaterial.status !== 'available') {
+    if (rawMaterialDoc.status !== 'available') {
       return res.status(400).json({ error: "Raw material is not available for sale" });
     }
 
-    if (data.quantitySold > rawMaterial.quantity) {
+    if (quantitySold > rawMaterialDoc.quantity) {
       return res.status(400).json({ error: "Quantity sold cannot exceed available quantity" });
     }
 
     const supplyRecord = await SupplyRecord.create(data);
     
     // Update raw material quantity or status
-    const newQuantity = rawMaterial.quantity - data.quantitySold;
+    const newQuantity = rawMaterialDoc.quantity - quantitySold;
     if (newQuantity <= 0) {
-      await RawMaterial.findByIdAndUpdate(data.rawMaterial, { 
+      await RawMaterial.findByIdAndUpdate(rawMaterial, { 
         quantity: 0, 
         status: 'sold' 
       });
     } else {
-      await RawMaterial.findByIdAndUpdate(data.rawMaterial, { 
+      await RawMaterial.findByIdAndUpdate(rawMaterial, { 
         quantity: newQuantity 
       });
     }
@@ -69,6 +95,11 @@ export const getSupplyRecords = async (req, res) => {
 // Get single supply record
 export const getSupplyRecord = async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid supply record ID format" });
+    }
+
     const supplyRecord = await SupplyRecord.findById(req.params.id)
       .populate('supplier', 'name email contactNumber whatsappNumber address')
       .populate('rawMaterial');
@@ -83,6 +114,11 @@ export const getSupplyRecord = async (req, res) => {
 // Update supply record
 export const updateSupplyRecord = async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid supply record ID format" });
+    }
+
     const data = req.body;
 
     const supplyRecord = await SupplyRecord.findByIdAndUpdate(req.params.id, data, { new: true })
@@ -99,6 +135,11 @@ export const updateSupplyRecord = async (req, res) => {
 // Delete supply record
 export const deleteSupplyRecord = async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid supply record ID format" });
+    }
+
     const supplyRecord = await SupplyRecord.findById(req.params.id);
     if (!supplyRecord) return res.status(404).json({ error: "Supply record not found" });
 
@@ -118,6 +159,11 @@ export const deleteSupplyRecord = async (req, res) => {
 // Get supply records by supplier
 export const getSupplyRecordsBySupplier = async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.supplierId)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
+    }
+
     const supplyRecords = await SupplyRecord.find({ supplier: req.params.supplierId })
       .populate('supplier', 'name email contactNumber')
       .populate('rawMaterial', 'quality materialPhoto location')
