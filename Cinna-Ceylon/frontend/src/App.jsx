@@ -16,6 +16,7 @@ import ProductForm from './components/ProductForm';
 import ProductList from "./components/ProductList.jsx";
 import ProductDetails from "./components/ProductDetails.jsx";
 import ProductManagement from "./components/ProductManagement.jsx";
+import ProductManagerDashboard from "./components/ProductManagerDashboard.jsx";
 
 // User Management Pages
 import Login from './pages/Login';
@@ -80,6 +81,7 @@ function App() {
         
         {/* Admin Management Routes */}
         <Route path="/admin/products" element={<ProductManagement />} />
+        <Route path="/admin/dashboard" element={<ProductManagerDashboard />} />
         <Route path="/leaverequestform" element={<LeaveRequestForm />} />
         <Route path="/supplierform" element={<SuplierForm />} />
         <Route path='/salary_form' element={<SalaryForm />} />
@@ -117,6 +119,7 @@ function App() {
           <Route path="/products" element={<ProductList />} />
           <Route path="/products/:id" element={<ProductDetails />} />
           <Route path="/admin/products" element={<ProductManagement />} />
+          <Route path="/admin/dashboard" element={<ProductManagerDashboard />} />
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
