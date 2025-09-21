@@ -25,13 +25,6 @@ export const createProduct = async (req, res) => {
 };
 
 // Get all products
-export const getProducts = async (req, res) => {
-  try {
-    const products = await Product.find().sort("-createdAt");
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-=======
 export const getProducts = async (req, res) => { // define controller to fetch all products
   try { // start try block
     // Check if request is from admin (you'll need to implement proper auth later)

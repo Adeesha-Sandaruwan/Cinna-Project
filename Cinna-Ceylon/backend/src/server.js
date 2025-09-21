@@ -41,8 +41,10 @@ const app = express();
 // Enhanced CORS configuration for frontend
 app.use(cors({
   origin: [
-    'http://localhost:3000',    // Your React app's URL
+    'http://localhost:3000',    // Default React port
+    'http://localhost:3002',    // Configured React port  
     'http://127.0.0.1:3000',    // Also allow the IP version
+    'http://127.0.0.1:3002',    // Configured IP version
     'http://localhost:3002',    // Keep your existing one if needed
     'http://127.0.0.1:3002'     // Keep your existing one if needed
   ],
