@@ -31,12 +31,25 @@ export const generateReceiptPDF = (orderDetails, cart) => {
   doc.setTextColor("#CC7722");
   doc.text("Order Details", 20, 105);
 
+  // Use a y-position pointer to avoid overlapping lines
+  let detailsY = 115;
   doc.setFontSize(10);
   doc.setTextColor("#000000");
-  doc.text(`Order ID: ${orderDetails._id}`, 20, 115);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 122);
-  doc.text(`Payment Method: ${orderDetails.paymentMethod}`, 20, 129);
-  doc.text(`Status: ${orderDetails.status}`, 20, 136);
+  doc.text(`Order ID: ${orderDetails._id}`, 20, detailsY);
+  detailsY += 7;
+
+  // Include Customer / User ID if available
+  const customerId = orderDetails.user && (orderDetails.user._id || orderDetails.user);
+  if (customerId) {
+    doc.text(`Customer ID: ${customerId}`, 20, detailsY);
+    detailsY += 7;
+  }
+
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, detailsY);
+  detailsY += 7;
+  doc.text(`Payment Method: ${orderDetails.paymentMethod}`, 20, detailsY);
+  detailsY += 7;
+  doc.text(`Status: ${orderDetails.status}`, 20, detailsY);
 
   // Shipping details
   doc.setFontSize(14);

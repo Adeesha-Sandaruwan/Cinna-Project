@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import HeaderAfterLogin from './HeaderAfterLogin.jsx';
-import Footer from './Footer.jsx';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { FaTrash, FaMinus, FaPlus, FaTag } from 'react-icons/fa';
 
 const COLORS = {
@@ -13,7 +12,11 @@ const COLORS = {
 };
 
 const Cart = () => {
-  const { userId } = useParams();
+  const { userId: routeUserId } = useParams();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const userId = user?._id || routeUserId;
+
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,6 +36,16 @@ const Cart = () => {
   const fetchCart = async () => {
     try {
       setLoading(true);
+      // If there's no authenticated user and no route userId, show an empty cart page
+      if (!user && !routeUserId) {
+        setCart(null);
+        setCartItemCount(0);
+        // Ensure header badge clears
+        window.dispatchEvent(new CustomEvent('cartCountUpdate', { detail: 0 }));
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`http://localhost:5000/api/cart/${userId || 'default'}`);
       if (response.ok) {
         const data = await response.json();
@@ -119,6 +132,14 @@ const Cart = () => {
     }
   };
 
+  const handleCheckout = () => {
+    if (!user) {
+      navigate('/login');
+    } else {
+      navigate('/checkout');
+    }
+  };
+
   // Safe price formatting function
   const formatPrice = (price) => {
     if (price === undefined || price === null) return '0.00';
@@ -137,14 +158,12 @@ const Cart = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <HeaderAfterLogin cartItemCount={cartItemCount} />
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cinnamon mx-auto mb-4"></div>
             <p className="text-lg">Loading cart...</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -152,13 +171,11 @@ const Cart = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <HeaderAfterLogin cartItemCount={cartItemCount} />
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
             <p className="text-lg text-red-600">{error}</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -167,7 +184,6 @@ const Cart = () => {
       (cart.items && cart.items.length === 0 && cart.offerItems && cart.offerItems.length === 0)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <HeaderAfterLogin cartItemCount={cartItemCount} />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -192,7 +208,6 @@ const Cart = () => {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -214,7 +229,6 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <HeaderAfterLogin cartItemCount={cartItemCount} />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
@@ -502,7 +516,7 @@ const Cart = () => {
                 </div>
                 
                 <button
-                  onClick={() => window.location.href = '/checkout'}
+                  onClick={handleCheckout}
                   className="w-full py-3 px-6 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
                   style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
                   disabled={(!cart.items || cart.items.length === 0) && (!cart.offerItems || cart.offerItems.length === 0)}
@@ -523,7 +537,6 @@ const Cart = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

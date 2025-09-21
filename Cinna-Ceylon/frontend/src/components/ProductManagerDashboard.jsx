@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import HeaderAfterLogin from "./HeaderAfterLogin.jsx";
-import Footer from "./Footer.jsx";
 
 // Existing theme colors
 const COLORS = {
@@ -65,7 +63,6 @@ const ProductManagerDashboard = () => {
 
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="min-h-screen flex flex-col">
-      <HeaderAfterLogin />
       <main className="flex-grow p-8">
         <h1 className="text-4xl font-bold mb-8" style={{ color: COLORS.DARK_SLATE }}>Product Manager Dashboard</h1>
         
@@ -130,7 +127,6 @@ const ProductManagerDashboard = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

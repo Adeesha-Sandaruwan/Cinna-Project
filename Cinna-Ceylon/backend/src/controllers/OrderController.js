@@ -39,7 +39,11 @@ export const createOrder = async (req, res) => {
       status: paymentMethod === 'Credit Card' ? 'paid' : 'pending'
     });
 
-    const populatedOrder = await Order.findById(order._id).populate('items.product');
+    // Populate product items and the user reference so frontend can access user info
+    const populatedOrder = await Order.findById(order._id)
+      .populate('items.product')
+      .populate({ path: 'user', select: '_id name email' });
+
     res.status(201).json(populatedOrder);
 
   } catch (err) {
