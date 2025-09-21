@@ -203,6 +203,12 @@ const AdminDashboard = () => {
               Product Management
             </button>
             <button
+              onClick={() => navigate('/leave-management')}
+              className="bg-teal-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-700 transition-colors mr-4"
+            >
+              Leave Management
+            </button>
+            <button
               onClick={() => { setShowCreate(true); setEditingId(null); setForm(initialForm); }}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
             >
