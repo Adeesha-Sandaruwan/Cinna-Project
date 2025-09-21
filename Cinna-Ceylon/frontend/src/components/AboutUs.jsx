@@ -1,11 +1,11 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { HeartIcon, UsersIcon, SparklesIcon, StarIcon, GlobeAltIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
-import AnimatedSection from './AnimatedSection';
-import Header from './Header';
-import Footer from './Footer';
+import React from 'react'; // Import React
+import { Link } from 'react-router-dom'; // For page navigation
+import { HeartIcon, UsersIcon, SparklesIcon, StarIcon, GlobeAltIcon, AcademicCapIcon } from '@heroicons/react/24/outline'; // Icons
+import AnimatedSection from './AnimatedSection'; // Animation wrapper
+import Header from './Header'; // Top navigation bar
+import Footer from './Footer'; // Bottom footer
 
-/* ----- Color tokens (matching HomePage theme) ----- */
+// Theme colors
 const COLORS = {
   RICH_GOLD: '#c5a35a',
   DEEP_CINNAMON: '#CC7722',
@@ -14,292 +14,159 @@ const COLORS = {
   SOFT_WHITE: '#FCFBF8',
 };
 
-/* ----- Team members data ----- */
+// Team data
 const teamMembers = [
   {
     name: 'Adeesha',
-    role: 'Team Member',
+    role: 'Team Leader',
     image: 'https://ui-avatars.com/api/?name=Adeesha&background=c5a35a&color=ffffff&size=300&bold=true',
-    description: 'Project team Leader contributing to the Ceylon cinnamon supply chain management system.'
+    description: 'Handle Product management and Leads project and vision.'
   },
   {
     name: 'Janith',
     role: 'Team Member',
     image: 'https://ui-avatars.com/api/?name=Janith&background=CC7722&color=ffffff&size=300&bold=true',
-    description: 'Project team member contributing to the Ceylon cinnamon supply chain management system.'
+    description: 'Works on delivery management system.'
   },
   {
     name: 'Sahan',
     role: 'Team Member',
     image: 'https://ui-avatars.com/api/?name=Sahan&background=F5EFE6&color=2d2d2d&size=300&bold=true',
-    description: 'Project team member contributing to the Ceylon cinnamon supply chain management system.'
+    description: 'Helps connect financial base to site.'
   },
   {
     name: 'Biyuni',
     role: 'Team Member',
     image: 'https://ui-avatars.com/api/?name=Biyuni&background=2d2d2d&color=ffffff&size=300&bold=true',
-    description: 'Project team member contributing to the Ceylon cinnamon supply chain management system.'
+    description: 'Helps to connect farmers and raw cinnamon.'
   },
   {
     name: 'Himasha',
     role: 'Team Member',
     image: 'https://ui-avatars.com/api/?name=Himasha&background=FCFBF8&color=2d2d2d&size=300&bold=true',
-    description: 'Project team member contributing to the Ceylon cinnamon supply chain management system.'
+    description: 'Builds User management system.'
   }
 ];
 
-
-
+// Main component
 function AboutUs() {
   return (
-    <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased">
-      <Header />
+    <div style={{ backgroundColor: COLORS.SOFT_WHITE }}>
+       {/* Show top bar */}
 
-      <main className="text-gray-800">
-        {/* ---------- Hero Section ---------- */}
-        <section className="relative py-20 bg-gradient-to-br from-amber-50 to-orange-50">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div 
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: 'url("https://ideogram.ai/assets/image/lossless/response/2nIN32B7SCmpA7S8n431ng")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          ></div>
-          
-          <div className="relative z-10 max-w-4xl mx-auto px-6 md:px-8 text-center">
-            <h1 
-              className="text-4xl md:text-6xl font-extrabold leading-tight"
-              style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}
-            >
-              Our Story
-            </h1>
-            <p className="mt-6 text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
-            From the lush highlands of Sri Lanka to global markets, Cinna Ceylon ensures a seamless and transparent
-            cinnamon supply chain. For over two decades, we have combined tradition with innovation
-             to deliver efficiency, traceability, and trust at every stage from
-              cultivation to distribution. Our system empowers growers,
-               suppliers, and businesses with the tools they need to manage, track, and optimize the journey of authentic Ceylon cinnamon
-            </p>
-          </div>
+      <main>
+        {/* Hero Section */}
+        <section className="relative py-20 bg-gradient-to-br from-amber-50 to-orange-50 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold" style={{ color: COLORS.DARK_SLATE }}>
+            Our Story
+          </h1>
+          <p className="mt-6 text-lg text-gray-700 max-w-2xl mx-auto">
+            From Sri Lanka’s highlands to the world, Cinna Ceylon brings
+            authentic cinnamon with trust and transparency.
+          </p>
         </section>
 
-        {/* ---------- Company Overview ---------- */}
+        {/* Company Overview */}
         <AnimatedSection className="py-16">
-          <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center px-6">
+            {/* Left side text */}
             <div>
-              <h2 
-                className="text-3xl md:text-4xl font-bold mb-6"
-                style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}
-              >
-                Rooted in Tradition, Driven by Excellence
+              <h2 className="text-3xl font-bold mb-6" style={{ color: COLORS.DARK_SLATE }}>
+                Tradition Meets Innovation
               </h2>
-              <p className="text-gray-700 leading-relaxed mb-6">
-              Cinna Ceylon Supply Chain Management System was developed as a university project with 
-              the aim of modernizing and streamlining the Ceylon cinnamon supply chain. While still
-               in its early stages, the system is designed to connect farmers, suppliers,
-                and distributors under one digital platform, ensuring greater transparency,
-                 efficiency, and trust.
+              <p className="text-gray-700 mb-4">
+                Our system links farmers, suppliers and distributors on one platform —
+                simple, clear and fair.
               </p>
-              <p className="text-gray-700 leading-relaxed mb-6">
-              Inspired by Sri Lanka’s long-standing cinnamon heritage, our project focuses on supporting
-              small-scale farmers from the central highlands by providing fair opportunities, improved traceability,
-               and sustainable practices. Through this initiative, we seek to bridge tradition with technology and
-                lay the foundation for a smarter, more reliable cinnamon supply chain.
+              <p className="text-gray-700">
+                Inspired by heritage, we use tech to give farmers fair trade
+                and customers true quality.
               </p>
-                              <div className="grid grid-cols-2 gap-4 mt-8">
-                  <div className="text-center p-4 bg-white rounded-lg shadow">
-                    <div className="text-2xl font-bold" style={{ color: COLORS.RICH_GOLD }}>100%</div>
-                    <div className="text-sm text-gray-600">Quality Ensured</div>
-                  </div>
-                  <div className="text-center p-4 bg-white rounded-lg shadow">
-                    <div className="text-2xl font-bold" style={{ color: COLORS.RICH_GOLD }}>150+</div>
-                    <div className="text-sm text-gray-600">Partner Farms</div>
-                  </div>
-                </div>
             </div>
-            
+
+            {/* Right side images */}
             <div className="space-y-6">
               <img
                 src="https://ideogram.ai/assets/image/lossless/response/bztddh2gSkSHSkD9lvh4_g"
-                alt="Ceylon cinnamon plantation"
-                className="rounded-lg shadow-xl w-full object-cover h-64"
+                alt="Cinnamon plantation"
+                className="rounded-lg shadow-xl w-full h-64 object-cover"
               />
               <img
                 src="https://ideogram.ai/assets/image/lossless/response/Ew38Un6zQUCMWlKagMGLVA"
-                alt="Traditional cinnamon processing"
-                className="rounded-lg shadow-xl w-full object-cover h-48"
+                alt="Cinnamon processing"
+                className="rounded-lg shadow-xl w-full h-48 object-cover"
               />
             </div>
           </div>
         </AnimatedSection>
 
-        {/* ---------- Our Values ---------- */}
+        {/* Core Values */}
         <AnimatedSection className="py-16 bg-gradient-to-r from-amber-50/50 to-orange-50/50">
-          <div className="max-w-7xl mx-auto px-6 md:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-12">
-              <h2 
-                className="text-3xl md:text-4xl font-bold mb-4"
-                style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}
-              >
-                Our Core Values
-              </h2>
-              <p className="text-gray-700 text-lg">
-                These principles guide everything we do, from farm partnerships to customer service.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-                <HeartIcon className="w-12 h-12 mx-auto mb-4" style={{ color: COLORS.DEEP_CINNAMON }} />
-                <h3 className="text-xl font-semibold mb-3" style={{ color: COLORS.DARK_SLATE }}>
-                  Passion for Quality
-                </h3>
-                <p className="text-gray-600">
-                  Every batch is carefully tested and processed to ensure the highest standards of 
-                  aroma, flavor, and purity that Ceylon cinnamon is renowned for.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-                <UsersIcon className="w-12 h-12 mx-auto mb-4" style={{ color: COLORS.DEEP_CINNAMON }} />
-                <h3 className="text-xl font-semibold mb-3" style={{ color: COLORS.DARK_SLATE }}>
-                  Community First
-                </h3>
-                <p className="text-gray-600">
-                  We believe in fair trade practices, supporting local farmers with better prices 
-                  and investing in community development programs.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-                <SparklesIcon className="w-12 h-12 mx-auto mb-4" style={{ color: COLORS.DEEP_CINNAMON }} />
-                <h3 className="text-xl font-semibold mb-3" style={{ color: COLORS.DARK_SLATE }}>
-                  Sustainability
-                </h3>
-                <p className="text-gray-600">
-                  Environmental responsibility is at our core. We promote organic farming, 
-                  sustainable packaging, and carbon-neutral shipping practices.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-                <StarIcon className="w-12 h-12 mx-auto mb-4" style={{ color: COLORS.DEEP_CINNAMON }} />
-                <h3 className="text-xl font-semibold mb-3" style={{ color: COLORS.DARK_SLATE }}>
-                  Authenticity
-                </h3>
-                <p className="text-gray-600">
-                  We source only true Ceylon cinnamon (Cinnamomum verum) and maintain complete 
-                  transparency in our supply chain from farm to table.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-                <GlobeAltIcon className="w-12 h-12 mx-auto mb-4" style={{ color: COLORS.DEEP_CINNAMON }} />
-                <h3 className="text-xl font-semibold mb-3" style={{ color: COLORS.DARK_SLATE }}>
-                  Global Reach
-                </h3>
-                <p className="text-gray-600">
-                  While rooted in Sri Lankan tradition, we serve customers worldwide, sharing 
-                  the exceptional taste of authentic Ceylon spices globally.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-                <AcademicCapIcon className="w-12 h-12 mx-auto mb-4" style={{ color: COLORS.DEEP_CINNAMON }} />
-                <h3 className="text-xl font-semibold mb-3" style={{ color: COLORS.DARK_SLATE }}>
-                  Innovation
-                </h3>
-                <p className="text-gray-600">
-                  We continuously improve our processing methods and develop new products while 
-                  respecting traditional techniques passed down through generations.
-                </p>
-              </div>
-            </div>
-          </div>
-        </AnimatedSection>
-
-        {/* ---------- Meet Our Team ---------- */}
-        <AnimatedSection className="py-16">
-          <div className="max-w-7xl mx-auto px-6 md:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-12">
-              <h2 
-                className="text-3xl md:text-4xl font-bold mb-4"
-                style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}
-              >
-                Meet Our Team
-              </h2>
-              <p className="text-gray-700 text-lg">
-                The dedicated team members behind the Cinna Ceylon supply chain management system.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-              {teamMembers.map((member, index) => (
-                <div key={index} className="bg-white rounded-lg overflow-hidden shadow-lg">
-                  <img 
-                    src={member.image} 
-                    alt={member.name}
-                    className="w-full h-64 object-cover"
-                  />
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2" style={{ color: COLORS.DARK_SLATE }}>
-                      {member.name}
-                    </h3>
-                    <p className="font-medium mb-3" style={{ color: COLORS.RICH_GOLD }}>
-                      {member.role}
-                    </p>
-                    <p className="text-gray-600 text-sm leading-relaxed">
-                      {member.description}
-                    </p>
-                  </div>
+          <div className="max-w-7xl mx-auto px-6 text-center">
+            <h2 className="text-3xl font-bold mb-6" style={{ color: COLORS.DARK_SLATE }}>
+              Our Core Values
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              {[
+                { icon: <HeartIcon />, title: "Quality" },
+                { icon: <UsersIcon />, title: "Community" },
+                { icon: <SparklesIcon />, title: "Sustainability" },
+                { icon: <StarIcon />, title: "Authenticity" },
+                { icon: <GlobeAltIcon />, title: "Global Reach" },
+                { icon: <AcademicCapIcon />, title: "Innovation" },
+              ].map((val, i) => (
+                <div key={i} className="bg-white rounded-lg p-6 shadow text-center">
+                  <div className="w-10 h-10 mx-auto mb-2 text-orange-600">{val.icon}</div>
+                  <p className="font-semibold">{val.title}</p>
                 </div>
               ))}
             </div>
           </div>
         </AnimatedSection>
 
-
-
-        {/* ---------- Call to Action ---------- */}
-        <section className="py-16 bg-gradient-to-r from-amber-100 to-orange-100">
-          <div className="max-w-4xl mx-auto px-6 md:px-8 text-center">
-            <h3 
-              className="text-2xl md:text-3xl font-bold mb-4"
-              style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}
-            >
-              Experience the CinnaCeylon Difference
-            </h3>
-            <p className="text-gray-700 text-lg mb-8 max-w-2xl mx-auto">
-              Join thousands of satisfied customers who have discovered the unmatched quality 
-              and authentic flavor of true Ceylon cinnamon. Taste the difference tradition makes.
-            </p>
-            
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                to="/products"
-                className="inline-block px-8 py-3 rounded-full font-semibold shadow-lg transition transform hover:scale-[1.02]"
-                style={{ backgroundColor: COLORS.RICH_GOLD, color: '#111' }}
-              >
-                Shop Our Products
-              </Link>
-              <Link
-                to="/contact"
-                className="inline-block px-8 py-3 rounded-full border-2 font-semibold transition"
-                style={{ 
-                  borderColor: COLORS.DEEP_CINNAMON, 
-                  color: COLORS.DEEP_CINNAMON 
-                }}
-              >
-                Contact Us
-              </Link>
+        {/* Meet the Team */}
+        <AnimatedSection className="py-16">
+          <div className="max-w-7xl mx-auto px-6">
+            <h2 className="text-3xl font-bold text-center mb-8" style={{ color: COLORS.DARK_SLATE }}>
+              Meet Our Team
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+              {teamMembers.map((m, i) => (
+                <div key={i} className="bg-white rounded-lg shadow p-4 text-center">
+                  <img src={m.image} alt={m.name} className="w-full h-40 object-cover rounded" />
+                  <h3 className="mt-4 font-semibold">{m.name}</h3>
+                  <p className="text-orange-600">{m.role}</p>
+                  <p className="text-gray-600 text-sm">{m.description}</p>
+                </div>
+              ))}
             </div>
+          </div>
+        </AnimatedSection>
+
+        {/* Call to Action */}
+        <section className="py-16 bg-amber-100 text-center">
+          <h3 className="text-2xl font-bold">Experience Cinna Ceylon</h3>
+          <p className="mt-2 text-gray-700">Taste the true flavor of Ceylon cinnamon.</p>
+          <div className="mt-6 flex justify-center gap-4">
+            <Link
+              to="/products"
+              className="px-6 py-2 rounded-full font-semibold shadow"
+              style={{ backgroundColor: COLORS.RICH_GOLD, color: '#111' }}
+            >
+              Shop
+            </Link>
+            <Link
+              to="/contact"
+              className="px-6 py-2 rounded-full border-2 font-semibold"
+              style={{ borderColor: COLORS.DEEP_CINNAMON, color: COLORS.DEEP_CINNAMON }}
+            >
+              Contact
+            </Link>
           </div>
         </section>
       </main>
 
-      <Footer />
+      {/* Bottom footer */}
     </div>
   );
 }

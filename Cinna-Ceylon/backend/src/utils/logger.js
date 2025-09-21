@@ -1,0 +1,4 @@
+// Logger Utility
+module.exports = {
+  log: (msg) => console.log(msg),
+};

@@ -3,7 +3,12 @@ import { createOrder, getOrders, getUserOrders, getOrder, updateOrder } from '..
 
 const router = express.Router();
 
+// ---------------------- ORDER ROUTES ---------------------- //
+
+// Create a new order (usually from a cart at checkout)
 router.post('/', createOrder);
+
+// Get all orders (admin use case, to see every order)
 router.get('/', getOrders);
 router.get('/user/:userId', getUserOrders);
 router.get('/:orderId', getOrder);

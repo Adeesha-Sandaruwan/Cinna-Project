@@ -1,11 +1,10 @@
-import Product from "../models/Product.js";
+import Product from "../models/Product.js"; // import the Product model to interact with the products collection
 
-// ✅ Create product
+// Create product
 export const createProduct = async (req, res) => {
   try {
     const data = req.body;
 
-    // Validation for expiry date
     if (data.expiryDate) {
       const today = new Date();
       const expDate = new Date(data.expiryDate);
@@ -15,7 +14,7 @@ export const createProduct = async (req, res) => {
     }
 
     if (req.file) {
-      data.image = req.file.filename; // save uploaded filename
+      data.image = req.file.filename;
     }
 
     const product = await Product.create(data);
@@ -25,17 +24,23 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// ✅ Get all products
-export const getProducts = async (req, res) => {
-  try {
-    const products = await Product.find().sort("-createdAt");
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+// Get all products
+export const getProducts = async (req, res) => { // define controller to fetch all products
+  try { // start try block
+    // Check if request is from admin (you'll need to implement proper auth later)
+    const isAdmin = req.query.admin === 'true';
+    
+    // If not admin, only show public products
+    const query = isAdmin ? {} : { visibility: "public" };
+    
+    const products = await Product.find(query).sort("-createdAt"); // query filtered products and sort them
+    res.json(products); // return the filtered list of products as JSON
+  } catch (err) { // catch any error
+    res.status(500).json({ error: err.message }); // return 500 (Server Error) with the error message
   }
 };
 
-// ✅ Get single product
+// Get single product
 export const getProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -46,13 +51,15 @@ export const getProduct = async (req, res) => {
   }
 };
 
-// ✅ Update product (with image option)
+// Update product (with image option)
 export const updateProduct = async (req, res) => {
   try {
     const data = req.body;
+
     if (req.file) {
       data.image = req.file.filename;
     }
+
     if (data.expiryDate) {
       const today = new Date();
       const expDate = new Date(data.expiryDate);
@@ -63,13 +70,14 @@ export const updateProduct = async (req, res) => {
 
     const product = await Product.findByIdAndUpdate(req.params.id, data, { new: true });
     if (!product) return res.status(404).json({ error: "Not found" });
+
     res.json(product);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
-// ✅ Delete product
+// Delete product
 export const deleteProduct = async (req, res) => {
   try {
     await Product.findByIdAndDelete(req.params.id);
@@ -79,30 +87,27 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-// ✅ Update stock levels
+// Update stock levels
 export const updateStock = async (req, res) => {
   try {
     const { stock, safetyStock, reorderLevel } = req.body;
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    // Validate stock levels
+    // Validate stock values
     if (stock < 0) {
       return res.status(400).json({ error: "Stock cannot be negative" });
     }
-
     if (safetyStock < 0) {
       return res.status(400).json({ error: "Safety stock cannot be negative" });
     }
-
     if (reorderLevel < 0) {
       return res.status(400).json({ error: "Reorder level cannot be negative" });
     }
 
-    // Update stock levels
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
       { stock, safetyStock, reorderLevel },
@@ -115,11 +120,11 @@ export const updateStock = async (req, res) => {
   }
 };
 
-// ✅ Get inventory status
+// Get inventory status
 export const getInventoryStatus = async (req, res) => {
   try {
-    const products = await Product.find().select('name stock safetyStock reorderLevel availableStock');
-    
+    const products = await Product.find().select("name stock safetyStock reorderLevel availableStock");
+
     const inventoryStatus = products.map(product => ({
       id: product._id,
       name: product.name,
@@ -128,7 +133,7 @@ export const getInventoryStatus = async (req, res) => {
       reorderLevel: product.reorderLevel,
       availableStock: product.availableStock,
       needsReorder: product.stock <= product.reorderLevel,
-      belowSafetyStock: product.stock <= product.safetyStock
+      belowSafetyStock: product.stock <= product.safetyStock,
     }));
 
     res.json(inventoryStatus);

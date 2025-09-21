@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Header from "./Header.jsx";
-import Footer from "./Footer.jsx";
 
 const COLORS = { 
   RICH_GOLD: "#c5a35a",
@@ -13,15 +11,33 @@ const COLORS = {
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/products");
+        setLoading(true);
+        // Using environment variable for API URL
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+        const res = await fetch(`${baseUrl}/api/products`);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const data = await res.json();
-        setProducts(data);
+        console.log("Fetched products:", data); // Debug log
+        // Filter out private products unless user is admin
+        const isAdmin = false; // TODO: Replace with actual admin check
+        const filteredProducts = isAdmin 
+          ? data 
+          : data.filter(product => product.visibility === "public");
+        setProducts(filteredProducts);
       } catch (err) {
         console.error("❌ Error fetching products:", err);
+        setError(`Error loading products: ${err.message}`);
+        console.log('Backend URL:', process.env.REACT_APP_API_URL || 'http://localhost:5001');
+      } finally {
+        setLoading(false);
       }
     };
     fetchProducts();
@@ -29,7 +45,6 @@ const ProductList = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <Header />
       <div className="p-10">
         <h1
           className="text-3xl font-bold text-center mb-8"
@@ -86,7 +101,6 @@ const ProductList = () => {
           ))}
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

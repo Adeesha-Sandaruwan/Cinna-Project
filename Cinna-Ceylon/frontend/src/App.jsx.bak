@@ -1,0 +1,54 @@
+import React from 'react';
+import { AuthProvider } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { AuthProvider } from './context/AuthContext';
+
+import HomePage from './components/HomePage';
+import AboutUs from './components/AboutUs';
+import ContactUs from './components/ContactUs';
+import ProductForm from './components/ProductForm';
+import ProductList from "./components/ProductList.jsx";
+import ProductDetails from "./components/ProductDetails.jsx";
+import ProductManagement from "./components/ProductManagement.jsx";
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Profile from './pages/Profile';
+
+import Header from './components/Header';
+import Footer from './components/Footer';
+import { BuyerDashboard, SupplierDashboard, DriverDashboard, AdminDashboard } from './components/dashboard';
+import AttendanceRecords from './components/dashboard/AttendanceRecords';
+
+function App() {
+  return (
+    <>
+      <AuthProvider>
+        <Router>
+          <Header />
+          <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/product_form" element={<ProductForm />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/products/:id" element={<ProductDetails />} />
+          <Route path="/admin/products" element={<ProductManagement />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/dashboard/buyer" element={<BuyerDashboard />} />
+          <Route path="/dashboard/supplier" element={<SupplierDashboard />} />
+          <Route path="/dashboard/driver" element={<DriverDashboard />} />
+          <Route path="/dashboard/admin" element={<AdminDashboard />} />
+          <Route path="/dashboard/attendance-records" element={<AttendanceRecords />} />
+        </Routes>
+        <Footer />
+      </Router>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+    </>
+  );
+}
+
+export default App;
