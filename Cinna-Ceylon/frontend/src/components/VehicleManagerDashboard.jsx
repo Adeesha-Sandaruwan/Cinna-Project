@@ -43,7 +43,14 @@ const VehicleManagerDashboard = () => {
     serviceDate: "",
     serviceFile: null,
   });
+  const [formErrors, setFormErrors] = useState({});
   const [message, setMessage] = useState("");
+
+  // Validate insurance number format
+  const validateInsuranceNo = (value) => {
+    const insurancePattern = /^INS\d{6}$/;
+    return insurancePattern.test(value);
+  };
 
   // Fetch vehicles
   useEffect(() => {
@@ -93,36 +100,148 @@ const VehicleManagerDashboard = () => {
       ...f,
       [name]: files ? files[0] : value
     }));
+
+    // Validate insurance number when it changes
+    if (name === 'insuranceNo') {
+      if (!value) {
+        setFormErrors(prev => ({ ...prev, insuranceNo: 'Insurance number is required' }));
+      } else if (!validateInsuranceNo(value)) {
+        setFormErrors(prev => ({ ...prev, insuranceNo: 'Insurance number must start with "INS" followed by 6 digits' }));
+      } else {
+        setFormErrors(prev => ({ ...prev, insuranceNo: '' }));
+      }
+    }
   };
 
-  // Export vehicles to CSV
-  const exportToCSV = () => {
-    const headers = ['Vehicle ID', 'Type', 'Capacity', 'Status', 'Insurance No', 'Insurance Expiry'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredVehicles.map(vehicle => [
-        vehicle.vehicleId || '',
-        vehicle.vehicleType || '',
-        vehicle.capacity || '',
-        vehicle.status || '',
-        vehicle.insuranceNo || '',
-        vehicle.insuranceExpDate ? new Date(vehicle.insuranceExpDate).toLocaleDateString() : ''
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `vehicles_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
+  // Generate and export PDF
+  const generatePDF = () => {
+    // Create PDF content with styling
+    const printContent = `
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              color: #333;
+            }
+            h1 {
+              color: #CC7722;
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .header-info {
+              text-align: right;
+              margin-bottom: 20px;
+              font-size: 12px;
+              color: #666;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th {
+              background-color: #F5EFE6;
+              color: #8B4513;
+              padding: 12px;
+              text-align: left;
+              font-size: 14px;
+            }
+            td {
+              padding: 10px;
+              border-bottom: 1px solid #ddd;
+              font-size: 13px;
+            }
+            .status {
+              padding: 4px 8px;
+              border-radius: 12px;
+              font-size: 12px;
+              font-weight: bold;
+            }
+            .status-available { background: #dcfce7; color: #166534; }
+            .status-inuse { background: #dbeafe; color: #1e40af; }
+            .status-maintenance { background: #fef9c3; color: #854d0e; }
+            .status-outofservice { background: #fee2e2; color: #991b1b; }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Vehicle Fleet Report</h1>
+          <div class="header-info">
+            <div>Generated on: ${new Date().toLocaleDateString()}</div>
+            <div>Total Vehicles: ${filteredVehicles.length}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Vehicle ID</th>
+                <th>Type</th>
+                <th>Capacity</th>
+                <th>Status</th>
+                <th>Insurance No</th>
+                <th>Insurance Expiry</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredVehicles.map(vehicle => `
+                <tr>
+                  <td><strong>${vehicle.vehicleId || '-'}</strong></td>
+                  <td>${vehicle.vehicleType || '-'}</td>
+                  <td>${vehicle.capacity || '-'}</td>
+                  <td>
+                    <span class="status status-${vehicle.status?.toLowerCase().replace(/\s+/g, '')}">
+                      ${vehicle.status || '-'}
+                    </span>
+                  </td>
+                  <td>${vehicle.insuranceNo || '-'}</td>
+                  <td>${vehicle.insuranceExpDate ? new Date(vehicle.insuranceExpDate).toLocaleDateString() : '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+            <p>Cinna Ceylon Vehicle Management System</p>
+            <p>This is an automatically generated report. Please verify all information.</p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    // Open in new window and trigger print
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Trigger print dialog after a short delay to ensure content is loaded
+    setTimeout(() => {
+      printWindow.print();
+      // Close the window after printing (optional)
+      // printWindow.close();
+    }, 250);
   };
 
   // Add vehicle
   const handleSubmit = async e => {
     e.preventDefault();
     setMessage("");
+
+    // Validate insurance number before submission
+    if (!validateInsuranceNo(form.insuranceNo)) {
+      setFormErrors(prev => ({
+        ...prev,
+        insuranceNo: 'Insurance number must start with "INS" followed by 6 digits'
+      }));
+      setMessage("Please fix the errors before submitting.");
+      return;
+    }
+
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => {
       if (value) formData.append(key, value);
@@ -223,49 +342,64 @@ const VehicleManagerDashboard = () => {
       }}
     >
       <div className="max-w-5xl w-full p-8 bg-gradient-to-br from-white/90 to-amber-50/90 rounded-xl shadow-lg">
-        <h2 className="text-3xl font-extrabold mb-6 text-[#8B4513] tracking-tight flex items-center gap-2">
-          <FaTruck className="inline-block mr-2 text-[#CC7722]" /> Vehicle Management
+        <h2 className="text-3xl font-extrabold mb-6 text-[#8B4513] tracking-tight flex items-center gap-2 hover:scale-105 transform transition-transform duration-300">
+          <FaTruck className="inline-block mr-2 text-[#CC7722] animate-bounce-subtle" /> Vehicle Management
+          <span className="ml-auto text-sm font-medium bg-[#CC7722] text-white px-3 py-1 rounded-full animate-pulse">
+            Live Dashboard
+          </span>
         </h2>
         
         {/* Statistics Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-4 rounded-lg shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="transform hover:scale-105 transition-all duration-300 bg-gradient-to-br from-emerald-400 via-green-500 to-green-600 text-white p-6 rounded-xl shadow-xl hover:shadow-2xl cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">Available</p>
-                <p className="text-2xl font-bold">{vehicles.filter(v => v.status === 'Available').length}</p>
+                <p className="text-green-100 text-sm font-medium uppercase tracking-wider">Available</p>
+                <p className="text-3xl font-bold mt-2 font-mono">{vehicles.filter(v => v.status === 'Available').length}</p>
+                <p className="text-green-100 text-xs mt-2">Vehicles Ready</p>
               </div>
-              <FaCheckCircle className="text-3xl text-green-200" />
+              <div className="bg-white/20 p-3 rounded-lg">
+                <FaCheckCircle className="text-3xl text-white animate-pulse" />
+              </div>
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-blue-400 to-blue-600 text-white p-4 rounded-lg shadow-lg">
+          <div className="transform hover:scale-105 transition-all duration-300 bg-gradient-to-br from-blue-400 via-indigo-500 to-blue-600 text-white p-6 rounded-xl shadow-xl hover:shadow-2xl cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm">In Use</p>
-                <p className="text-2xl font-bold">{vehicles.filter(v => v.status === 'In Use').length}</p>
+                <p className="text-blue-100 text-sm font-medium uppercase tracking-wider">In Use</p>
+                <p className="text-3xl font-bold mt-2 font-mono">{vehicles.filter(v => v.status === 'In Use').length}</p>
+                <p className="text-blue-100 text-xs mt-2">Active Vehicles</p>
               </div>
-              <FaTruck className="text-3xl text-blue-200" />
+              <div className="bg-white/20 p-3 rounded-lg">
+                <FaTruck className="text-3xl text-white animate-pulse" />
+              </div>
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white p-4 rounded-lg shadow-lg">
+          <div className="transform hover:scale-105 transition-all duration-300 bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 text-white p-6 rounded-xl shadow-xl hover:shadow-2xl cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-100 text-sm">Maintenance</p>
-                <p className="text-2xl font-bold">{vehicles.filter(v => v.status === 'Maintenance').length}</p>
+                <p className="text-yellow-100 text-sm font-medium uppercase tracking-wider">Maintenance</p>
+                <p className="text-3xl font-bold mt-2 font-mono">{vehicles.filter(v => v.status === 'Maintenance').length}</p>
+                <p className="text-yellow-100 text-xs mt-2">Under Service</p>
               </div>
-              <FaTools className="text-3xl text-yellow-200" />
+              <div className="bg-white/20 p-3 rounded-lg">
+                <FaTools className="text-3xl text-white animate-pulse" />
+              </div>
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-purple-400 to-purple-600 text-white p-4 rounded-lg shadow-lg">
+          <div className="transform hover:scale-105 transition-all duration-300 bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-500 text-white p-6 rounded-xl shadow-xl hover:shadow-2xl cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm">Total Fleet</p>
-                <p className="text-2xl font-bold">{vehicles.length}</p>
+                <p className="text-purple-100 text-sm font-medium uppercase tracking-wider">Total Fleet</p>
+                <p className="text-3xl font-bold mt-2 font-mono">{vehicles.length}</p>
+                <p className="text-purple-100 text-xs mt-2">All Vehicles</p>
               </div>
-              <FaCalendarAlt className="text-3xl text-purple-200" />
+              <div className="bg-white/20 p-3 rounded-lg">
+                <FaCalendarAlt className="text-3xl text-white animate-pulse" />
+              </div>
             </div>
           </div>
         </div>
@@ -289,7 +423,22 @@ const VehicleManagerDashboard = () => {
             <label htmlFor="status" className="font-semibold text-[#CC7722]">Status</label>
             <input id="status" name="status" placeholder="e.g. Available, In Service" value={form.status} onChange={handleChange} className="p-3 border rounded focus:ring-2 focus:ring-amber-400" />
             <label htmlFor="insuranceNo" className="font-semibold text-[#CC7722]">Insurance Number</label>
-            <input id="insuranceNo" name="insuranceNo" placeholder="e.g. INS123456" value={form.insuranceNo} onChange={handleChange} required className="p-3 border rounded focus:ring-2 focus:ring-amber-400" />
+            <div className="flex flex-col">
+              <input 
+                id="insuranceNo" 
+                name="insuranceNo" 
+                placeholder="e.g. INS123456" 
+                value={form.insuranceNo} 
+                onChange={handleChange} 
+                required 
+                className={`p-3 border rounded focus:ring-2 focus:ring-amber-400 ${formErrors.insuranceNo ? 'border-red-500' : ''}`}
+                pattern="INS\d{6}"
+                title="Insurance number must start with INS followed by 6 digits"
+              />
+              {formErrors.insuranceNo && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.insuranceNo}</p>
+              )}
+            </div>
             <label htmlFor="insuranceExpDate" className="font-semibold text-[#CC7722]">Insurance Expiry Date</label>
             <input id="insuranceExpDate" name="insuranceExpDate" type="date" value={form.insuranceExpDate} onChange={handleChange} required className="p-3 border rounded focus:ring-2 focus:ring-amber-400" />
             <label htmlFor="insuranceFile" className="font-semibold text-[#CC7722]">Insurance File</label>
@@ -298,7 +447,16 @@ const VehicleManagerDashboard = () => {
             <input id="serviceDate" name="serviceDate" type="date" value={form.serviceDate} onChange={handleChange} className="p-3 border rounded focus:ring-2 focus:ring-amber-400" />
             <label htmlFor="serviceFile" className="font-semibold text-[#CC7722]">Service File</label>
             <input id="serviceFile" name="serviceFile" type="file" accept=".pdf,.jpg,.png" onChange={handleChange} className="p-3 border rounded focus:ring-2 focus:ring-amber-400" />
-            <button type="submit" className="col-span-2 bg-gradient-to-r from-[#CC7722] to-[#c5a35a] text-white py-3 rounded font-bold shadow hover:scale-105 transition">Add Vehicle</button>
+            <button 
+              type="submit" 
+              className="col-span-2 bg-gradient-to-r from-[#CC7722] to-[#c5a35a] text-white py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-102 transition-all duration-300 group relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <div className="flex items-center justify-center gap-2">
+                <FaPlus className="text-sm group-hover:rotate-90 transition-transform duration-300" />
+                <span className="group-hover:translate-x-1 transition-transform duration-300">Add Vehicle</span>
+              </div>
+            </button>
           </form>
         </div>
         <div className="bg-white/80 rounded-lg shadow p-6">
@@ -338,12 +496,13 @@ const VehicleManagerDashboard = () => {
             
             <div className="flex items-center gap-2">
               <button
-                onClick={exportToCSV}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md"
-                title="Export to CSV"
+                onClick={generatePDF}
+                className="group relative flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                title="Generate PDF Report"
               >
-                <FaDownload className="text-sm" />
-                Export
+                <FaDownload className="text-sm group-hover:-translate-y-1 transition-transform duration-300" />
+                <span className="font-medium group-hover:translate-x-0.5 transition-transform duration-300">Generate Report</span>
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 rounded-lg transition-opacity duration-300"></div>
               </button>
             </div>
             
@@ -387,11 +546,11 @@ const VehicleManagerDashboard = () => {
                     </tr>
                   ) : (
                     filteredVehicles.map(vehicle => (
-                      <tr key={vehicle._id} className="border-t cursor-pointer hover:bg-amber-50 transition" onClick={() => navigate(`/vehicle/${vehicle._id}`)}>
-                        <td className="p-3 font-semibold text-[#CC7722]">{vehicle.vehicleId || '-'}</td>
-                        <td className="p-3 font-semibold">{vehicle.vehicleType}</td>
-                        <td className="p-3">{vehicle.capacity}</td>
-                        <td className="p-3">
+                      <tr key={vehicle._id} className="border-t hover:bg-amber-50 transition">
+                        <td className="p-3 font-semibold text-[#CC7722] cursor-pointer" onClick={() => navigate(`/vehicle/${vehicle._id}`)}>{vehicle.vehicleId || '-'}</td>
+                        <td className="p-3 font-semibold cursor-pointer" onClick={() => navigate(`/vehicle/${vehicle._id}`)}>{vehicle.vehicleType}</td>
+                        <td className="p-3 cursor-pointer" onClick={() => navigate(`/vehicle/${vehicle._id}`)}>{vehicle.capacity}</td>
+                        <td className="p-3 cursor-pointer" onClick={() => navigate(`/vehicle/${vehicle._id}`)}>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             vehicle.status === 'Available' ? 'bg-green-100 text-green-800' :
                             vehicle.status === 'In Use' ? 'bg-blue-100 text-blue-800' :
@@ -401,41 +560,49 @@ const VehicleManagerDashboard = () => {
                             {vehicle.status}
                           </span>
                         </td>
-                        <td className="p-3">{vehicle.insuranceNo}</td>
-                        <td className="p-3">{vehicle.insuranceExpDate ? new Date(vehicle.insuranceExpDate).toLocaleDateString() : ""}</td>
+                        <td className="p-3 cursor-pointer" onClick={() => navigate(`/vehicle/${vehicle._id}`)}>{vehicle.insuranceNo}</td>
+                        <td className="p-3 cursor-pointer" onClick={() => navigate(`/vehicle/${vehicle._id}`)}>{vehicle.insuranceExpDate ? new Date(vehicle.insuranceExpDate).toLocaleDateString() : ""}</td>
                         <td className="p-3">
-                          <div className="flex flex-wrap gap-1 justify-center">
+                          <div className="flex flex-wrap gap-2 justify-center">
                             <button 
-                              onClick={e => { e.stopPropagation(); handleDelete(vehicle._id); }} 
-                              className="bg-red-600 text-white px-2 py-1 rounded shadow hover:bg-red-700 transition text-xs flex items-center gap-1"
+                              onClick={(e) => handleDelete(vehicle._id)} 
+                              className="group relative bg-gradient-to-r from-red-500 to-red-600 text-white w-[90px] h-[32px] rounded-lg shadow-lg hover:shadow-xl hover:from-red-600 hover:to-red-700 transform hover:-translate-y-0.5 transition-all duration-200 text-xs"
                               title="Delete Vehicle"
                             >
-                              <FaTrash className="text-xs" />
-                              Delete
+                              <div className="absolute inset-0 flex items-center justify-center gap-1.5">
+                                <FaTrash className="text-xs group-hover:rotate-12 transition-transform duration-200" />
+                                <span>Delete</span>
+                              </div>
                             </button>
                             <button 
-                              onClick={e => { e.stopPropagation(); navigate(`/vehicle/${vehicle._id}/update`); }} 
-                              className="bg-blue-600 text-white px-2 py-1 rounded shadow hover:bg-blue-700 transition text-xs flex items-center gap-1"
+                              onClick={(e) => navigate(`/vehicle/${vehicle._id}/update`)}
+                              className="group relative bg-gradient-to-r from-blue-500 to-indigo-500 text-white w-[90px] h-[32px] rounded-lg shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-indigo-600 transform hover:-translate-y-0.5 transition-all duration-200 text-xs"
                               title="Update Vehicle"
                             >
-                              <FaEdit className="text-xs" />
-                              Update
+                              <div className="absolute inset-0 flex items-center justify-center gap-1.5">
+                                <FaEdit className="text-xs group-hover:rotate-12 transition-transform duration-200" />
+                                <span>Update</span>
+                              </div>
                             </button>
                             <button 
-                              onClick={e => { e.stopPropagation(); fetchMaintenanceHistory(vehicle._id); }} 
-                              className="bg-green-600 text-white px-2 py-1 rounded shadow hover:bg-green-700 transition text-xs flex items-center gap-1"
+                              onClick={(e) => fetchMaintenanceHistory(vehicle._id)}
+                              className="group relative bg-gradient-to-r from-emerald-500 to-green-600 text-white w-[90px] h-[32px] rounded-lg shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-green-700 transform hover:-translate-y-0.5 transition-all duration-200 text-xs"
                               title="Maintenance History"
                             >
-                              <FaClipboardCheck className="text-xs" />
-                              Maintenance
+                              <div className="absolute inset-0 flex items-center justify-center gap-1.5">
+                                <FaClipboardCheck className="text-xs group-hover:rotate-12 transition-transform duration-200" />
+                                <span>Service</span>
+                              </div>
                             </button>
                             <button 
-                              onClick={e => { e.stopPropagation(); fetchAccidentHistory(vehicle._id); }} 
-                              className="bg-orange-600 text-white px-2 py-1 rounded shadow hover:bg-orange-700 transition text-xs flex items-center gap-1"
+                              onClick={(e) => fetchAccidentHistory(vehicle._id)}
+                              className="group relative bg-gradient-to-r from-amber-500 to-orange-600 text-white w-[90px] h-[32px] rounded-lg shadow-lg hover:shadow-xl hover:from-amber-600 hover:to-orange-700 transform hover:-translate-y-0.5 transition-all duration-200 text-xs"
                               title="Accident History"
                             >
-                              <FaExclamationTriangle className="text-xs" />
-                              Accidents
+                              <div className="absolute inset-0 flex items-center justify-center gap-1.5">
+                                <FaExclamationTriangle className="text-xs group-hover:rotate-12 transition-transform duration-200" />
+                                <span>Accident</span>
+                              </div>
                             </button>
                           </div>
                         </td>
@@ -524,6 +691,31 @@ const VehicleManagerDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Quick Action Buttons */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4">
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="bg-gradient-to-r from-[#CC7722] to-[#c5a35a] text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group relative"
+          title="Add New Vehicle"
+        >
+          <FaPlus className="text-xl" />
+          <span className="absolute right-full mr-3 bg-white text-[#CC7722] px-3 py-1 rounded-lg shadow-md text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+            Add New Vehicle
+          </span>
+        </button>
+        
+        <button
+          onClick={generatePDF}
+          className="bg-gradient-to-r from-green-500 to-green-600 text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group relative"
+          title="Generate PDF Report"
+        >
+          <FaDownload className="text-xl" />
+          <span className="absolute right-full mr-3 bg-white text-green-600 px-3 py-1 rounded-lg shadow-md text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+            Generate PDF Report
+          </span>
+        </button>
+      </div>
 
       {/* Accident History Modal */}
       {showAccidentHistory && (

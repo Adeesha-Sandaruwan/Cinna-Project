@@ -122,7 +122,7 @@ export default function Header() {
             ) : user.userType === 'supplier' ? (
               <Link to="/supplier/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
             ) : user.userType === 'driver' ? (
-              <Link to="/driver/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
+              <Link to="/dashboard/driver" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
             ) : null
           )}
         </div>

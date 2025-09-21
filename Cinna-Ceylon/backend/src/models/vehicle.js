@@ -8,6 +8,7 @@ const vehicleSchema = new mongoose.Schema({
   },
   vehicleType: {
     type: String,
+    required: true,
     enum: ["Truck", "truck", "Van", "van", "Bike", "bike", "Car", "car"],
   },
   capacity: {
@@ -21,6 +22,7 @@ const vehicleSchema = new mongoose.Schema({
   },
   insuranceNo: {
     type: String,
+    required: true,
     unique: true,
   },
   insuranceExpDate: {

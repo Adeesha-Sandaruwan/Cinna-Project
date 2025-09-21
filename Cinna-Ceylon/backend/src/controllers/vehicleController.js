@@ -104,12 +104,18 @@ export const updateVehicle = async (req, res) => {
     // Create detailed accident record if accident data is provided
     if (req.files && req.files.accidentReport && req.body.accidentCost) {
       try {
+        const parsedDate = new Date(req.body.accidentDate);
+        if (isNaN(parsedDate.getTime())) {
+          console.error("Invalid accident date:", req.body.accidentDate);
+          throw new Error("Invalid accident date format");
+        }
+        
         await Accident.create({
           vehicle: req.params.id,
           accidentCost: Number(req.body.accidentCost),
-          accidentReport: req.files.accidentReport[0].path,
+          accidentReport: path.basename(req.files.accidentReport[0].path),
           description: "Accident report submitted via vehicle details page",
-          accidentDate: new Date(),
+          accidentDate: parsedDate,
           severity: "Minor" // Default, can be updated later
         });
         console.log("Accident record created successfully");
@@ -192,34 +198,50 @@ export const submitAccidentReport = async (req, res) => {
     console.log("Accident submission - Files:", req.files);
     console.log("Accident submission - File (single):", req.file);
 
-    const { accidentCost, severity = "Minor", location, driverName } = req.body;
     const vehicleId = req.params.id;
+    console.log('Raw request body:', req.body);
+    console.log('Raw request files:', req.files);
+    console.log('Raw request file:', req.file);
+    
+    console.log('Processing accident submission with raw body:', req.body);
+    const { accidentCost, severity = "Minor", location, driverName, accidentDate: inputDate } = req.body;
+    console.log('Parsed input date:', inputDate);
 
     if (!accidentCost) {
       return res.status(400).json({ message: "Accident cost is required" });
+    }
+
+    if (!inputDate) {
+      console.log('Missing accident date in request');
+      return res.status(400).json({ message: "Accident date is required" });
     }
 
     if (!req.file) {
       return res.status(400).json({ message: "Accident report file is required" });
     }
 
+    const parsedDate = new Date(inputDate);
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: "Invalid accident date format" });
+    }
+    
     // Update vehicle with accident cost and report
     const vehicleUpdateData = {
       accidentCost: Number(accidentCost),
-      accidentReport: req.file.path,
+      accidentReport: path.basename(req.file.path),
       status: severity === "Critical" ? "Inactive" : "Maintenance"
     };
 
     const vehicle = await Vehicle.findByIdAndUpdate(vehicleId, vehicleUpdateData, { new: true });
     if (!vehicle) return res.status(404).json({ message: "Vehicle not found" });
-
-    // Create detailed accident record
+    
     const accidentRecord = await Accident.create({
       vehicle: vehicleId,
       accidentCost: Number(accidentCost),
-      accidentReport: req.file.path,
+      accidentReport: path.basename(req.file.path),
       description: "Accident report submitted via vehicle details page",
       severity: severity,
+      accidentDate: parsedDate,
       location: location || "",
       driverName: driverName || ""
     });
