@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import HeaderAfterLogin from './HeaderAfterLogin.jsx';
-import Footer from './Footer.jsx';
 import { FaCreditCard, FaLock, FaCheckCircle } from 'react-icons/fa';
 import { generateReceiptPDF } from './ReceiptPDF';
+import {
+  validateName,
+  validateEmail,
+  validatePhone,
+  validateAddress,
+  validatePostalCode,
+  validateCardNumber,
+  validateCardExpiry,
+  validateCVV
+} from '../utils/validations.jsx';
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
@@ -29,6 +37,8 @@ const Checkout = () => {
     address: "", city: "", postalCode: "",
     cardNumber: "", cardName: "", expiryDate: "", cvv: ""
   });
+
+  const [errors, setErrors] = useState({});
 
   const [paymentMethod, setPaymentMethod] = useState("payNow");
 
@@ -93,19 +103,46 @@ const Checkout = () => {
     }
   };
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear the field-specific error as user types
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
   const validateForm = () => {
-    const required = ["firstName", "lastName", "email", "phone", "address", "city", "postalCode"];
-    for (let f of required) if (!formData[f]) return alert(`Please enter ${f}`), false;
+    const newErrors = {};
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return alert("Invalid email"), false;
+    // Shipping validations
+    try { validateName(formData.firstName); } catch (e) { newErrors.firstName = e.message; }
+    try { validateName(formData.lastName); } catch (e) { newErrors.lastName = e.message; }
+    try { validateEmail(formData.email); } catch (e) { newErrors.email = e.message; }
+    try { validatePhone(formData.phone); } catch (e) { newErrors.phone = e.message; }
+    try { validateAddress(formData.address); } catch (e) { newErrors.address = e.message; }
+    if (!formData.city || formData.city.trim().length < 2) newErrors.city = 'City must be at least 2 characters long';
+    try { validatePostalCode(formData.postalCode); } catch (e) { newErrors.postalCode = e.message; }
 
-    if (paymentMethod === "payNow") {
-      if (formData.cardNumber.length < 16) return alert("Invalid card number"), false;
-      if (formData.cvv.length < 3) return alert("Invalid CVV"), false;
+    // Payment validations when paying now
+    if (paymentMethod === 'payNow') {
+      try { validateCardNumber(formData.cardNumber); } catch (e) { newErrors.cardNumber = e.message; }
+      try { validateName(formData.cardName); } catch (e) { newErrors.cardName = e.message; }
+      try { validateCardExpiry(formData.expiryDate); } catch (e) { newErrors.expiryDate = e.message; }
+      try { validateCVV(formData.cvv); } catch (e) { newErrors.cvv = e.message; }
     }
 
+    // If there are any errors, set them and return false
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      // Focus first invalid field if running in browser
+      const firstInvalid = Object.keys(newErrors)[0];
+      const el = document.querySelector(`[name="${firstInvalid}"]`);
+      if (el && typeof el.focus === 'function') el.focus();
+      return false;
+    }
+
+    // Clear previous errors
+    setErrors({});
     return true;
   };
 
@@ -201,7 +238,6 @@ const Checkout = () => {
   if (orderComplete && orderDetails) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <HeaderAfterLogin />
         <div className="max-w-lg mx-auto p-8 bg-white rounded-2xl shadow-lg text-center mt-10">
           <FaCheckCircle className="mx-auto text-green-600" size={70} />
           <h1 className="text-3xl font-bold mt-4 text-gray-800">
@@ -233,29 +269,29 @@ const Checkout = () => {
             Continue Shopping
           </button>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HeaderAfterLogin />
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 p-6">
 
         <div className="space-y-8">
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h2 className="font-semibold text-xl mb-4 border-b pb-2">📦 Shipping Information</h2>
             {["firstName","lastName","email","phone","address","city","postalCode"].map(f => (
-              <input 
-                key={f} 
-                name={f} 
-                value={formData[f]} 
-                onChange={handleChange}
-                placeholder={f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')} 
-                className="w-full mb-3 p-3 border rounded-lg focus:ring-2 focus:ring-orange-400" 
-                required
-              />
+                <div key={f} className="mb-3">
+                  <input 
+                    name={f} 
+                    value={formData[f]} 
+                    onChange={handleChange}
+                    placeholder={f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')} 
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400" 
+                    required
+                  />
+                  {errors[f] && <p className="text-sm text-red-600 mt-1">{errors[f]}</p>}
+                </div>
             ))}
           </div>
 
@@ -274,11 +310,23 @@ const Checkout = () => {
 
             {paymentMethod==="payNow" && (
               <div className="mt-4 space-y-3">
-                <input name="cardNumber" placeholder="Card Number" maxLength="16" value={formData.cardNumber} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
-                <input name="cardName" placeholder="Cardholder Name" value={formData.cardName} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+                <div>
+                  <input name="cardNumber" placeholder="Card Number" maxLength="16" value={formData.cardNumber} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+                  {errors.cardNumber && <p className="text-sm text-red-600 mt-1">{errors.cardNumber}</p>}
+                </div>
+                <div>
+                  <input name="cardName" placeholder="Cardholder Name" value={formData.cardName} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+                  {errors.cardName && <p className="text-sm text-red-600 mt-1">{errors.cardName}</p>}
+                </div>
                 <div className="flex gap-3">
-                  <input name="expiryDate" placeholder="MM/YY" value={formData.expiryDate} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" required />
-                  <input name="cvv" placeholder="CVV" maxLength="4" value={formData.cvv || ''} onChange={handleChange} className="w-1/2 p-3 border rounded-lg" required />
+                  <div className="w-1/2">
+                    <input name="expiryDate" placeholder="MM/YY" value={formData.expiryDate} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+                    {errors.expiryDate && <p className="text-sm text-red-600 mt-1">{errors.expiryDate}</p>}
+                  </div>
+                  <div className="w-1/2">
+                    <input name="cvv" placeholder="CVV" maxLength="4" value={formData.cvv || ''} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+                    {errors.cvv && <p className="text-sm text-red-600 mt-1">{errors.cvv}</p>}
+                  </div>
                 </div>
                 <p className="text-sm text-gray-600 flex items-center"><FaLock className="mr-2"/> Secure Payment</p>
               </div>
@@ -332,7 +380,6 @@ const Checkout = () => {
             className="mt-4 text-gray-600 text-sm hover:underline">← Back</button>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

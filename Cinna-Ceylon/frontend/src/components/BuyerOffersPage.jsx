@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import HeaderAfterLogin from './HeaderAfterLogin';
-import Footer from './Footer';
 import OfferCard from './OfferCard';
 
 const COLORS = {
@@ -150,21 +148,18 @@ const BuyerOffersPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <HeaderAfterLogin />
         <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading offers...</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <HeaderAfterLogin />
       
       {/* Notification */}
       {notification.show && (
@@ -254,7 +249,6 @@ const BuyerOffersPage = () => {
         )}
       </div>
 
-      <Footer />
     </div>
   );
 };

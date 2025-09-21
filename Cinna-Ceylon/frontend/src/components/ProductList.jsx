@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Header from "./Header.jsx";
-import Footer from "./Footer.jsx";
 
 const COLORS = { 
   RICH_GOLD: "#c5a35a",
@@ -47,7 +45,6 @@ const ProductList = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <Header />
       <div className="p-10">
         <h1
           className="text-3xl font-bold text-center mb-8"
@@ -104,7 +101,6 @@ const ProductList = () => {
           ))}
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

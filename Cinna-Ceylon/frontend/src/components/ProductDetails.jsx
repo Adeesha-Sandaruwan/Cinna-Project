@@ -1,8 +1,7 @@
 // Import necessary libraries and components from React and other packages.
 import React, { useEffect, useState } from "react"; // Import React core, and the 'useEffect' and 'useState' hooks.
 import { useParams, Link, useNavigate } from "react-router-dom"; // Import routing hooks for accessing URL params, creating links, and programmatic navigation.
-import HeaderAfterLogin from "./HeaderAfterLogin.jsx"; // Import the header component for logged-in users.
-import Footer from "./Footer.jsx"; // Import the footer component.
+import { useAuth } from "../context/AuthContext";
 
 // Define a constant object to hold the theme colors for consistent styling.
 const COLORS = {
@@ -19,6 +18,7 @@ const ProductDetails = () => {
   const { id } = useParams();
   // Get the navigate function to programmatically redirect the user to other pages.
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // --- STATE MANAGEMENT ---
   // State to hold the fetched product object. Initial value is null.
@@ -100,6 +100,10 @@ const ProductDetails = () => {
 
   // Function to handle the "Add to Cart" button click.
   const addToCart = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     // Prevent action if there's no product or it's out of stock.
     if (!product || product.availableStock === 0) return;
 
@@ -142,6 +146,10 @@ const ProductDetails = () => {
 
   // Function to handle the "Buy Now" button click.
   const buyNow = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     // Prevent action if there's no product or it's out of stock.
     if (!product || product.availableStock === 0) return;
 
@@ -202,11 +210,9 @@ const ProductDetails = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <HeaderAfterLogin /> {/* Show header */}
         <div className="flex justify-center items-center min-h-screen">
           <p className="text-lg">Loading product details...</p> {/* Loading text */}
         </div>
-        <Footer /> {/* Show footer */}
       </div>
     );
   }
@@ -215,11 +221,9 @@ const ProductDetails = () => {
   if (!product) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <HeaderAfterLogin /> {/* Show header */}
         <div className="flex justify-center items-center min-h-screen">
           <p className="text-gray-600">Product not found</p> {/* Not found text */}
         </div>
-        <Footer /> {/* Show footer */}
       </div>
     );
   }
@@ -227,7 +231,6 @@ const ProductDetails = () => {
   // If the product was loaded successfully, render the full details page.
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <HeaderAfterLogin /> {/* Render the header */}
 
       <div className="container mx-auto px-4 py-8">
         {/* Main product details card */}
@@ -521,7 +524,6 @@ const ProductDetails = () => {
 
       </div> {/* End of container */}
 
-      <Footer /> {/* Render the footer */}
     </div>
   );
 };
