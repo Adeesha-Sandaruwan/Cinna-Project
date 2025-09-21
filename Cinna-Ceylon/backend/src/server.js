@@ -10,10 +10,17 @@ import connectDB from './config/db.js';
 import productRoutes from './routes/ProductRoutes.js';
 import cartRoutes from './routes/CartRoutes.js';
 import orderRoutes from './routes/OrderRoutes.js';
-//import reviewRoutes from './routes/ReviewRoutes.js';
+import reviewRoutes from './routes/ReviewRoutes.js';
 import supplierRoutes from './routes/SupplierRoutes.js';
 import supplyRecordRoutes from './routes/SupplyRecordRoutes.js';
+import rawMaterialRoutes from './routes/RawMaterialRoutes.js';
 import leaveReqRoutes from './routes/LeaveReqRoutes.js';
+import salaryRoutes from './routes/salaryRoutes.js';
+import supPaymentRoutes from "./routes/supPaymentRoutes.js";
+import deliveryPayoutRoutes from "./routes/deliveryPayoutRoutes.js";
+import financialReportRoutes from "./routes/financialReportRoutes.js";
+import offerRoutes from "./routes/offerRoutes.js";
+
 // Vehicle Management Routes
 import vehicleRoutes from './routes/vehicleRoutes.js';
 import accidentRoutes from './routes/accidentRoutes.js';
@@ -28,13 +35,22 @@ import adminUserRoutes from "./routes/adminUserRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import attendanceAdminRoutes from "./routes/attendanceAdminRoutes.js";
 
+
+
 dotenv.config();
 
 const app = express();
 
 // Enhanced CORS configuration for frontend
 app.use(cors({
-  origin: ['http://localhost:3002', 'http://127.0.0.1:3002'],
+  origin: [
+    'http://localhost:3000',    // Default React port
+    'http://localhost:3002',    // Configured React port  
+    'http://127.0.0.1:3000',    // Also allow the IP version
+    'http://127.0.0.1:3002',    // Configured IP version
+    'http://localhost:3002',    // Keep your existing one if needed
+    'http://127.0.0.1:3002'     // Keep your existing one if needed
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -52,9 +68,10 @@ app.use('/uploads', express.static(uploadsPath));
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
-//app.use('/api/reviews', reviewRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/supply-records', supplyRecordRoutes);
+app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/leave-requests', leaveReqRoutes);
 // Vehicle Management Routes
 app.use('/api/vehicles', vehicleRoutes);
@@ -62,6 +79,11 @@ app.use('/api/accidents', accidentRoutes);
 app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/emergencies', emergencyRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use("/api/salaries", salaryRoutes);
+app.use("/api/supplier-payments", supPaymentRoutes);
+app.use("/api/delivery-payouts", deliveryPayoutRoutes);
+app.use("/api/financial-reports", financialReportRoutes);
+app.use("/api/offers", offerRoutes);
 
 // User routes
 app.use("/api/users", userRoutes);
@@ -72,6 +94,7 @@ app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/attendance", attendanceRoutes);
 // Admin attendance management
 app.use("/api/admin/attendance", attendanceAdminRoutes);
+
 
 // Root test endpoint
 app.get('/', (req, res) => {

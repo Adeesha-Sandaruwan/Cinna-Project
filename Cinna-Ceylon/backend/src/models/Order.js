@@ -1,27 +1,23 @@
 import mongoose from 'mongoose';
 const { Schema, model, Types } = mongoose;
 
-// Order schema definition
 const orderSchema = new Schema({
-  // User ID or identifier of the buyer
   user: { type: String, required: true },
 
-  // List of ordered items
-  items: [{
-    // Reference to Product document
-    product: { type: Types.ObjectId, ref: 'Product', required: true },
+  // Items can be either a product or an offer/bundle
+  items: [
+    {
+      product: { type: Types.ObjectId, ref: 'Product' }, // optional for offers
+      offer: { type: Types.ObjectId, ref: 'Offer' }, // optional for regular products
+      qty: { type: Number, required: true },
+      price: { type: Number, required: true },
+      itemType: { type: String, enum: ['product', 'offer'], required: true }, // indicates type
+      originalPrice: Number, // optional, for offers to show discount
+    }
+  ],
 
-    // Quantity ordered
-    qty: { type: Number, required: true },
-
-    // Price per item at the time of order (to preserve history)
-    price: { type: Number, required: true }
-  }],
-
-  // Total amount charged for the order (all items combined)
   total: { type: Number, required: true },
 
-  // Shipping address details (embedded object)
   shippingAddress: {
     firstName: String,
     lastName: String,
@@ -32,18 +28,12 @@ const orderSchema = new Schema({
     postalCode: String
   },
 
-  // Payment method (e.g., "Credit Card", "PayPal", "Cash on Delivery")
-  paymentMethod: String,
+  paymentMethod: { type: String, enum: ['Credit Card', 'Pay at Delivery'], default: 'Pay at Delivery' },
+  status: { type: String, default: 'pending' } // pending, paid, shipped, delivered, etc.
 
-  // Order status (default = pending)
-  // Can later be updated to: shipped, delivered, cancelled, etc.
-  status: { type: String, default: 'pending' }
 }, { 
-  // Automatically add createdAt & updatedAt
   timestamps: true,
-
-  // Prevents mongoose from auto-creating indexes (better for production control)
-  autoIndex: false 
+  autoIndex: false // Disable automatic indexing
 });
 
 // Export Order model

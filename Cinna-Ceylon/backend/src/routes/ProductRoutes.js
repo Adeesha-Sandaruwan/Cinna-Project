@@ -30,12 +30,8 @@ router.put("/:id", upload.single("image"), updateProduct);
 // Delete a product by ID
 router.delete("/:id", deleteProduct);
 
-// ----------------- INVENTORY MANAGEMENT ROUTES ----------------- //
-
-// Update stock for a specific product (e.g., add/remove quantities)
+// Inventory management routes
 router.put("/:id/stock", updateStock);
-
-// Get overall inventory status (could include stock levels, reorder needs, etc.)
 router.get("/inventory/status", getInventoryStatus);
 
 export default router;

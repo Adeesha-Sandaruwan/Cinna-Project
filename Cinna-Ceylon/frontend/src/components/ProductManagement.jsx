@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";// brings react in to scope and use effect support fetching data
 import { Link } from "react-router-dom";//link navigates between routes without reloading the page.
-import HeaderAfterLogin from "./HeaderAfterLogin";
-import Footer from "./Footer";
 import {
   PencilIcon,
   TrashIcon,
@@ -155,7 +153,6 @@ export default function ProductManagement() { // defines and exports the main pa
 
   return ( // react component that returns JSX that defines what will render
     <div className="bg-gray-50 min-h-screen flex flex-col">  
-      <HeaderAfterLogin /> 
       <div className="p-6 flex-1">
         {message && (
           <div className="mb-4 text-center font-medium text-green-700 bg-green-100 py-2 rounded-xl">
@@ -353,7 +350,6 @@ export default function ProductManagement() { // defines and exports the main pa
         </div>
       </Modal>
 
-      <Footer />
     </div>
   );
 }

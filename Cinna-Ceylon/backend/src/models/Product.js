@@ -32,6 +32,8 @@ const productSchema = new mongoose.Schema(
     reorderLevel: { type: Number, default: 10, min: 0 },
 
     // Expiry date (required, useful for perishable products)
+    safetyStock: { type: Number, default: 5, min: 0 },
+    reorderLevel: { type: Number, default: 10, min: 0 },
     expiryDate: { type: Date, required: true },
 
     // Visibility of product (public: visible to all, private: hidden from customers)
@@ -45,6 +47,15 @@ const productSchema = new mongoose.Schema(
     timestamps: true 
   }
 );
+
+// Virtual field for available stock (sellable stock)
+productSchema.virtual('availableStock').get(function() {
+  return Math.max(0, this.stock - this.safetyStock);
+});
+
+// Ensure virtual fields are serialized
+productSchema.set('toJSON', { virtuals: true });
+productSchema.set('toObject', { virtuals: true });
 
 // Virtual field (not stored in DB) → calculates sellable stock
 productSchema.virtual('availableStock').get(function() {

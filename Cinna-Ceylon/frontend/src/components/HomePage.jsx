@@ -42,7 +42,8 @@ function HomePage() {
 
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased"> {/* Page background */}
-      
+      {/* Navbar */}
+      <Header />
 
       <main className="text-gray-800"> {/* Main content */}
         <section className="relative h-[70vh] md:h-[80vh] w-full"> {/* Hero section */}
@@ -218,7 +219,8 @@ function HomePage() {
         </section>
       </main>
 
-      <Footer /> {/* Footer */}
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

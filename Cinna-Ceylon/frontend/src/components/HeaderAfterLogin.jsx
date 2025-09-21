@@ -9,6 +9,7 @@ const navLinks = [
   { name: 'Wholesale', href: '/wholesale' },
   { name: 'About Us', href: '/about' },
   { name: 'Contact Us', href: '/contact' },
+  { name: 'Offers', href: '/buyer-offers' },
 ];
 
 export default function HeaderAfterLogin() {

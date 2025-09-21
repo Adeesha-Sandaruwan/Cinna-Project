@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { downloadCSV } from './downloadCSV';
@@ -61,6 +60,10 @@ const AdminDashboard = () => {
 
   const token = localStorage.getItem('token');
 
+  // Navigate to Product Management Dashboard
+  const goToProductDashboard = () => {
+    navigate('/admin/dashboard');
+  };
 
   // Fetch all users
   const fetchUsers = async () => {
@@ -263,6 +266,168 @@ const AdminDashboard = () => {
   };
 
   return (
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+          <div>
+            <button
+              onClick={goToProductDashboard}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-700 transition-colors mr-4"
+            >
+              Product Management
+            </button>
+            <button
+              onClick={() => navigate('/leave-management')}
+              className="bg-teal-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-700 transition-colors mr-4"
+            >
+              Leave Management
+            </button>
+            <button
+              onClick={() => { setShowCreate(true); setEditingId(null); setForm(initialForm); }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+            >
+              Create User
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          {/* Create User Modal */}
+          {showCreate && (
+            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+              <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+                <button onClick={handleCancel} className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl">&times;</button>
+                <h2 className="text-xl font-semibold mb-4">Create User</h2>
+                <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input name="username" value={form.username} onChange={handleChange} placeholder="Username" className="border p-2 rounded" required />
+                  <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="border p-2 rounded" required />
+                  <input name="password" value={form.password} onChange={handleChange} placeholder="Password" className="border p-2 rounded" type="password" required />
+                  <select name="userType" value={form.userType} onChange={handleChange} className="border p-2 rounded">
+                    <option value="buyer">Buyer</option>
+                    <option value="supplier">Supplier</option>
+                    <option value="driver">Driver</option>
+                  </select>
+                  {/* Only show role for managers */}
+                  <select
+                    name="role"
+                    value={form.role}
+                    onChange={handleChange}
+                    className="border p-2 rounded"
+                    disabled={form.userType !== 'delivery manager' && form.userType !== 'product manager' && form.userType !== 'finance manager' && form.userType !== 'user manager'}
+                  >
+                    <option value="">Select Role (Managers Only)</option>
+                    <option value="delivery manager">Delivery Manager</option>
+                    <option value="product manager">Product Manager</option>
+                    <option value="finance manager">Finance Manager</option>
+                    <option value="user manager">User Manager</option>
+                  </select>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
+                  </label>
+                  <input name="profile.name" value={form.profile.name} onChange={handleChange} placeholder="Full Name" className="border p-2 rounded" />
+                  <input name="profile.address" value={form.profile.address} onChange={handleChange} placeholder="Address" className="border p-2 rounded" />
+                  <input name="profile.phone" value={form.profile.phone} onChange={handleChange} placeholder="Phone" className="border p-2 rounded" />
+                  <div className="col-span-2 flex gap-2 mt-2">
+                    <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={loading}>Create</button>
+                    <button type="button" onClick={handleCancel} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+          {/* Edit User Modal */}
+          {editingId && (
+            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+              <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+                <button onClick={handleCancel} className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl">&times;</button>
+                <h2 className="text-xl font-semibold mb-4">Edit User</h2>
+                <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input name="username" value={form.username} onChange={handleChange} placeholder="Username" className="border p-2 rounded" required />
+                  <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="border p-2 rounded" required />
+                  <input name="password" value={form.password} onChange={handleChange} placeholder="New Password (optional)" className="border p-2 rounded" type="password" />
+                  <select name="userType" value={form.userType} onChange={handleChange} className="border p-2 rounded">
+                    <option value="buyer">Buyer</option>
+                    <option value="supplier">Supplier</option>
+                    <option value="driver">Driver</option>
+                  </select>
+                  {/* Only show role for managers */}
+                  <select
+                    name="role"
+                    value={form.role}
+                    onChange={handleChange}
+                    className="border p-2 rounded"
+                    disabled={!(form.userType === 'driver' || form.userType === 'supplier' || form.userType === 'buyer') ? false : true}
+                  >
+                    <option value="">Select Role (Managers Only)</option>
+                    <option value="delivery manager">Delivery Manager</option>
+                    <option value="product manager">Product Manager</option>
+                    <option value="finance manager">Finance Manager</option>
+                    <option value="user manager">User Manager</option>
+                  </select>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
+                  </label>
+                  <input name="profile.name" value={form.profile.name} onChange={handleChange} placeholder="Full Name" className="border p-2 rounded" />
+                  <input name="profile.address" value={form.profile.address} onChange={handleChange} placeholder="Address" className="border p-2 rounded" />
+                  <input name="profile.phone" value={form.profile.phone} onChange={handleChange} placeholder="Phone" className="border p-2 rounded" />
+                  <div className="col-span-2 flex gap-2 mt-2">
+                    <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={loading}>Update</button>
+                    <button type="button" onClick={handleCancel} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold mb-2">All Users</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white rounded shadow">
+              <thead>
+                <tr>
+                  <th className="p-2 border">Username</th>
+                  <th className="p-2 border">Email</th>
+                  <th className="p-2 border">Type</th>
+                  <th className="p-2 border">Role</th>
+                  <th className="p-2 border">Admin</th>
+                  <th className="p-2 border">Name</th>
+                  <th className="p-2 border">Address</th>
+                  <th className="p-2 border">Phone</th>
+                  <th className="p-2 border">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u._id} className="text-center">
+                    <td className="p-2 border">{u.username}</td>
+                    <td className="p-2 border">{u.email}</td>
+                    <td className="p-2 border capitalize">{u.userType}</td>
+                    <td className="p-2 border capitalize">{u.role || '-'}</td>
+                    <td className="p-2 border">{u.isAdmin ? 'Yes' : 'No'}</td>
+                    <td className="p-2 border">{u.profile?.name || ''}</td>
+                    <td className="p-2 border">{u.profile?.address || ''}</td>
+                    <td className="p-2 border">{u.profile?.phone || ''}</td>
+                    <td className="p-2 border flex gap-2 justify-center">
+                      <button onClick={() => handleEdit(u)} className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-700">Edit</button>
+                      <button onClick={() => handleDelete(u._id)} className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-800">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Attendance Section Link */}
+        <div className="mt-12">
+          <button onClick={() => navigate('/dashboard/attendance-records')} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            View Attendance Records
+          </button>
+        </div>
+      </div>
+    </div>
+
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
