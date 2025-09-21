@@ -116,7 +116,7 @@ export default function Header() {
           ))}
           {user && (
             user.isAdmin ? (
-              <Link to="/admin/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Admin Dashboard</Link>
+              <Link to="/dashboard/admin" className="hover:text-[#FFD700] transition-colors duration-200">Admin Dashboard</Link>
             ) : user.userType === 'buyer' ? (
               <Link to="/buyer/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Buyer Dashboard</Link>
             ) : user.userType === 'supplier' ? (
@@ -202,7 +202,7 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.isAdmin ? <Link to="/admin/dashboard" onClick={closeAllMenus}>Admin Dashboard</Link> :
+            user.isAdmin ? <Link to="/dashboard/admin" onClick={closeAllMenus}>Admin Dashboard</Link> :
             user.userType === 'buyer' ? <Link to="/buyer/dashboard" onClick={closeAllMenus}>Buyer Dashboard</Link> :
             user.userType === 'supplier' ? <Link to="/supplier/dashboard" onClick={closeAllMenus}>Supplier Dashboard</Link> :
             user.userType === 'driver' ? <Link to="/driver/dashboard" onClick={closeAllMenus}>Driver Dashboard</Link> :
