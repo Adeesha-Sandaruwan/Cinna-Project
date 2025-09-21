@@ -31,7 +31,6 @@ import { BuyerDashboard, SupplierDashboard, DriverDashboard, AdminDashboard } fr
 import AttendanceRecords from './components/dashboard/AttendanceRecords';
 
 // E-commerce
-import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
 import Cart from "./components/Cart.jsx";
 import Checkout from "./components/Checkout.jsx";
 
@@ -63,8 +62,10 @@ import EmergencyManagement from "./components/EmergencyManagement.jsx";
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <AuthProvider>
+      <Router>
+        <Header />
+        <Routes>
         {/* Main Website Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutUs />} />
@@ -104,12 +105,8 @@ function App() {
         <Route path="/maintenance" element={<MaintenanceManagement />} />
         <Route path="/accidents" element={<AccidentManagement />} />
         <Route path="/emergencies" element={<EmergencyManagement />} />
-      </Routes>
-    </Router>
-    <AuthProvider>
-      <Router>
-        <Header />
-        <Routes>
+
+        {/* Duplicate routes from second section */}
           {/* Main Website Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutUs />} />
@@ -136,7 +133,6 @@ function App() {
           {/* E-commerce */}
           <Route path="/cart/:userId?" element={<Cart />} />
           <Route path="/checkout/:userId?" element={<Checkout />} />
-          <Route path="/leaverequestform" element={<LeaveRequestForm />} />
           <Route path="/supplierform" element={<SuplierForm />} />
 
           {/* Vehicle Management */}

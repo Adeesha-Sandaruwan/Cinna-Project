@@ -20,8 +20,9 @@ const ProductList = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Using relative URL to work with webpack proxy
-        const res = await fetch("/api/products");
+        // Using environment variable for API URL
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+        const res = await fetch(`${baseUrl}/api/products`);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
@@ -35,7 +36,8 @@ const ProductList = () => {
         setProducts(filteredProducts);
       } catch (err) {
         console.error("❌ Error fetching products:", err);
-        setError(err.message);
+        setError(`Error loading products: ${err.message}`);
+        console.log('Backend URL:', process.env.REACT_APP_API_URL || 'http://localhost:5001');
       } finally {
         setLoading(false);
       }
