@@ -1,9 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// Website pages
+// Toasts
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Contexts
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 
@@ -36,9 +38,14 @@ import AttendanceRecords from './components/dashboard/AttendanceRecords';
 import Cart from "./components/Cart.jsx";
 import Checkout from "./components/Checkout.jsx";
 
-// HR & Finance
+// Supplier & HR
+import SupplierForm from "./components/SupplierForm.jsx";
+import SupplierDashboardPage from "./components/SupplierDashboard.jsx";
+import SupplierReport from "./components/SupplierReport.jsx";
+import RawMaterialPage from "./components/RawMaterialPage.jsx";
+import WholesalePage from "./components/WholesalePage.jsx";
+import LeaveRequestManagement from "./components/LeaveRequestManagement.jsx";
 import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
-import SuplierForm from "./components/SupplierForm.jsx";
 import SalaryForm from './components/SalaryForm';
 import FinancialReportForm from './components/FinancialReportForm';
 import SupPaymentForm from './components/SupPaymentForm';
@@ -56,7 +63,6 @@ import DeliveryManagerDashboard from "./components/DeliveryManagerDashboard.jsx"
 import VehicleDetailsPage from "./components/VehicleDetailsPage.jsx";
 import VehicleUpdatePage from "./components/VehicleUpdatePage.jsx";
 
-// Management System
 // Management Systems
 import MaintenanceManagement from "./components/MaintenanceManagement.jsx";
 import AccidentManagement from "./components/AccidentManagement.jsx";
@@ -69,48 +75,6 @@ function App() {
         <Router>
           <Header />
           <Routes>
-          {/* Main Website Routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/contact" element={<ContactUs />} />
-          
-          {/* Product Routes */}
-          <Route path="/product_form" element={<ProductForm />} />
-          <Route path="/products" element={<ProductList />} />
-          <Route path="/products/:id" element={<ProductDetails />} />
-          <Route path="/cart/:userId?" element={<Cart />} />
-          <Route path="/checkout/:userId?" element={<Checkout />} />
-          
-          {/* Admin Management Routes */}
-          <Route path="/admin/products" element={<ProductManagement />} />
-          <Route path="/admin/dashboard" element={<ProductManagerDashboard />} />
-          <Route path="/leaverequestform" element={<LeaveRequestForm />} />
-          <Route path="/supplierform" element={<SuplierForm />} />
-          <Route path='/salary_form' element={<SalaryForm />} />
-          <Route path='/financial-report-form' element={<FinancialReportForm />} />
-          <Route path='/sup-payment-form' element={<SupPaymentForm />} />
-          <Route path='/delivery-payout-form' element={<DeliveryPayoutForm />} />
-          <Route path='/offer-card' element={<OfferCard />} />
-          <Route path='/offer-form' element={<OfferForm />} />
-          <Route path='/offer-page' element={<OffersPage />} />
-          <Route path='/buyer-offers' element={<BuyerOffersPage />} />
-          
-          {/* Vehicle Management Routes */}
-          <Route path="/vehicles" element={<VehicleManagerDashboard />} />
-          <Route path="/vehicle-manager" element={<VehicleManagerDashboard />} />
-          <Route path="/vehicles/:id" element={<VehicleDetailsPage />} />
-          <Route path="/vehicle/:id" element={<VehicleDetailsPage />} />
-          <Route path="/vehicle/:id/update" element={<VehicleUpdatePage />} />
-          <Route path="/delivery" element={<DeliveryManagerDashboard />} />
-          <Route path="/delivery-manager" element={<DeliveryManagerDashboard />} />
-          <Route path="/driver" element={<DriverDashboard />} />
-          
-          {/* Management System Routes */}
-          <Route path="/maintenance" element={<MaintenanceManagement />} />
-          <Route path="/accidents" element={<AccidentManagement />} />
-          <Route path="/emergencies" element={<EmergencyManagement />} />
-
-          {/* Duplicate routes from second section */}
             {/* Main Website Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutUs />} />
@@ -120,6 +84,10 @@ function App() {
             <Route path="/product_form" element={<ProductForm />} />
             <Route path="/products" element={<ProductList />} />
             <Route path="/products/:id" element={<ProductDetails />} />
+            <Route path="/cart/:userId?" element={<Cart />} />
+            <Route path="/checkout/:userId?" element={<Checkout />} />
+
+            {/* Admin/Product Management */}
             <Route path="/admin/products" element={<ProductManagement />} />
             <Route path="/admin/dashboard" element={<ProductManagerDashboard />} />
 
@@ -135,10 +103,24 @@ function App() {
             <Route path="/dashboard/admin" element={<AdminDashboard />} />
             <Route path="/dashboard/attendance-records" element={<AttendanceRecords />} />
 
-            {/* E-commerce */}
-            <Route path="/cart/:userId?" element={<Cart />} />
-            <Route path="/checkout/:userId?" element={<Checkout />} />
-            <Route path="/supplierform" element={<SuplierForm />} />
+            {/* Supplier & HR Management */}
+            <Route path="/supplierform" element={<SupplierForm />} />
+            <Route path="/supplier-dashboard/:id" element={<SupplierDashboardPage />} />
+            <Route path="/supplier-report/:id" element={<SupplierReport />} />
+            <Route path="/raw-material-form/:supplierId" element={<RawMaterialPage />} />
+            <Route path="/wholesale" element={<WholesalePage />} />
+            <Route path="/leave-management" element={<LeaveRequestManagement />} />
+            <Route path="/leaverequestform" element={<LeaveRequestForm />} />
+            <Route path='/salary_form' element={<SalaryForm />} />
+            <Route path='/financial-report-form' element={<FinancialReportForm />} />
+            <Route path='/sup-payment-form' element={<SupPaymentForm />} />
+            <Route path='/delivery-payout-form' element={<DeliveryPayoutForm />} />
+
+            {/* Offers */}
+            <Route path='/offer-card' element={<OfferCard />} />
+            <Route path='/offer-form' element={<OfferForm />} />
+            <Route path='/offer-page' element={<OffersPage />} />
+            <Route path='/buyer-offers' element={<BuyerOffersPage />} />
 
             {/* Vehicle Management */}
             <Route path="/vehicles" element={<VehicleManagerDashboard />} />
@@ -155,6 +137,7 @@ function App() {
             <Route path="/emergencies" element={<EmergencyManagement />} />
           </Routes>
           <Footer />
+          <ToastContainer />
         </Router>
       </CartProvider>
     </AuthProvider>

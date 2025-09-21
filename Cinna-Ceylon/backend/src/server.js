@@ -10,9 +10,10 @@ import connectDB from './config/db.js';
 import productRoutes from './routes/ProductRoutes.js';
 import cartRoutes from './routes/CartRoutes.js';
 import orderRoutes from './routes/OrderRoutes.js';
-//import reviewRoutes from './routes/ReviewRoutes.js';
+import reviewRoutes from './routes/ReviewRoutes.js';
 import supplierRoutes from './routes/SupplierRoutes.js';
 import supplyRecordRoutes from './routes/SupplyRecordRoutes.js';
+import rawMaterialRoutes from './routes/RawMaterialRoutes.js';
 import leaveReqRoutes from './routes/LeaveReqRoutes.js';
 import salaryRoutes from './routes/salaryRoutes.js';
 import supPaymentRoutes from "./routes/supPaymentRoutes.js";
@@ -33,6 +34,8 @@ import userRoutes from "./routes/userRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import attendanceAdminRoutes from "./routes/attendanceAdminRoutes.js";
+
+
 
 dotenv.config();
 
@@ -65,9 +68,10 @@ app.use('/uploads', express.static(uploadsPath));
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
-//app.use('/api/reviews', reviewRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/supply-records', supplyRecordRoutes);
+app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/leave-requests', leaveReqRoutes);
 // Vehicle Management Routes
 app.use('/api/vehicles', vehicleRoutes);
@@ -90,6 +94,7 @@ app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/attendance", attendanceRoutes);
 // Admin attendance management
 app.use("/api/admin/attendance", attendanceAdminRoutes);
+
 
 // Root test endpoint
 app.get('/', (req, res) => {
