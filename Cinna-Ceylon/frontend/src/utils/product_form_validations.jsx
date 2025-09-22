@@ -21,8 +21,8 @@ export const validateDescription = (description) => {
   if (description.trim().length < 5) {
     return "Description must be at least 5 characters";
   }
-  if (description.length > 1000) {
-    return "Description cannot exceed 1000 characters";
+  if (description.length > 2000) {
+    return "Description cannot exceed 2000 characters";
   }
   return "";
 };

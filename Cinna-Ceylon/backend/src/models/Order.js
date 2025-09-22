@@ -3,7 +3,6 @@ const { Schema, model, Types } = mongoose;
 
 const orderSchema = new Schema({
   user: { type: String, required: true },
-
   // Items can be either a product or an offer/bundle
   items: [
     {
@@ -15,7 +14,6 @@ const orderSchema = new Schema({
       originalPrice: Number, // optional, for offers to show discount
     }
   ],
-
   total: { type: Number, required: true },
 
   shippingAddress: {
@@ -27,9 +25,11 @@ const orderSchema = new Schema({
     city: String,
     postalCode: String
   },
-
-  paymentMethod: { type: String, enum: ['Credit Card', 'Pay at Delivery'], default: 'Pay at Delivery' },
-  status: { type: String, default: 'pending' } // pending, paid, shipped, delivered, etc.
+  paymentMethod: 
+  { type: String, enum: ['Credit Card', 'Pay at Delivery'], default: 'Pay at Delivery' },
+ 
+  status: 
+  { type: String, default: 'pending' } // pending, paid etc.
 
 }, { 
   timestamps: true,
