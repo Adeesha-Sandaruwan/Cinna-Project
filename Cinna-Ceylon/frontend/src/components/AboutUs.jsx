@@ -52,7 +52,8 @@ const teamMembers = [
 function AboutUs() {
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }}>
-       {/* Show top bar */}
+      {/* Show top bar */}
+      <Header />
 
       <main>
         {/* Hero Section */}
@@ -166,7 +167,8 @@ function AboutUs() {
         </section>
       </main>
 
-      <Footer /> {/* Bottom footer */}
+      {/* Bottom footer */}
+      <Footer />
     </div>
   );
 }

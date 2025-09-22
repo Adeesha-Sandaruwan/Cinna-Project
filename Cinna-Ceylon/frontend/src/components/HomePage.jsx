@@ -42,7 +42,8 @@ function HomePage() {
 
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased"> {/* Page background */}
-     {/* Navbar */}
+      {/* Navbar */}
+      <Header />
 
       <main className="text-gray-800"> {/* Main content */}
         <section className="relative h-[70vh] md:h-[80vh] w-full"> {/* Hero section */}
@@ -85,7 +86,8 @@ function HomePage() {
           </div>
         </section>
 
-        <AnimatedSection className="py-16"> {/* About section */}
+        {/* About Section */}
+        <AnimatedSection className="py-16">
           <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="mt-4 text-gray-700 leading-relaxed">
@@ -124,7 +126,8 @@ function HomePage() {
           </div>
         </AnimatedSection>
 
-        <AnimatedSection className="py-12"> {/* Why choose us */}
+        {/* Why Choose Us */}
+        <AnimatedSection className="py-12">
           <div className="max-w-7xl mx-auto px-6 md:px-8 text-center">
             <h3 className="text-xl font-semibold" style={{ color: COLORS.RICH_GOLD }}>Why choose CinnaCeylon?</h3>
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -152,7 +155,8 @@ function HomePage() {
           </div>
         </AnimatedSection>
 
-        <AnimatedSection className="py-16"> {/* Featured products */}
+        {/* Featured Products */}
+        <AnimatedSection className="py-16">
           <div className="max-w-7xl mx-auto px-6 md:px-8">
             <div className="text-center max-w-2xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}>
@@ -202,7 +206,8 @@ function HomePage() {
           </div>
         </AnimatedSection>
 
-        <section className="py-16 bg-gradient-to-r from-white to-white"> {/* Newsletter */}
+        {/* Newsletter */}
+        <section className="py-16 bg-gradient-to-r from-white to-white">
           <div className="max-w-3xl mx-auto px-6">
             <h3 className="text-2xl font-bold" style={{ color: COLORS.DARK_SLATE }}>Join the Spice Route</h3>
             <p className="mt-2 text-gray-600">Sign up for offers, recipes & stories.</p>
@@ -218,7 +223,8 @@ function HomePage() {
         </section>
       </main>
 
-      <Footer /> {/* Footer */}
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

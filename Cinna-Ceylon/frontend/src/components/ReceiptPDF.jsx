@@ -1,52 +1,63 @@
-import jsPDF from 'jspdf';
-import logo from '../assets/images/logo.png';
+import jsPDF from 'jspdf';              // Import jsPDF library for creating PDFs
+import logo from '../assets/images/logo.png';  // Import your logo to include in the receipt
 
+// Function to generate a PDF receipt
 export const generateReceiptPDF = (orderDetails, cart) => {
-  const doc = new jsPDF();
-  
+  const doc = new jsPDF();   // Create a new PDF document instance
+
+  // 🔹 Function to add the header (logo, company info, line)
   const addHeader = () => {
-    // Add logo
     const img = new Image();
-    img.src = logo;
-    doc.addImage(img, 'PNG', 85, 15, 35, 35);
-    
-    // Company details
+    img.src = logo;  // Load your logo image
+    doc.addImage(img, 'PNG', 85, 15, 35, 35); // Add logo (x, y, width, height)
+
     doc.setFontSize(22);
-    doc.setTextColor("#CC7722");
+    doc.setTextColor("#CC7722");  // Cinnamon color branding
     doc.text("Cinna Ceylon", 105, 65, { align: "center" });
-    
+
     doc.setFontSize(10);
     doc.setTextColor("#000000");
     doc.text("Premium Ceylon Cinnamon Products", 105, 72, { align: "center" });
     doc.text("123 Spice Road, Colombo, Sri Lanka", 105, 77, { align: "center" });
     doc.text("Tel: +94 11 234 5678 | Email: info@cinnaceylon.com", 105, 82, { align: "center" });
-    
+
     // Decorative line
     doc.setDrawColor("#CC7722");
     doc.setLineWidth(0.5);
     doc.line(20, 90, 190, 90);
   };
 
-  // Add first page header
-  addHeader();
-  
-  // Order details
+  addHeader(); // Call header function
+
+  // 🔹 Order details
   doc.setFontSize(14);
   doc.setTextColor("#CC7722");
   doc.text("Order Details", 20, 105);
-  
+
+  let detailsY = 115; // Track vertical position (so text doesn’t overlap)
   doc.setFontSize(10);
   doc.setTextColor("#000000");
-  doc.text(`Order ID: ${orderDetails._id}`, 20, 115);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 122);
-  doc.text(`Payment Method: ${orderDetails.paymentMethod}`, 20, 129);
-  doc.text(`Status: ${orderDetails.status}`, 20, 136);
-  
-  // Shipping details
+  doc.text(`Order ID: ${orderDetails._id}`, 20, detailsY);
+  detailsY += 7;
+
+  // Add customer ID if available
+  const customerId = orderDetails.user && (orderDetails.user._id || orderDetails.user);
+  if (customerId) {
+    doc.text(`Customer ID: ${customerId}`, 20, detailsY);
+    detailsY += 7;
+  }
+
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, detailsY);
+  detailsY += 7;
+  doc.text(`Payment Method: ${orderDetails.paymentMethod}`, 20, detailsY);
+  detailsY += 7;
+  doc.text(`Status: ${orderDetails.status}`, 20, detailsY);
+
+  // 🔹 Shipping details
   doc.setFontSize(14);
   doc.setTextColor("#CC7722");
   doc.text("Shipping Details", 20, 151);
-  
+
   doc.setFontSize(10);
   doc.setTextColor("#000000");
   doc.text(`${orderDetails.shippingAddress.firstName} ${orderDetails.shippingAddress.lastName}`, 20, 161);
@@ -54,81 +65,114 @@ export const generateReceiptPDF = (orderDetails, cart) => {
   doc.text(`${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.postalCode}`, 20, 175);
   doc.text(`Phone: ${orderDetails.shippingAddress.phone}`, 20, 182);
   doc.text(`Email: ${orderDetails.shippingAddress.email}`, 20, 189);
-  
-  // Order items
+
+  // 🔹 Order Summary
   doc.setFontSize(14);
   doc.setTextColor("#CC7722");
   doc.text("Order Summary", 20, 204);
-  
+
   // Table headers
   doc.setFontSize(10);
   doc.setTextColor("#666666");
   doc.text("Item", 20, 214);
   doc.text("Quantity", 130, 214);
   doc.text("Price (LKR)", 170, 214);
-  
-  // Decorative line
+
   doc.setDrawColor("#CC7722");
   doc.line(20, 217, 190, 217);
-  
-  // Items
+
+  // Merge cart items and offers
+  let allItems = [];
+
+  if (cart.items) {
+    allItems = [
+      ...allItems,
+      ...cart.items.map(i => ({
+        name: i.product.name,
+        qty: i.qty,
+        price: i.priceAtAdd || i.product.price,
+      }))
+    ];
+  }
+
+  if (cart.offerItems) {
+    allItems = [
+      ...allItems,
+      ...cart.offerItems.map(i => ({
+        name: `${i.offer.name} (Bundle)`,
+        qty: i.qty,
+        price: i.discountedPrice || i.offer.discountedPrice,
+        savings: (i.originalPrice || i.offer.products.reduce((sum, p) => sum + p.price, 0)) 
+                 - (i.discountedPrice || i.offer.discountedPrice)
+      }))
+    ];
+  }
+
+  // 🔹 Loop through items and print them
   let yPos = 224;
-  doc.setTextColor("#000000");
-  
-  cart.items.forEach((item, index) => {
-    // Check if we need a new page
+  allItems.forEach(item => {
+    // If the page is full, add a new page
     if (yPos > 250) {
       doc.addPage();
       addHeader();
-      yPos = 105; // Reset Y position after header
-      
-      // Add table headers on new page
+      yPos = 105;
+
+      // Re-draw table headers
       doc.setFontSize(10);
       doc.setTextColor("#666666");
       doc.text("Item", 20, yPos);
       doc.text("Quantity", 130, yPos);
       doc.text("Price (LKR)", 170, yPos);
-      
-      // Decorative line
       doc.setDrawColor("#CC7722");
       doc.line(20, yPos + 3, 190, yPos + 3);
       yPos += 10;
     }
 
+    // Add item row
     doc.setTextColor("#000000");
-    doc.text(item.product.name, 20, yPos);
+    doc.text(item.name, 20, yPos);
     doc.text(item.qty.toString(), 130, yPos);
-    doc.text((item.qty * item.priceAtAdd).toLocaleString(), 170, yPos);
-    yPos += 10;
+    doc.text((item.qty * item.price).toLocaleString(), 170, yPos);
+
+    // If bundle savings exist, show it in green
+    if (item.savings) {
+      doc.setFontSize(8);
+      doc.setTextColor("green");
+      doc.text(`You saved: LKR ${item.savings.toLocaleString()}`, 20, yPos + 6);
+      doc.setFontSize(10);
+      yPos += 6;
+    }
+
+    yPos += 10; // Move down for next item
   });
-  
-  // Add total on the current or new page
+
+  // If we are at bottom of page, add a new one
   if (yPos > 250) {
     doc.addPage();
     addHeader();
     yPos = 105;
   }
-  
-  // Total section
+
+  // 🔹 Totals
   doc.setDrawColor("#CC7722");
   doc.line(20, yPos + 3, 190, yPos + 3);
+
   doc.setFontSize(10);
   doc.setTextColor("#000000");
   doc.text("Delivery Cost:", 130, yPos + 13);
   doc.text("Free", 170, yPos + 13);
-  
-  // Final Total
+
   doc.setFontSize(12);
   doc.setTextColor("#CC7722");
   doc.text("Total:", 130, yPos + 23);
   doc.text(`LKR ${orderDetails.total.toLocaleString()}`, 170, yPos + 23);
-  
-  // Footer
+
+  // 🔹 Footer
   doc.setFontSize(8);
   doc.setTextColor("#666666");
   doc.text("Thank you for choosing Cinna Ceylon - Your Premium Ceylon Cinnamon Source", 105, 270, { align: "center" });
   doc.text("www.cinnaceylon.com", 105, 275, { align: "center" });
-  
-  // Save PDF
+
+  // 🔹 Save the PDF with unique file name
   doc.save(`CinnaCeylon-Receipt-${orderDetails._id}.pdf`);
 };

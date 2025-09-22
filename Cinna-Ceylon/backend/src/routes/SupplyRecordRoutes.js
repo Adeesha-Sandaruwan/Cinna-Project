@@ -1,12 +1,20 @@
 import express from "express";
-import { createSupplierRecord, getSupplierRecords, getSupplierRecord, updateSupplierRecord, deleteSupplierRecord } from "../controllers/SupplyRecordController.js";
+import { 
+  createSupplyRecord, 
+  getSupplyRecords, 
+  getSupplyRecord, 
+  updateSupplyRecord, 
+  deleteSupplyRecord,
+  getSupplyRecordsBySupplier 
+} from "../controllers/SupplyRecordController.js";
 
 const router = express.Router();
 
-router.post("/", createSupplierRecord);
-router.get("/", getSupplierRecords);
-router.get("/:id", getSupplierRecord);
-router.put("/:id", updateSupplierRecord);
-router.delete("/:id", deleteSupplierRecord);
+router.post("/", createSupplyRecord);
+router.get("/", getSupplyRecords);
+router.get("/:id", getSupplyRecord);
+router.put("/:id", updateSupplyRecord);
+router.delete("/:id", deleteSupplyRecord);
+router.get("/supplier/:supplierId", getSupplyRecordsBySupplier);
 
 export default router;

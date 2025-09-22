@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";// brings react in to scope and use effect support fetching data
 import { Link } from "react-router-dom";//link navigates between routes without reloading the page.
-import HeaderAfterLogin from "./HeaderAfterLogin";
-import Footer from "./Footer";
 import {
   PencilIcon,
   TrashIcon,
@@ -50,7 +48,7 @@ const StockStatus = ({ stock }) => {
 export default function ProductManagement() { // defines and exports the main page component
   const [products, setProducts] = useState([]); //holds full products list from the backend
   const [loading, setLoading] = useState(true); //Controls the loading state (spinner/message).
-  const [message, setMessage] = useState(""); // Holds feedback text (e.g., “✅ Product updated”, errors, etc.
+  const [message, setMessage] = useState(""); // Holds feedback text (e.g., “ Product updated”, errors, etc.
   const [search, setSearch] = useState(""); //current text in the search box
   const [filter, setFilter] = useState("all"); //filter type "all","spice","powder"
   const [page, setPage] = useState(1); //current page in the pagination
@@ -155,7 +153,6 @@ export default function ProductManagement() { // defines and exports the main pa
 
   return ( // react component that returns JSX that defines what will render
     <div className="bg-gray-50 min-h-screen flex flex-col">  
-      <HeaderAfterLogin /> 
       <div className="p-6 flex-1">
         {message && (
           <div className="mb-4 text-center font-medium text-green-700 bg-green-100 py-2 rounded-xl">
@@ -353,7 +350,6 @@ export default function ProductManagement() { // defines and exports the main pa
         </div>
       </Modal>
 
-      <Footer />
     </div>
   );
 }

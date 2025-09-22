@@ -9,19 +9,32 @@ import {
 } from 'react-icons/fa';
 import logo from '../assets/images/logo.png';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+
+const COLORS = {
+  RICH_GOLD: '#c5a35a',
+  DEEP_CINNAMON: '#8B4513',
+  WARM_BEIGE: '#F5EFE6',
+  DARK_SLATE: '#2d2d2d',
+  SOFT_WHITE: '#FCFBF8',
+};
 
 const navLinks = [
   { name: 'Home', href: '/' },
   { name: 'Products', href: '/products' },
   { name: 'Wholesale', href: '/wholesale' },
+  { name: 'Suppliers', href: '/supplierform' },
   { name: 'About Us', href: '/about' },
   { name: 'Contact Us', href: '/contact' },
+  { name: 'Offers', href: '/buyer-offers' },
 ];
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { cartItemCount } = useCart();
   const navigate = useNavigate();
   const profileRef = useRef();
   const mobileProfileRef = useRef();
@@ -37,7 +50,6 @@ export default function Header() {
     }
   };
 
-  // Close profile dropdown on outside click
   React.useEffect(() => {
     function handleClick(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -50,7 +62,6 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [profileOpen]);
 
-  // Close mobile menu on outside click
   React.useEffect(() => {
     function handleClick(e) {
       if (mobileProfileRef.current && !mobileProfileRef.current.contains(e.target)) {
@@ -116,7 +127,7 @@ export default function Header() {
           ))}
           {user && (
             user.isAdmin ? (
-              <Link to="/admin/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Admin Dashboard</Link>
+              <Link to="/dashboard/admin" className="hover:text-[#FFD700] transition-colors duration-200">Admin Dashboard</Link>
             ) : user.userType === 'buyer' ? (
               <Link to="/buyer/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Buyer Dashboard</Link>
             ) : user.userType === 'supplier' ? (
@@ -142,9 +153,14 @@ export default function Header() {
           </form>
 
           {/* Cart Icon */}
-          <button className="p-2 rounded-full hover:bg-[#A0522D] transition" aria-label="Shopping Cart">
-            <FaShoppingCart size={20} />
-          </button>
+          <Link to="/cart" className="relative text-white hover:text-gray-200 transition">
+            <FaShoppingCart size={24} />
+            {user && cartItemCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cartItemCount}
+              </span>
+            )}
+          </Link>
 
           {/* Desktop Auth / Profile */}
           <div className="hidden md:block">
@@ -202,7 +218,7 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.isAdmin ? <Link to="/admin/dashboard" onClick={closeAllMenus}>Admin Dashboard</Link> :
+            user.isAdmin ? <Link to="/dashboard/admin" onClick={closeAllMenus}>Admin Dashboard</Link> :
             user.userType === 'buyer' ? <Link to="/buyer/dashboard" onClick={closeAllMenus}>Buyer Dashboard</Link> :
             user.userType === 'supplier' ? <Link to="/supplier/dashboard" onClick={closeAllMenus}>Supplier Dashboard</Link> :
             user.userType === 'driver' ? <Link to="/driver/dashboard" onClick={closeAllMenus}>Driver Dashboard</Link> :
