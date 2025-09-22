@@ -48,7 +48,7 @@ const StockStatus = ({ stock }) => {
 export default function ProductManagement() { // defines and exports the main page component
   const [products, setProducts] = useState([]); //holds full products list from the backend
   const [loading, setLoading] = useState(true); //Controls the loading state (spinner/message).
-  const [message, setMessage] = useState(""); // Holds feedback text (e.g., “✅ Product updated”, errors, etc.
+  const [message, setMessage] = useState(""); // Holds feedback text (e.g., “ Product updated”, errors, etc.
   const [search, setSearch] = useState(""); //current text in the search box
   const [filter, setFilter] = useState("all"); //filter type "all","spice","powder"
   const [page, setPage] = useState(1); //current page in the pagination

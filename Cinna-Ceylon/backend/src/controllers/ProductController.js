@@ -3,63 +3,68 @@ import Product from "../models/Product.js"; // import the Product model to inter
 // Create product
 export const createProduct = async (req, res) => {
   try {
-    const data = req.body;
+    const data = req.body; // get data sent from frontend
 
+    // Validate expiry date if provided
     if (data.expiryDate) {
-      const today = new Date();
-      const expDate = new Date(data.expiryDate);
-      if (expDate < today.setHours(0, 0, 0, 0)) {
+      const today = new Date(); // current date
+      const expDate = new Date(data.expiryDate); // convert input expiry date to Date
+      if (expDate < today.setHours(0, 0, 0, 0)) { // check if expiry is before today
         return res.status(400).json({ error: "Expiry date must be today or later" });
       }
     }
 
+    // If an image file is uploaded, store the filename
     if (req.file) {
       data.image = req.file.filename;
     }
 
+    // Create new product in database
     const product = await Product.create(data);
-    res.status(201).json(product);
+    res.status(201).json(product); // return the created product
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: err.message }); // handle errors
   }
 };
 
 // Get all products
-export const getProducts = async (req, res) => { // define controller to fetch all products
-  try { // start try block
-    // Check if request is from admin (you'll need to implement proper auth later)
-    const isAdmin = req.query.admin === 'true';
-    
-    // If not admin, only show public products
+export const getProducts = async (req, res) => {
+  try {
+    const isAdmin = req.query.admin === 'true'; // check if admin query param is true
+
+    // If admin, show all products; else only public products
     const query = isAdmin ? {} : { visibility: "public" };
-    
-    const products = await Product.find(query).sort("-createdAt"); // query filtered products and sort them
-    res.json(products); // return the filtered list of products as JSON
-  } catch (err) { // catch any error
-    res.status(500).json({ error: err.message }); // return 500 (Server Error) with the error message
+
+    // Find products based on query and sort newest first
+    const products = await Product.find(query).sort("-createdAt");
+    res.json(products); // send products list as JSON
+  } catch (err) {
+    res.status(500).json({ error: err.message }); // server error
   }
 };
 
-// Get single product
+// Get single product by ID
 export const getProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ error: "Not found" });
-    res.json(product);
+    const product = await Product.findById(req.params.id); // find product by ID
+    if (!product) return res.status(404).json({ error: "Not found" }); // if not found
+    res.json(product); // return the product
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Update product (with image option)
+// Update product
 export const updateProduct = async (req, res) => {
   try {
-    const data = req.body;
+    const data = req.body; // get updated data from frontend
 
+    // If a new image is uploaded, update the filename
     if (req.file) {
       data.image = req.file.filename;
     }
 
+    // Validate expiry date if provided
     if (data.expiryDate) {
       const today = new Date();
       const expDate = new Date(data.expiryDate);
@@ -68,10 +73,11 @@ export const updateProduct = async (req, res) => {
       }
     }
 
+    // Update product in DB and return new version
     const product = await Product.findByIdAndUpdate(req.params.id, data, { new: true });
     if (!product) return res.status(404).json({ error: "Not found" });
 
-    res.json(product);
+    res.json(product); // send updated product
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -80,8 +86,8 @@ export const updateProduct = async (req, res) => {
 // Delete product
 export const deleteProduct = async (req, res) => {
   try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted" });
+    await Product.findByIdAndDelete(req.params.id); // remove product from DB
+    res.json({ message: "Deleted" }); // confirm deletion
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -90,31 +96,24 @@ export const deleteProduct = async (req, res) => {
 // Update stock levels
 export const updateStock = async (req, res) => {
   try {
-    const { stock, safetyStock, reorderLevel } = req.body;
-    const product = await Product.findById(req.params.id);
+    const { stock, safetyStock, reorderLevel } = req.body; // get stock values from request
+    const product = await Product.findById(req.params.id); // find product
 
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ error: "Product not found" });
 
-    // Validate stock values
-    if (stock < 0) {
-      return res.status(400).json({ error: "Stock cannot be negative" });
-    }
-    if (safetyStock < 0) {
-      return res.status(400).json({ error: "Safety stock cannot be negative" });
-    }
-    if (reorderLevel < 0) {
-      return res.status(400).json({ error: "Reorder level cannot be negative" });
-    }
+    // Validate that stock values are not negative
+    if (stock < 0) return res.status(400).json({ error: "Stock cannot be negative" });
+    if (safetyStock < 0) return res.status(400).json({ error: "Safety stock cannot be negative" });
+    if (reorderLevel < 0) return res.status(400).json({ error: "Reorder level cannot be negative" });
 
+    // Update stock values in DB
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
       { stock, safetyStock, reorderLevel },
-      { new: true }
+      { new: true } // return updated product
     );
 
-    res.json(updatedProduct);
+    res.json(updatedProduct); // return updated product
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -123,20 +122,22 @@ export const updateStock = async (req, res) => {
 // Get inventory status
 export const getInventoryStatus = async (req, res) => {
   try {
+    // Fetch selected fields from all products
     const products = await Product.find().select("name stock safetyStock reorderLevel availableStock");
 
+    // Map products to include useful inventory info
     const inventoryStatus = products.map(product => ({
       id: product._id,
       name: product.name,
-      actualStock: product.stock,
-      safetyStock: product.safetyStock,
-      reorderLevel: product.reorderLevel,
-      availableStock: product.availableStock,
-      needsReorder: product.stock <= product.reorderLevel,
-      belowSafetyStock: product.stock <= product.safetyStock,
+      actualStock: product.stock, // total stock
+      safetyStock: product.safetyStock, // minimum stock to keep
+      reorderLevel: product.reorderLevel, // stock level to trigger reorder
+      availableStock: product.availableStock, // computed available stock
+      needsReorder: product.stock <= product.reorderLevel, // true if stock below reorder
+      belowSafetyStock: product.stock <= product.safetyStock, // true if below safety stock
     }));
 
-    res.json(inventoryStatus);
+    res.json(inventoryStatus); // send inventory status
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

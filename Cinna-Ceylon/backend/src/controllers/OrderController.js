@@ -4,21 +4,24 @@ import Product from '../models/Product.js';
 // Create order
 export const createOrder = async (req, res) => {
   try {
+    // Extract fields from request body
     const { user, items, total, shippingAddress, paymentMethod } = req.body;
 
+    // Validate required fields
     if (!user || !items || !total) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Check stock only for real products
+    // Check stock for each product item (skip offers/bundles if no "product" field)
     for (const item of items) {
-      if (!item.product) continue; // Skip offers/bundles
+      if (!item.product) continue;
 
       const product = await Product.findById(item.product);
       if (!product) {
         return res.status(404).json({ error: `Product ${item.product} not found` });
       }
 
+      // Ensure stock is available considering safetyStock
       const availableStock = Math.max(0, product.stock - product.safetyStock);
       if (availableStock < item.qty) {
         return res.status(400).json({
@@ -26,20 +29,22 @@ export const createOrder = async (req, res) => {
         });
       }
 
+      // Deduct stock if order can be placed
       product.stock -= item.qty;
       await product.save();
     }
 
+    // Create the order in DB
     const order = await Order.create({
       user,
       items,
       total,
       shippingAddress,
       paymentMethod,
-      status: paymentMethod === 'Credit Card' ? 'paid' : 'pending'
+      status: paymentMethod === 'Credit Card' ? 'paid' : 'pending' // Auto-mark paid if CC
     });
 
-    // Populate product items and the user reference so frontend can access user info
+    // Populate product details and user info for frontend
     const populatedOrder = await Order.findById(order._id)
       .populate('items.product')
       .populate({ path: 'user', select: '_id name email' });
@@ -52,12 +57,12 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// Get all orders (admin)
+// Get all orders (admin use)
 export const getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate('items.product')
-      .sort({ createdAt: -1 });
+      .populate('items.product') // Include product details
+      .sort({ createdAt: -1 }); // Latest first
     res.json(orders);
   } catch (err) {
     console.error('Get orders error:', err);
@@ -65,7 +70,7 @@ export const getOrders = async (req, res) => {
   }
 };
 
-// Get user orders
+// Get all orders of a specific user
 export const getUserOrders = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -79,7 +84,7 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
-// Get single order
+// Get details of a single order
 export const getOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -96,7 +101,7 @@ export const getOrder = async (req, res) => {
   }
 };
 
-// Update order
+// Update an order
 export const updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -121,9 +126,10 @@ export const updateOrder = async (req, res) => {
       }
     }
 
+    // Update order with new data
     const order = await Order.findByIdAndUpdate(orderId, updateData, {
-      new: true,
-      runValidators: true
+      new: true,          // Return updated document
+      runValidators: true // Ensure schema validation runs
     }).populate('items.product');
 
     if (!order) {

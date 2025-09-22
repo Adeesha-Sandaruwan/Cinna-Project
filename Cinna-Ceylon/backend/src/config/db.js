@@ -1,20 +1,20 @@
-// Import the mongoose library for MongoDB interaction
+// We need mongoose to connect to our MongoDB database.
 import mongoose from "mongoose";
 
-// Define an asynchronous function to connect to the database
+// This function is responsible for connecting to the database.
 const connectDB = async () => {
   try {
-    // Attempt to connect to MongoDB using the URI from environment variables
+    // We're telling mongoose to connect to the database.
     const conn = await mongoose.connect(process.env.MONGO_URI);
-    // Log a success message with the connection host
+    // If the connection is successful, we'll see a message in the console.
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
   } catch (err) {
-    // Log an error message if the connection fails
+    // If something goes wrong during the connection, we'll see an error message.
     console.error("❌ MongoDB connection error:", err.message);
-    // Exit the process with a failure code
+    // And the application will stop.
     process.exit(1);
   }
 };
 
-// Export the connectDB function to be used in other parts of the application
+// We're making this function available to be used in other files.
 export default connectDB;
