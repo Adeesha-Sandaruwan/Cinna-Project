@@ -50,7 +50,6 @@ export default function Header() {
     }
   };
 
-  // Close profile dropdown on outside click
   React.useEffect(() => {
     function handleClick(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -63,7 +62,6 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [profileOpen]);
 
-  // Close mobile menu on outside click
   React.useEffect(() => {
     function handleClick(e) {
       if (mobileProfileRef.current && !mobileProfileRef.current.contains(e.target)) {
@@ -128,7 +126,11 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.userType === 'supplier' ? (
+            user.isAdmin ? (
+              <Link to="/dashboard/admin" className="hover:text-[#FFD700] transition-colors duration-200">Admin Dashboard</Link>
+            ) : user.userType === 'buyer' ? (
+              <Link to="/buyer/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Buyer Dashboard</Link>
+            ) : user.userType === 'supplier' ? (
               <Link to="/supplier/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
             ) : user.userType === 'driver' ? (
               <Link to="/driver/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
@@ -216,6 +218,8 @@ export default function Header() {
             </Link>
           ))}
           {user && (
+            user.isAdmin ? <Link to="/dashboard/admin" onClick={closeAllMenus}>Admin Dashboard</Link> :
+            user.userType === 'buyer' ? <Link to="/buyer/dashboard" onClick={closeAllMenus}>Buyer Dashboard</Link> :
             user.userType === 'supplier' ? <Link to="/supplier/dashboard" onClick={closeAllMenus}>Supplier Dashboard</Link> :
             user.userType === 'driver' ? <Link to="/driver/dashboard" onClick={closeAllMenus}>Driver Dashboard</Link> :
             null

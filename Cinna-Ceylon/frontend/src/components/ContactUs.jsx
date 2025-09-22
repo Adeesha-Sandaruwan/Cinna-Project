@@ -15,7 +15,8 @@ const COLORS = {
 function ContactUs() {
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased"> {/* Main container with background */}
-       {/* Navigation bar at top */}
+      {/* Navigation bar at top */}
+      <Header />
 
       <main className="text-gray-800"> {/* Content wrapper */}
 
@@ -133,9 +134,10 @@ function ContactUs() {
         </section>
       </main>
 
-     {/* Bottom footer */}
+      {/* Bottom footer */}
+      <Footer />
     </div>
   );
 }
 
-export default ContactUs; // Export component
+export default ContactUs;

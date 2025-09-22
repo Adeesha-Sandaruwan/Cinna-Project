@@ -4,8 +4,30 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  userType: { type: String, enum: ['buyer', 'supplier', 'driver'], required: true },
-  role: { type: String, enum: ['delivery manager', 'product manager', 'finance manager', 'user manager'] },
+  userType: { 
+    type: String, 
+    enum: [
+      'admin',
+      'manager',
+      'buyer',
+      'supplier',
+      'driver'
+    ], 
+    required: true 
+  },
+  role: { 
+    type: String,
+    enum: [
+      'admin',
+      'delivery_manager',
+      'product_manager',
+      'finance_manager',
+      'user_manager',
+      'vehicle_manager',
+      'supplier_manager',
+      null
+    ]
+  },
   isAdmin: { type: Boolean, default: false },
   otp: { type: String },
   profile: {
