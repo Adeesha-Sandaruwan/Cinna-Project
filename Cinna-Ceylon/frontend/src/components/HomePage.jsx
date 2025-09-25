@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'; // For navigation links
 import { BeakerIcon, GlobeAltIcon, LockClosedIcon, SparklesIcon } from '@heroicons/react/24/outline'; // Icons
 import Carousel from './Carousel'; // Custom image slider
 import AnimatedSection from './AnimatedSection'; // Animation wrapper
-import Header from './Header'; // Top navigation bar
-import Footer from './Footer'; // Bottom footer
+// Header & Footer removed here (now provided globally in App layout)
 
 const COLORS = { // Theme colors
   RICH_GOLD: '#c5a35a',
@@ -42,8 +41,6 @@ function HomePage() {
 
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased"> {/* Page background */}
-      {/* Navbar */}
-      <Header />
 
       <main className="text-gray-800"> {/* Main content */}
         <section className="relative h-[70vh] md:h-[80vh] w-full"> {/* Hero section */}
@@ -219,8 +216,6 @@ function HomePage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

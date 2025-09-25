@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // Toasts
 import { ToastContainer } from 'react-toastify';
@@ -68,13 +68,16 @@ import MaintenanceManagement from "./components/MaintenanceManagement.jsx";
 import AccidentManagement from "./components/AccidentManagement.jsx";
 import EmergencyManagement from "./components/EmergencyManagement.jsx";
 
-function App() {
+// Inner component to allow useLocation hook (for conditional layout)
+function AppContent() {
+  const location = useLocation();
+  const noLayoutRoutes = ['/login', '/register'];
+  const hideLayout = noLayoutRoutes.includes(location.pathname.toLowerCase());
+
   return (
-    <AuthProvider>
-      <CartProvider>
-        <Router>
-          <Header />
-          <Routes>
+    <>
+      {!hideLayout && <Header />}
+      <Routes>
             {/* Main Website Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutUs />} />
@@ -135,9 +138,19 @@ function App() {
             <Route path="/maintenance" element={<MaintenanceManagement />} />
             <Route path="/accidents" element={<AccidentManagement />} />
             <Route path="/emergencies" element={<EmergencyManagement />} />
-          </Routes>
-          <Footer />
-          <ToastContainer />
+      </Routes>
+      {!hideLayout && <Footer />}
+      <ToastContainer />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <Router>
+          <AppContent />
         </Router>
       </CartProvider>
     </AuthProvider>
