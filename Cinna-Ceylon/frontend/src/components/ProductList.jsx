@@ -102,6 +102,14 @@ const ProductList = () => {
             </div>
           ))}
         </div>
+
+        {loading && (
+          <p className="text-center mt-6 text-gray-500">Loading products...</p>
+        )}
+
+        {error && (
+          <p className="text-center mt-6 text-red-500">{error}</p>
+        )}
       </div>
     </div>
   );

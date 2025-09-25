@@ -12,9 +12,33 @@ export const register = async (req, res) => {
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
     const hashedPassword = await bcrypt.hash(password, 10);
     // isAdmin is not settable by normal registration
-    const user = new User({ username, email, password: hashedPassword, userType, profile, isAdmin: false });
+    // Set isAdmin and role based on userType
+    const isAdmin = userType === 'admin' || userType.includes('manager');
+    const role = userType.includes('manager') ? userType : (userType === 'admin' ? 'admin' : undefined);
+
+    const user = new User({ 
+      username, 
+      email, 
+      password: hashedPassword, 
+      userType, 
+      role,
+      profile, 
+      isAdmin 
+    });
+    
     await user.save();
-    res.status(201).json({ message: 'User registered successfully', user: { id: user._id, username: user.username, email: user.email, userType: user.userType, profile: user.profile } });
+    res.status(201).json({ 
+      message: 'User registered successfully', 
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email, 
+        userType: user.userType,
+        role: user.role,
+        isAdmin: user.isAdmin, 
+        profile: user.profile 
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -83,7 +107,7 @@ export const updateProfile = async (req, res) => {
 export const deleteProfile = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!users) return res.status(404).json({ message: 'User not found' });
     res.json({ message: 'Profile deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
