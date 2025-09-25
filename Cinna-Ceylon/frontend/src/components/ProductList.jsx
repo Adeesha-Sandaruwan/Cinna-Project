@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import ExpiryBar from './ExpiryBar.jsx';
 
 const COLORS = { 
   RICH_GOLD: "#c5a35a",
@@ -80,13 +81,14 @@ const ProductList = () => {
                   {product.name}
                 </h2>
                 <p
-                  className="text-md font-bold mb-4 text-center"
+                  className="text-md font-bold mb-2 text-center"
                   style={{ color: COLORS.DEEP_CINNAMON }}
                 >
                   LKR {product.price.toLocaleString()}
                 </p>
-
-                {/* Button */}
+                {product.expiryDate && (
+                  <ExpiryBar createdAt={product.createdAt} expiryDate={product.expiryDate} compact />
+                )}
                 <div className="mt-auto">
                   <Link
                     to={`/products/${product._id}`}

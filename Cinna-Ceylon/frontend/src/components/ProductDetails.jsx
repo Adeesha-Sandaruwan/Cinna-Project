@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react"; // Import React core, and the 'useEffect' and 'useState' hooks.
 import { useParams, Link, useNavigate } from "react-router-dom"; // Import routing hooks for accessing URL params, creating links, and programmatic navigation.
 import { useAuth } from "../context/AuthContext";
+import ExpiryBar from './ExpiryBar.jsx';
 
 // Define a constant object to hold the theme colors for consistent styling.
 const COLORS = {
@@ -331,6 +332,11 @@ const ProductDetails = () => {
                     {new Date(product.expiryDate).toLocaleDateString()}
                   </span>
                 </p>
+                {product.expiryDate && (
+                  <div className="mt-2">
+                    <ExpiryBar createdAt={product.createdAt} expiryDate={product.expiryDate} />
+                  </div>
+                )}
               </div>
 
               {/* Quantity Selector */}

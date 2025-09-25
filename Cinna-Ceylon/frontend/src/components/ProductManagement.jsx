@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";//import some visual icons from hereicons(delete , search and view)
+import ExpiryBar from './ExpiryBar.jsx';
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
@@ -202,6 +203,7 @@ export default function ProductManagement() { // defines and exports the main pa
                   <th className="p-3">Price</th>
                   <th className="p-3">Stock</th>
                   <th className="p-3">Status</th>
+                  <th className="p-3">Expiry</th>
                   <th className="p-3">Visibility</th>
                   <th className="p-3">Actions</th>
                 </tr>
@@ -215,6 +217,14 @@ export default function ProductManagement() { // defines and exports the main pa
                     <td className="p-3">${p.price}</td>
                     <td className="p-3">{p.stock}</td>
                     <td className="p-3"><StockStatus stock={p.stock} /></td>
+                    <td className="p-3 w-28">
+                      {p.expiryDate && (
+                        <ExpiryBar createdAt={p.createdAt} expiryDate={p.expiryDate} compact />
+                      )}
+                      <div className="text-[10px] mt-1">
+                        {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '—'}
+                      </div>
+                    </td>
                     <td className="p-3">
                       <button
                         onClick={() => toggleVisibility(p)}
@@ -306,6 +316,14 @@ export default function ProductManagement() { // defines and exports the main pa
                 onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
                 className="border p-2 rounded"
                 placeholder="Stock"
+              />
+              <input
+                type="date"
+                value={editProduct.expiryDate ? editProduct.expiryDate.split('T')[0] : ''}
+                onChange={(e) => setEditProduct({ ...editProduct, expiryDate: e.target.value })}
+                className="border p-2 rounded"
+                min={new Date().toISOString().split('T')[0]}
+                placeholder="Expiry Date"
               />
               <textarea
                 value={editProduct.description}
