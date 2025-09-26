@@ -141,7 +141,7 @@ export default function ProductManagement() { // defines and exports the main pa
   const metaBaseY = HEADER_HEIGHT + 6;
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, metaBaseY);
   doc.text(`Products: ${rows.length}`, 14, metaBaseY + 6);
-  doc.text(`Total Inventory Value: $${totalValue.toFixed(2)}`, 14, metaBaseY + 12);
+  doc.text(`Total Inventory Value: Rs.${totalValue.toFixed(2)}`, 14, metaBaseY + 12);
 
     // Derived metrics
   const lowCount = rows.filter(r=> r.status==='Low').length;
@@ -211,7 +211,7 @@ export default function ProductManagement() { // defines and exports the main pa
         body: [
           ['Products', rows.length],
           ['Low Stock Items', lowCount],
-          ['Total Inventory Value', `$${totalValue.toFixed(2)}`]
+          ['Total Inventory Value', `Rs.${totalValue.toFixed(2)}`]
         ],
         theme: 'grid',
         styles: { fontSize: 10 },
@@ -377,7 +377,7 @@ export default function ProductManagement() { // defines and exports the main pa
                 <>
                   <div><span className="font-semibold">Products:</span> {rows.length}</div>
                   <div><span className="font-semibold">Low Stock:</span> {lowCount}</div>
-                  <div><span className="font-semibold">Total Inventory Value:</span> ${totalValue.toFixed(2)}</div>
+                  <div><span className="font-semibold">Total Inventory Value:</span> Rs.{totalValue.toFixed(2)}</div>
                 </>
               );
             })()}

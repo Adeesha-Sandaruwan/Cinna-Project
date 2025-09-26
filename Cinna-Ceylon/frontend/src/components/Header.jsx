@@ -107,13 +107,11 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.userType === 'buyer' ? (
-              <Link to="/buyer/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Buyer Dashboard</Link>
-            ) : user.userType === 'supplier' ? (
+            user.userType === 'supplier' ? (
               <Link to="/supplier/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
             ) : user.userType === 'driver' ? (
               <Link to="/driver/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
-            ) : null
+            ) : null /* Intentionally hide Buyer Dashboard link for buyers */
           )}
         </div>
 
@@ -157,6 +155,9 @@ export default function Header() {
                     {user?.isAdmin && (
                       <Link to="/dashboard/admin" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Admin Dashboard</Link>
                     )}
+                    {user?.userType === 'buyer' && (
+                      <Link to="/dashboard/buyer" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Buyer Dashboard</Link>
+                    )}
                     <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Profile</Link>
                     <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg transition-colors border-t border-gray-200">Logout</button>
                   </div>
@@ -193,10 +194,9 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.userType === 'buyer' ? <Link to="/buyer/dashboard" onClick={closeAllMenus}>Buyer Dashboard</Link> :
             user.userType === 'supplier' ? <Link to="/supplier/dashboard" onClick={closeAllMenus}>Supplier Dashboard</Link> :
             user.userType === 'driver' ? <Link to="/driver/dashboard" onClick={closeAllMenus}>Driver Dashboard</Link> :
-            null
+            null /* Buyer Dashboard link hidden intentionally */
           )}
         </div>
 
@@ -216,6 +216,9 @@ export default function Header() {
               <div className="flex flex-col gap-2">
                 {user?.isAdmin && (
                   <Link to="/dashboard/admin" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>Admin Dashboard</Link>
+                )}
+                {user?.userType === 'buyer' && (
+                  <Link to="/dashboard/buyer" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>Buyer Dashboard</Link>
                 )}
                 <Link to="/profile" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>View Profile</Link>
                 <button onClick={handleLogout} className="bg-red-600 text-white rounded px-3 py-2 hover:bg-red-700 transition text-center text-sm">Logout</button>
