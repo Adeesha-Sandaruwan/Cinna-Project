@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { sanitizePhone, allowPhoneKey, handlePhonePaste } from '../utils/validations.jsx';
 
 function Profile() {
   const navigate = useNavigate();
@@ -59,19 +60,29 @@ function Profile() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let nextVal = value;
+    if (name === 'profile.phone') {
+      let sanitized = sanitizePhone(value);
+      if (sanitized.startsWith('+')) {
+        sanitized = sanitized.replace(/^(\+\d{0,12}).*/, '$1');
+      } else {
+        sanitized = sanitized.replace(/^(\d{0,10}).*/, '$1');
+      }
+      nextVal = sanitized;
+    }
     if (name.startsWith('profile.')) {
       const profileField = name.split('.')[1];
       setFormData(prev => ({
         ...prev,
         profile: {
           ...prev.profile,
-          [profileField]: value
+          [profileField]: nextVal
         }
       }));
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: value
+        [name]: nextVal
       }));
     }
   };
@@ -327,7 +338,12 @@ function Profile() {
           </div>
         </motion.div>
 
-        {/* Rest of the file (forms, alerts, modals) stays unchanged */}
+  {/* Add phone field enforcement where the editable form inputs are rendered (assuming a form exists below) */}
+  {/* NOTE: If your editable form section is elsewhere, replicate these props on that phone input: */}
+  {/* onKeyDown={allowPhoneKey} onPaste={(e)=>handlePhonePaste(e, (val)=> handleInputChange({ target: { name: 'profile.phone', value: sanitizePhone(val) } }))} */}
+  {/* maxLength={formData.profile.phone.startsWith('+') ? 13 : 10} */}
+  {/* title="Up to 10 digits, or + followed by up to 12 digits." */}
+  {/* Rest of the file (forms, alerts, modals) stays unchanged */}
         {/* ... keep your Account Information, Personal Information, Account Status, and Delete Confirmation Modal sections exactly as you had them */}
       </div>
     </motion.div>

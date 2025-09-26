@@ -12,6 +12,11 @@ import {
   validateCardExpiry,
   validateCVV
 } from '../utils/validations.jsx';
+import {
+  sanitizePhone,
+  allowPhoneKey,
+  handlePhonePaste
+} from '../utils/validations.jsx';
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
@@ -105,7 +110,18 @@ const Checkout = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    let nextVal = value;
+    if (name === 'phone') {
+      let sanitized = sanitizePhone(value);
+      // Enforce trimming here as a hard fallback regardless of key/paste guards
+      if (sanitized.startsWith('+')) {
+        sanitized = sanitized.replace(/^(\+\d{0,11}).*/, '$1');
+      } else {
+        sanitized = sanitized.replace(/^(\d{0,10}).*/, '$1');
+      }
+      nextVal = sanitized;
+    }
+    setFormData(prev => ({ ...prev, [name]: nextVal }));
     // Clear the field-specific error as user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
@@ -280,19 +296,29 @@ const Checkout = () => {
         <div className="space-y-8">
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h2 className="font-semibold text-xl mb-4 border-b pb-2">📦 Shipping Information</h2>
-            {["firstName","lastName","email","phone","address","city","postalCode"].map(f => (
+            {/* Removed duplicate uncontrolled input loop to ensure single controlled set with validation guards */}
+            {['firstName','lastName','email','phone','address','city','postalCode'].map(f => {
+              const isPhone = f === 'phone';
+              return (
                 <div key={f} className="mb-3">
-                  <input 
-                    name={f} 
-                    value={formData[f]} 
+                  <input
+                    name={f}
+                    value={formData[f]}
                     onChange={handleChange}
-                    placeholder={f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')} 
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400" 
+                    onKeyDown={isPhone ? allowPhoneKey : undefined}
+                    onPaste={isPhone ? (e)=>handlePhonePaste(e, (val)=> setFormData(prev=>({...prev, phone: sanitizePhone(val)}))) : undefined}
+                    inputMode={isPhone ? 'tel' : undefined}
+                    // New rule: up to 11 digits (no plus) OR plus sign followed by up to 12 digits (total length 13 including +)
+                    maxLength={isPhone ? (formData.phone.startsWith('+') ? 13 : 11) : undefined}
+                    title={isPhone ? 'Up to 11 digits, or + followed by up to 12 digits.' : undefined}
+                    placeholder={f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400"
                     required
                   />
                   {errors[f] && <p className="text-sm text-red-600 mt-1">{errors[f]}</p>}
                 </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-md">
