@@ -31,7 +31,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 
 // Dashboards
-import { BuyerDashboard, SupplierDashboard, DriverDashboard, AdminDashboard } from './components/dashboard';
+import { BuyerDashboard, SupplierDashboard, DriverDashboard, AdminDashboard, HRManagerDashboard } from './components/dashboard';
 import AttendanceRecords from './components/dashboard/AttendanceRecords';
 
 // E-commerce
@@ -104,6 +104,7 @@ function AppContent() {
             <Route path="/dashboard/supplier" element={<SupplierDashboard />} />
             <Route path="/dashboard/driver" element={<DriverDashboard />} />
             <Route path="/dashboard/admin" element={<AdminDashboard />} />
+            <Route path="/dashboard/hr" element={<HRManagerDashboard />} />
             <Route path="/dashboard/attendance-records" element={<AttendanceRecords />} />
 
             {/* Supplier & HR Management */}

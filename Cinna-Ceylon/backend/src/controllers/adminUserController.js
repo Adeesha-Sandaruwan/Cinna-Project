@@ -16,16 +16,13 @@ export const getAllUsers = async (req, res) => {
 export const createUser = async (req, res) => {
   try {
   let { username, email, password, userType, role, profile } = req.body;
-  // Diagnostic logging
-  console.log('[createUser] incoming:', { username, email, userType, role });
 
     // Normalization: if client sent a specific manager role as userType (e.g. hr_manager)
     // convert to base userType 'manager' and move into role.
     if (userType && typeof userType === 'string' && userType.endsWith('_manager')) {
-      role = userType; // capture specific manager role
+      role = userType.trim(); // capture specific manager role
       userType = 'manager';
     }
-    if (role && typeof role === 'string') role = role.trim();
     
     // Validate required fields
     if (!username || !email || !password || !userType) {
@@ -66,16 +63,9 @@ export const createUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('[createUser] normalized:', { userType, role, isAdmin: isAdmin });
-    const user = new User({ 
-      username, 
-      email, 
-      password: hashedPassword, 
-      userType, 
-      role: effectiveRole,
-      isAdmin, 
-      profile 
-    });
+    const userDoc = { username, email, password: hashedPassword, userType, isAdmin, profile };
+    if (effectiveRole) userDoc.role = effectiveRole;
+    const user = new User(userDoc);
     
     await user.save();
     res.status(201).json({ 
@@ -99,15 +89,13 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-  let { username, email, password, userType, profile, role } = req.body;
-  console.log('[updateUser] incoming:', { id, username, userType, role });
+    let { username, email, password, userType, profile, role } = req.body;
 
     // Normalize role-style userType values on update too
-    if (userType && typeof userType === 'string' && userType.endsWith('_manager')) {
+    if (userType && userType.endsWith('_manager')) {
       role = userType;
       userType = 'manager';
     }
-    if (role && typeof role === 'string') role = role.trim();
     
     let updateData = { 
       username, 
@@ -123,7 +111,7 @@ export const updateUser = async (req, res) => {
         updateData.role = 'admin';
         updateData.isAdmin = true;
       } else if (userType === 'manager') {
-        const effectiveRole = (role || req.body.role || '').trim();
+        const effectiveRole = role || req.body.role;
         if (effectiveRole && effectiveRole.includes('_manager')) {
           updateData.role = effectiveRole; // hr_manager allowed
           updateData.isAdmin = true;
@@ -135,7 +123,6 @@ export const updateUser = async (req, res) => {
         updateData.role = null;
         updateData.isAdmin = false;
       }
-      console.log('[updateUser] normalized:', { userType: updateData.userType, role: updateData.role, isAdmin: updateData.isAdmin });
     }
 
     if (password) {

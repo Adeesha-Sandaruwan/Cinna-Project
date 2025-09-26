@@ -59,7 +59,7 @@ function Login() {
         return;
       }
 
-      // Non-admin: proceed as before
+      // Non-admin (or roles not requiring OTP): proceed as before
       login({ token: data.token, ...data.user });
       toast.success(`Welcome, ${data.user?.username || data.user?.name || 'User'}!`, {
         position: 'top-right',
@@ -74,6 +74,8 @@ function Login() {
         dashboardPath = '/dashboard/driver';
       } else if (data.user?.isAdmin === true) {
         dashboardPath = '/dashboard/admin';
+      } else if (data.user?.role === 'hr_manager') {
+        dashboardPath = '/dashboard/hr';
       }
       setTimeout(() => navigate(dashboardPath), 1000);
     } catch (err) {

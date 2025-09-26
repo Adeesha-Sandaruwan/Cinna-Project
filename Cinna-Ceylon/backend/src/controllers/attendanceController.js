@@ -24,7 +24,7 @@ export const sendOtp = async (req, res) => {
     }
     
     // Check if user is admin or has admin role
-  const adminRoles = ['delivery manager', 'product manager', 'finance manager', 'user manager', 'admin'];
+  const adminRoles = ['delivery manager', 'product manager', 'finance manager', 'user manager', 'hr manager', 'admin'];
     const userRoleNormalized = normalizeRole(user.role);
     if (!user.isAdmin && !adminRoles.includes(userRoleNormalized)) {
       return res.status(403).json({ message: 'Not authorized' });
@@ -78,7 +78,7 @@ export const markAttendance = async (req, res) => {
     }
     
     // Validate that the role is one of the allowed values
-  const allowedRoles = ['delivery manager', 'product manager', 'finance manager', 'user manager']; // 'admin' normalized to user manager above
+  const allowedRoles = ['delivery manager', 'product manager', 'finance manager', 'user manager', 'hr manager']; // 'admin' normalized to user manager above
     if (!allowedRoles.includes(attendanceRole)) {
       return res.status(400).json({ message: 'Invalid user role for attendance' });
     }

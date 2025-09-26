@@ -120,13 +120,15 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       // Prepare the request body
+      // Normalize manager roles: if form.userType is a specific manager role, convert to base userType 'manager'
+      const isManagerRole = form.userType.endsWith('_manager');
       const body = {
         username: form.username,
         email: form.email,
         password: form.password,
         profile: form.profile,
-        userType: form.userType,
-        role: form.role
+        userType: isManagerRole ? 'manager' : form.userType,
+        role: isManagerRole ? form.userType : (form.role || null)
       };
 
       const res = await fetch('http://localhost:5000/api/admin/users', {
@@ -675,7 +677,8 @@ const AdminDashboard = () => {
                           onChange={(e) => {
                             const value = e.target.value;
                             handleChange(e);
-                            if (value.includes('manager')) {
+                            if (value.endsWith('_manager')) {
+                              // Specific manager roles (including hr_manager)
                               setForm(prev => ({ ...prev, role: value, isAdmin: true }));
                             } else if (value === 'admin') {
                               setForm(prev => ({ ...prev, role: 'admin', isAdmin: true }));
@@ -696,6 +699,7 @@ const AdminDashboard = () => {
                             <option value="user_manager">User Manager</option>
                             <option value="vehicle_manager">Vehicle Manager</option>
                             <option value="supplier_manager">Supplier Manager</option>
+                            <option value="hr_manager">HR Manager</option>
                           </optgroup>
                           <optgroup label="User Roles">
                             <option value="buyer">Buyer</option>
@@ -872,7 +876,7 @@ const AdminDashboard = () => {
                           onChange={(e) => {
                             const value = e.target.value;
                             handleChange(e);
-                            if (value.includes('manager')) {
+                            if (value.endsWith('_manager')) {
                               setForm(prev => ({ ...prev, role: value, isAdmin: true }));
                             } else if (value === 'admin') {
                               setForm(prev => ({ ...prev, role: 'admin', isAdmin: true }));
@@ -893,6 +897,7 @@ const AdminDashboard = () => {
                             <option value="user_manager">User Manager</option>
                             <option value="vehicle_manager">Vehicle Manager</option>
                             <option value="supplier_manager">Supplier Manager</option>
+                            <option value="hr_manager">HR Manager</option>
                           </optgroup>
                           <optgroup label="User Roles">
                             <option value="buyer">Buyer</option>

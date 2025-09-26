@@ -3,3 +3,4 @@ export { default as BuyerDashboard } from './BuyerDashboard';
 export { default as SupplierDashboard } from './SupplierDashboard';
 export { default as DriverDashboard } from './DriverDashboard';
 export { default as AdminDashboard } from './AdminDashboard';
+export { default as HRManagerDashboard } from './HRManagerDashboard';

@@ -1,22 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const LeaveRequestManagement = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
+  // Revised access control:
+  //  - buyer: blocked to home
+  //  - hr_manager: can view ALL & approve/reject
+  //  - other employees (supplier, driver, etc.): can view ALL requests (read-only, no buttons)
+    if (!user) return; // wait for auth load
+    const isBuyer = user.userType === 'buyer';
+    if (isBuyer) {
+      navigate('/');
+      return;
+    }
     fetchLeaveRequests();
-  }, []);
+  }, [user]);
 
   const fetchLeaveRequests = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/leave-requests');
       if (response.ok) {
         const data = await response.json();
+        // HR Manager sees all and can act; others (non-buyer) also see all but read-only
         setLeaveRequests(data);
       }
     } catch (err) {
@@ -27,6 +40,8 @@ const LeaveRequestManagement = () => {
   };
 
   const handleStatusChange = async (id, status) => {
+    // Guard on client: only hr_manager or admin can invoke
+  if (!(user?.role === 'hr_manager')) return; // still only HR can change status
     try {
       const response = await fetch(`http://localhost:5000/api/leave-requests/${id}`, {
         method: 'PUT',
@@ -132,7 +147,7 @@ const LeaveRequestManagement = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Filter Tabs */}
+        {/* Filter Tabs (Pending only visible to HR Manager) */}
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-8">
           <div className="flex flex-wrap gap-4">
             <button
@@ -145,16 +160,18 @@ const LeaveRequestManagement = () => {
             >
               All Requests ({leaveRequests.length})
             </button>
-            <button
-              onClick={() => setFilter('pending')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                filter === 'pending' 
-                  ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Pending ({leaveRequests.filter(r => r.status === 'pending').length})
-            </button>
+            {user?.role === 'hr_manager' && (
+              <button
+                onClick={() => setFilter('pending')}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                  filter === 'pending' 
+                    ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Pending ({leaveRequests.filter(r => r.status === 'pending').length})
+              </button>
+            )}
             <button
               onClick={() => setFilter('approved')}
               className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
@@ -251,7 +268,7 @@ const LeaveRequestManagement = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  {request.status === 'pending' && (
+                  {request.status === 'pending' && user?.role === 'hr_manager' && (
                     <div className="flex flex-col space-y-3 ml-6">
                       <button
                         onClick={() => handleStatusChange(request._id, 'approved')}
