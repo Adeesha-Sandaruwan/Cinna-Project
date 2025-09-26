@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'; // For navigation links
 import { BeakerIcon, GlobeAltIcon, LockClosedIcon, SparklesIcon } from '@heroicons/react/24/outline'; // Icons
 import Carousel from './Carousel'; // Custom image slider
 import AnimatedSection from './AnimatedSection'; // Animation wrapper
+import ExpiryBar from './ExpiryBar.jsx'; // Shelf-life visualization
 // Header & Footer removed here (now provided globally in App layout)
 
 const COLORS = { // Theme colors
@@ -28,7 +29,17 @@ function HomePage() {
       try {
         const response = await fetch('http://localhost:5000/api/products'); // API call
         const data = await response.json(); // Convert to JSON
-        setFeaturedProducts(data.slice(0, 4)); // Keep first 4 products
+        const todayStart = new Date();
+        todayStart.setHours(0,0,0,0);
+        const filtered = data.filter(p => {
+          if (p.visibility !== 'public') return false;
+          if (p.expiryDate) {
+            const exp = new Date(p.expiryDate);
+            if (exp < todayStart) return false; // drop expired
+          }
+            return true;
+        });
+        setFeaturedProducts(filtered.slice(0, 4)); // Keep first 4 products
       } catch (error) {
         console.error('Error fetching featured products:', error); // Show error
         setFeaturedProducts([]); // Set empty if error
@@ -184,6 +195,11 @@ function HomePage() {
                       <p className="mt-2 font-bold text-center" style={{ color: COLORS.RICH_GOLD }}>
                         LKR {product.price?.toLocaleString()}
                       </p>
+                      {product.expiryDate && (
+                        <div className="mt-2">
+                          <ExpiryBar createdAt={product.createdAt} expiryDate={product.expiryDate} compact />
+                        </div>
+                      )}
                       <Link to={`/products/${product._id}`} className="mt-4 w-full px-3 py-2 rounded-full text-white font-medium block text-center"
                             style={{ backgroundColor: COLORS.DEEP_CINNAMON }}>
                         View Details

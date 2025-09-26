@@ -29,9 +29,18 @@ const ProductList = () => {
         console.log("Fetched products:", data); // Debug log
         // Filter out private products unless user is admin
         const isAdmin = false; // TODO: Replace with actual admin check
+        const todayStart = new Date();
+        todayStart.setHours(0,0,0,0);
         const filteredProducts = isAdmin 
           ? data 
-          : data.filter(product => product.visibility === "public");
+          : data.filter(product => {
+              if (product.visibility !== 'public') return false;
+              if (product.expiryDate) {
+                const exp = new Date(product.expiryDate);
+                return exp >= todayStart; // only keep not-expired
+              }
+              return true; // if no expiryDate treat as non-expiring
+            });
         setProducts(filteredProducts);
       } catch (err) {
         console.error("❌ Error fetching products:", err);
