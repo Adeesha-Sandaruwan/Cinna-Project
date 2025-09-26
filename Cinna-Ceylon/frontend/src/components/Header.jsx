@@ -126,9 +126,7 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.isAdmin ? (
-              <Link to="/dashboard/admin" className="hover:text-[#FFD700] transition-colors duration-200">Admin Dashboard</Link>
-            ) : user.userType === 'buyer' ? (
+            user.userType === 'buyer' ? (
               <Link to="/buyer/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Buyer Dashboard</Link>
             ) : user.userType === 'supplier' ? (
               <Link to="/supplier/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
@@ -182,7 +180,10 @@ export default function Header() {
                 </button>
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-white text-gray-800 rounded-lg shadow-lg z-50 border">
-                    <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 rounded-t-lg transition-colors" onClick={() => setProfileOpen(false)}>Profile</Link>
+                    {user?.isAdmin && (
+                      <Link to="/dashboard/admin" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Admin Dashboard</Link>
+                    )}
+                    <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Profile</Link>
                     <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg transition-colors border-t border-gray-200">Logout</button>
                   </div>
                 )}
@@ -218,7 +219,6 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.isAdmin ? <Link to="/dashboard/admin" onClick={closeAllMenus}>Admin Dashboard</Link> :
             user.userType === 'buyer' ? <Link to="/buyer/dashboard" onClick={closeAllMenus}>Buyer Dashboard</Link> :
             user.userType === 'supplier' ? <Link to="/supplier/dashboard" onClick={closeAllMenus}>Supplier Dashboard</Link> :
             user.userType === 'driver' ? <Link to="/driver/dashboard" onClick={closeAllMenus}>Driver Dashboard</Link> :
@@ -240,6 +240,9 @@ export default function Header() {
                 <span className="font-medium truncate">{user?.username || user?.email || 'User'}</span>
               </div>
               <div className="flex flex-col gap-2">
+                {user?.isAdmin && (
+                  <Link to="/dashboard/admin" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>Admin Dashboard</Link>
+                )}
                 <Link to="/profile" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>View Profile</Link>
                 <button onClick={handleLogout} className="bg-red-600 text-white rounded px-3 py-2 hover:bg-red-700 transition text-center text-sm">Logout</button>
               </div>
