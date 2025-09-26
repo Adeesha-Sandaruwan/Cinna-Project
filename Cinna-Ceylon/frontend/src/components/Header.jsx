@@ -11,6 +11,7 @@ import logo from '../assets/images/logo.png';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import ProductSearch from './ProductSearch';
 
 const COLORS = {
   RICH_GOLD: '#c5a35a',
@@ -85,30 +86,10 @@ export default function Header() {
         {/* Logo */}
         <div
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
-          onClick={() => {
-            closeAllMenus();
-            if (user) {
-              if (user.isAdmin) navigate('/dashboard/admin');
-              else if (user.userType === 'buyer') navigate('/dashboard/buyer');
-              else if (user.userType === 'supplier') navigate('/dashboard/supplier');
-              else if (user.userType === 'driver') navigate('/dashboard/driver');
-              else navigate('/');
-            } else navigate('/');
-          }}
+          onClick={() => { closeAllMenus(); navigate('/'); }}
           role="button"
           tabIndex={0}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              closeAllMenus();
-              if (user) {
-                if (user.isAdmin) navigate('/dashboard/admin');
-                else if (user.userType === 'buyer') navigate('/dashboard/buyer');
-                else if (user.userType === 'supplier') navigate('/dashboard/supplier');
-                else if (user.userType === 'driver') navigate('/dashboard/driver');
-                else navigate('/');
-              } else navigate('/');
-            }
-          }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { closeAllMenus(); navigate('/'); } }}
         >
           <img src={logo} alt="CinnaCeylon Logo" className="h-12 w-auto" />
           <span className="font-bold text-xl tracking-wide hidden sm:block">CinnaCeylon</span>
@@ -138,17 +119,10 @@ export default function Header() {
 
         {/* Right side icons and auth */}
         <div className="flex items-center gap-4">
-          {/* Search Bar (Desktop) */}
-          <form className="hidden lg:flex items-center bg-white rounded-full px-3 py-1 shadow-inner">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 w-32"
-            />
-            <button type="submit" className="bg-[#FFD700] text-black rounded-full px-3 py-1 hover:bg-yellow-400 transition text-sm">
-              Search
-            </button>
-          </form>
+          {/* Dynamic Product Search (Desktop) */}
+          <div className="hidden lg:block">
+            <ProductSearch />
+          </div>
 
           {/* Cart Icon */}
           <Link to="/cart" className="relative text-white hover:text-gray-200 transition">
@@ -259,10 +233,9 @@ export default function Header() {
         </div>
 
         {/* Mobile Search */}
-        <form className="flex items-center bg-white rounded-full px-3 py-2 shadow-inner mb-6">
-          <input type="text" placeholder="Search products..." className="bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 flex-1" />
-          <button type="submit" className="bg-[#FFD700] text-black rounded-full px-3 py-1 hover:bg-yellow-400 transition text-sm">Search</button>
-        </form>
+        <div className="mb-6">
+          <ProductSearch className="w-full" />
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}

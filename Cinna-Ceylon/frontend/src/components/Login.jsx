@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { safeRequest, isOk } from '../utils/api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -22,13 +23,8 @@ function Login() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+  const { res, data } = await safeRequest('/api/users/login', { method: 'POST', body: { email, password } });
+  if (!isOk(res)) throw new Error(data?.message || data?.error || 'Login failed');
 
       // Check if admin (by role or isAdmin)
       const adminRoles = ['delivery manager', 'product manager', 'finance manager', 'user manager'];
@@ -39,15 +35,9 @@ function Login() {
         setLoading(false);
         try {
           setOtpLoading(true);
-          const otpRes = await fetch('http://localhost:5000/api/attendance/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: data.user.email })
-          });
-          const otpData = await otpRes.json();
-          if (!otpRes.ok) {
-            // If attendance already marked, treat as successful login
-            if (otpData.message === 'Attendance already marked in the last 24 hours.') {
+          const { res: otpRes, data: otpData } = await safeRequest('/api/attendance/send-otp', { method: 'POST', body: { email: data.user.email } });
+          if (!isOk(otpRes)) {
+            if (otpData?.message === 'Attendance already marked in the last 24 hours.' || otpData?.message === 'Attendance already marked within the last 24 hours.') {
               login({ token: data.token, ...data.user });
               toast.success('Attendance already marked! Welcome, Admin.', { position: 'top-right', autoClose: 3000 });
               setShowOtp(false);
@@ -55,9 +45,8 @@ function Login() {
               setPendingAdmin(null);
               setTimeout(() => navigate('/dashboard/admin'), 1000);
               return;
-            } else {
-              throw new Error(otpData.message || 'Failed to send OTP');
             }
+            throw new Error(otpData?.message || 'Failed to send OTP');
           }
           toast.info('OTP sent to your email for attendance.', { position: 'top-right', autoClose: 3000 });
         } catch (otpErr) {
@@ -88,6 +77,7 @@ function Login() {
       }
       setTimeout(() => navigate(dashboardPath), 1000);
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -100,13 +90,8 @@ function Login() {
     setError('');
     setOtpLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/attendance/mark-attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: pendingAdmin.email, otp })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'OTP verification failed');
+  const { res, data } = await safeRequest('/api/attendance/mark-attendance', { method: 'POST', body: { email: pendingAdmin.email, otp } });
+  if (!isOk(res)) throw new Error(data?.message || 'OTP verification failed');
       login({ token: pendingAdmin.token, ...pendingAdmin });
       toast.success('Attendance marked! Welcome, Admin.', { position: 'top-right', autoClose: 3000 });
       setShowOtp(false);
@@ -114,6 +99,7 @@ function Login() {
       setPendingAdmin(null);
       setTimeout(() => navigate('/dashboard/admin'), 1000);
     } catch (err) {
+      console.error('OTP submit error:', err);
       setError(err.message);
     } finally {
       setOtpLoading(false);

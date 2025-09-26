@@ -53,6 +53,7 @@ export const createProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const isAdmin = req.query.admin === 'true'; // check if admin query param is true
+    const search = (req.query.q || req.query.search || '').trim(); // optional search term
 
     // First, lazily enforce privatization of expired products
     await privatizeExpiredProducts();
@@ -62,9 +63,19 @@ export const getProducts = async (req, res) => {
 
     // Base query: exclude expired products for non-admins by visibility AND by expiryDate
     // Admins can see all (including expired) to manage them
-    let query = {};
+    const query = {};
     if (!isAdmin) {
-      query = { visibility: "public", expiryDate: { $gte: todayStart } };
+      query.visibility = "public";
+      query.expiryDate = { $gte: todayStart };
+    }
+
+    // If a search term is provided, apply case-insensitive regex on name and (optionally) description
+    if (search.length > 0) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); // escape then case-insensitive
+      query.$or = [
+        { name: regex },
+        { description: regex }
+      ];
     }
 
     // Find products based on query and sort newest first
