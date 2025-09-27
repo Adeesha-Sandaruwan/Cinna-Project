@@ -16,6 +16,11 @@ const LeaveRequestManagement = () => {
   //  - hr_manager: can view ALL & approve/reject
   //  - other employees (supplier, driver, etc.): can view ALL requests (read-only, no buttons)
     if (!user) return; // wait for auth load
+    // New rule: HR Manager should NOT view this page; redirect to HR dashboard
+    if (user.role === 'hr_manager') {
+      navigate('/dashboard/hr', { replace: true });
+      return;
+    }
     const isBuyer = user.userType === 'buyer';
     if (isBuyer) {
       navigate('/');
@@ -126,14 +131,14 @@ const LeaveRequestManagement = () => {
         </div>
       )}
 
-      {/* Header */}
+  {/* Header (HR Manager is redirected away before this renders) */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-4">Leave Request Management</h1>
             <p className="text-blue-100 mb-6">Manage employee leave requests and approvals</p>
             
-            {/* Leave Request Form Button */}
+            {/* Leave Request Form Button (hidden for buyers by redirect and HR manager by separate redirect) */}
             <div className="flex justify-center">
               <button
                 onClick={() => navigate('/leaverequestform')}

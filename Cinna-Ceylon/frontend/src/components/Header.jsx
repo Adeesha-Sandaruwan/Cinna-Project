@@ -25,7 +25,6 @@ const navLinks = [
   { name: 'Home', href: '/' },
   { name: 'Products', href: '/products' },
   { name: 'Wholesale', href: '/wholesale' },
-  { name: 'Suppliers', href: '/supplierform' },
   { name: 'About Us', href: '/about' },
   { name: 'Contact Us', href: '/contact' },
   { name: 'Offers', href: '/buyer-offers' },
