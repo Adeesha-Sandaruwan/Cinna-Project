@@ -148,61 +148,50 @@ const ProductDetails = () => {
   // Function to handle the "Buy Now" button click.
   const buyNow = async () => {
     if (!user) {
-      navigate("/login");
+      navigate('/login');
       return;
     }
-    // Prevent action if there's no product or it's out of stock.
     if (!product || product.availableStock === 0) return;
-
-    setBuyingNow(true); // Show loading state on the button.
-
-    // Prepare the data to create a new order.
-    const orderData = {
-      user: "default", // NOTE: Hardcoded user.
-      items: [ // An array of items in this order.
-        {
-          product: product._id, // Product ID.
-          qty: quantity, // Selected quantity.
-          price: product.price, // Price at time of purchase.
-          itemType: "product", // Type of item.
-          name: product.name, // Product name.
-          type: product.type, // Product type.
-        },
-      ],
-      total: quantity * product.price, // Calculate the total price.
-      shippingAddress: { // Pre-fill shipping with empty values for the checkout form.
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        address: "",
-        city: "",
-        postalCode: "",
-      },
-      paymentMethod: "Credit Card", // Default payment method.
-      status: "pending", // Initial status of the order.
-    };
-
-    // Send a POST request to the orders API to create the order.
-    const response = await fetch("http://localhost:5000/api/orders", {
-      method: "POST", // HTTP method.
-      headers: { "Content-Type": "application/json" }, // Data format.
-      body: JSON.stringify(orderData), // The order data in JSON format.
-    });
-
-    // If the order was created successfully...
-    if (response.ok) {
-      const order = await response.json(); // Get the created order details from the response.
-      // Redirect the user to the checkout page, passing the new order ID as a URL parameter.
-      navigate(`/checkout/default?orderId=${order._id}&buyNow=true`);
-    } else {
-      // If order creation failed...
-      const errorData = await response.json(); // Get the error details.
-      // Show an alert to the user with the error message.
-      alert(`Failed to create order: ${errorData.error || "Unknown error"}`);
+    setBuyingNow(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You need to log in again.');
+        navigate('/login');
+        return;
+      }
+      const orderData = {
+        items: [
+          {
+            product: product._id,
+            qty: quantity,
+            price: product.price,
+            itemType: 'product'
+          }
+        ],
+        total: quantity * product.price,
+        shippingAddress: {},
+        paymentMethod: 'Pay at Delivery'
+      };
+      const res = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(orderData)
+      });
+      if (!res.ok) {
+        let msg = 'Failed to create order';
+        try {
+          const errData = await res.json();
+          msg = errData.error || errData.message || msg;
+        } catch {}
+        alert(msg);
+      } else {
+        const order = await res.json();
+        navigate(`/checkout?orderId=${order._id}&buyNow=true`);
+      }
+    } finally {
+      setBuyingNow(false);
     }
-
-    setBuyingNow(false); // Reset the button's loading state.
   };
 
   // --- RENDER LOGIC ---

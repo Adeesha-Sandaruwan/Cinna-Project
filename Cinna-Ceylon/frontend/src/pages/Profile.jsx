@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { sanitizePhone, allowPhoneKey, handlePhonePaste } from '../utils/validations.jsx';
+import { generateReceiptPDF } from '../components/ReceiptPDF';
 
 function Profile() {
   const navigate = useNavigate();
@@ -42,6 +43,31 @@ function Profile() {
       address: ''
     }
   });
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  // Load user's orders
+  useEffect(() => {
+    const loadOrders = async () => {
+      if (!user?.id && !user?._id) return;
+      setOrdersLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:5000/api/orders/my', {
+          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+            setOrders(data);
+        }
+      } catch (e) {
+        console.warn('Failed to load orders', e);
+      } finally {
+        setOrdersLoading(false);
+      }
+    };
+    loadOrders();
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -335,6 +361,42 @@ function Profile() {
                 </>
               )}
             </div>
+          </div>
+        </motion.div>
+
+        {/* Order History */}
+        <motion.div
+          className="bg-white/70 backdrop-blur rounded-2xl shadow-md p-6 mb-8 border border-white/30"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <span className="w-2 h-6 bg-gradient-to-b from-amber-500 to-orange-600 rounded" />
+            Your Recent Orders
+          </h2>
+          {ordersLoading && <p className="text-sm text-gray-500">Loading orders...</p>}
+          {!ordersLoading && orders.length === 0 && (
+            <p className="text-gray-600 text-sm">You have not placed any orders yet.</p>
+          )}
+          <div className="space-y-3 max-h-80 overflow-auto pr-2">
+            {orders.map(o => (
+              <div key={o._id} className="p-4 rounded-xl border border-amber-100 bg-white/60 hover:shadow transition flex justify-between items-start gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-amber-700">Order #{o._id.slice(-6)}</p>
+                  <p className="text-xs text-gray-600">Placed: {new Date(o.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-600">Items: {o.items?.length || 0}</p>
+                  <p className="text-xs capitalize"><span className="font-medium">Status:</span> {o.status}</p>
+                  <p className="text-sm font-bold text-amber-800">LKR {o.total?.toLocaleString()}</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => generateReceiptPDF(o, { items: o.items?.filter(i=>i.product), offerItems: o.items?.filter(i=>i.offer) })}
+                    className="text-xs px-3 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
+                  >Receipt</button>
+                </div>
+              </div>
+            ))}
           </div>
         </motion.div>
 

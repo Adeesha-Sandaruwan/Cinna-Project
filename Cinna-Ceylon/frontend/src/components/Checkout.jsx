@@ -201,7 +201,6 @@ const Checkout = () => {
         const allItems = [...productItems, ...offerItems];
 
         const orderData = {
-          user: userId || "default",
           items: allItems,
           total: cart.total,
           shippingAddress: {
@@ -219,16 +218,23 @@ const Checkout = () => {
 
         console.log("Sending order data:", orderData);
 
+        const token = localStorage.getItem('token');
         const res = await fetch("http://localhost:5000/api/orders", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
           body: JSON.stringify(orderData),
         });
 
         if (!res.ok) {
-          const errorData = await res.json();
-          console.error("Order creation error:", errorData);
-          throw new Error(errorData.error || "Failed to create order");
+          let errorText = 'Failed to create order';
+          try {
+            const errorData = await res.json();
+            console.error("Order creation error:", errorData);
+            errorText = errorData.error || errorData.message || errorText;
+          } catch (parseErr) {
+            console.error('Failed to parse error response', parseErr);
+          }
+          throw new Error(errorText);
         }
 
         const newOrder = await res.json();
