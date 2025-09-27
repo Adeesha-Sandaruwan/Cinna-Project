@@ -409,7 +409,7 @@ export default function ProductManagement() { // defines and exports the main pa
                     <td className="p-3 font-medium">{p.name}</td>
                     <td className="p-3">{p.sku}</td>
                     <td className="p-3 capitalize">{p.type}</td>
-                    <td className="p-3">${p.price}</td>
+                    <td className="p-3">Rs.{p.price}</td>
                     <td className="p-3">{p.stock}</td>
                     <td className="p-3"><StockStatus stock={p.stock} /></td>
                     <td className="p-3 w-28">
