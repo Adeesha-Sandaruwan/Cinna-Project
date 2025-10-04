@@ -55,15 +55,46 @@ function Login() {
               setPendingAdmin(null);
               setTimeout(() => navigate('/dashboard/admin'), 1000);
               return;
+            } else if (otpData.message === 'Not authorized') {
+              // User doesn't have admin privileges for attendance, proceed with regular login
+              login({ token: data.token, ...data.user });
+              toast.success(`Welcome, ${data.user?.username || data.user?.name || 'User'}!`, { position: 'top-right', autoClose: 3000 });
+              setShowOtp(false);
+              setPendingAdmin(null);
+              setTimeout(() => navigate('/dashboard/admin'), 1000);
+              return;
+            } else if (otpData.message === 'User not found') {
+              // Handle user not found error - still allow login but skip attendance
+              login({ token: data.token, ...data.user });
+              toast.warning('Login successful, but attendance system is not available for this account.', { position: 'top-right', autoClose: 4000 });
+              setShowOtp(false);
+              setPendingAdmin(null);
+              setTimeout(() => navigate('/dashboard/admin'), 1000);
+              return;
             } else {
               throw new Error(otpData.message || 'Failed to send OTP');
             }
           }
           toast.info('OTP sent to your email for attendance.', { position: 'top-right', autoClose: 3000 });
         } catch (otpErr) {
-          setError(otpErr.message);
-          setShowOtp(false);
-          setPendingAdmin(null);
+          console.error('OTP Error:', otpErr);
+          // Don't block login if OTP fails - attendance is optional
+          if (otpErr.message && !otpErr.message.includes('network') && !otpErr.message.includes('fetch')) {
+            setError(otpErr.message);
+            setShowOtp(false);
+            setPendingAdmin(null);
+          } else {
+            // Network error or general failure - allow login but show warning
+            login({ token: data.token, ...data.user });
+            toast.warning('Login successful, but attendance OTP could not be sent. Please check your connection.', { 
+              position: 'top-right', 
+              autoClose: 5000 
+            });
+            setShowOtp(false);
+            setPendingAdmin(null);
+            setTimeout(() => navigate('/dashboard/admin'), 1000);
+            return;
+          }
         } finally {
           setOtpLoading(false);
         }

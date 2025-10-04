@@ -1,0 +1,170 @@
+/* Custom Cinnamon Theme Styles for Delivery Manager Dashboard */
+
+/* Custom gradient backgrounds */
+.cinnamon-gradient-primary {
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 50%, #D2691E 100%);
+}
+
+.cinnamon-gradient-light {
+  background: linear-gradient(135deg, #F4E4BC 0%, #FFEEDD 50%, #FDF8F0 100%);
+}
+
+/* Custom animations */
+@keyframes cinnamonPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.cinnamon-pulse {
+  animation: cinnamonPulse 2s ease-in-out infinite;
+}
+
+/* Hover effects */
+.cinnamon-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cinnamon-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(139, 69, 19, 0.2);
+}
+
+/* Custom scrollbar for tables */
+.cinnamon-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.cinnamon-scrollbar::-webkit-scrollbar-track {
+  background: #F4E4BC;
+  border-radius: 10px;
+}
+
+.cinnamon-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #A0522D, #D2691E);
+  border-radius: 10px;
+}
+
+.cinnamon-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #8B4513, #A0522D);
+}
+
+/* Status indicator dots with glow effect */
+.status-dot {
+  position: relative;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  animation: statusGlow 2s ease-in-out infinite;
+}
+
+.status-dot.pending::after {
+  background: rgba(251, 191, 36, 0.4);
+}
+
+.status-dot.delivered::after {
+  background: rgba(34, 197, 94, 0.4);
+}
+
+.status-dot.in-transit::after {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+@keyframes statusGlow {
+  0%, 100% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+/* Card hover effects */
+.delivery-card {
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.delivery-card:hover {
+  border-color: #D2691E;
+  box-shadow: 0 8px 30px rgba(139, 69, 19, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Loading spinner for cinnamon theme */
+.cinnamon-spinner {
+  border: 3px solid #F4E4BC;
+  border-top: 3px solid #A0522D;
+  border-radius: 50%;
+  animation: cinnamonSpin 1s linear infinite;
+}
+
+@keyframes cinnamonSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Table row hover effects */
+.table-row-hover {
+  transition: all 0.2s ease;
+}
+
+.table-row-hover:hover {
+  background: linear-gradient(90deg, #FFEEDD 0%, #F4E4BC 50%, #FFEEDD 100%);
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.1);
+}
+
+/* Button press animation */
+.cinnamon-button {
+  transition: all 0.2s ease;
+}
+
+.cinnamon-button:active {
+  transform: scale(0.98);
+}
+
+/* Custom focus states */
+.cinnamon-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(210, 105, 30, 0.5);
+  border-color: #A0522D;
+}
+
+/* Responsive design enhancements */
+@media (max-width: 768px) {
+  .mobile-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .mobile-stack > * {
+    width: 100%;
+  }
+}
+
+/* Dark mode compatibility (if ever needed) */
+@media (prefers-color-scheme: dark) {
+  .cinnamon-dark {
+    --cinnamon-bg: #2D1B0E;
+    --cinnamon-text: #F4E4BC;
+    --cinnamon-border: #6B5B4D;
+  }
+}

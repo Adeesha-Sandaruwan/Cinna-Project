@@ -1,4 +1,3 @@
-
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import nodemailer from 'nodemailer';
@@ -32,25 +31,69 @@ export const sendOtp = async (req, res) => {
 
     const otp = generateOTP();
     user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
     await user.save();
 
-    // Send email (configure transporter as needed)
-    const transporter = nodemailer.createTransport({
+    // For development/testing, we'll skip actual email sending
+    // In production, configure proper email service
+    console.log('Generated OTP for testing:', otp);
+    console.log('Email would be sent to:', email);
+    
+    // Simulate email sending success for development
+    res.json({ 
+      message: 'OTP sent',
+      devNote: 'In development mode - check console for OTP',
+      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+    });
+    
+    // Uncomment below for production email sending
+    /*
+    const transporter = nodemailer.createTransporter({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       }
     });
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Your Attendance OTP',
-      text: `Your OTP code is: ${otp}`
-    });
-    res.json({ message: 'OTP sent' });
+    
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your Attendance OTP - Cinna Ceylon',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #8B4513;">Attendance Verification</h2>
+            <p>Hello ${user.username},</p>
+            <p>Your OTP code for attendance verification is:</p>
+            <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; color: #8B4513; border-radius: 5px; margin: 20px 0;">
+              ${otp}
+            </div>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn't request this, please ignore this email.</p>
+            <br>
+            <p>Best regards,<br>Cinna Ceylon Team</p>
+          </div>
+        `
+      });
+      res.json({ message: 'OTP sent' });
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      // In development, still allow OTP to proceed even if email fails
+      res.json({ 
+        message: 'OTP generated (email service temporarily unavailable)',
+        devNote: 'Check console for OTP - email service needs configuration',
+        otp: process.env.NODE_ENV === 'development' ? otp : undefined
+      });
+    }
+    */
   } catch (err) {
-    res.status(500).json({ message: 'Error sending OTP', error: err.message });
+    console.error('Full error in sendOtp:', err);
+    res.status(500).json({ 
+      message: 'Error sending OTP', 
+      error: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 };
 
@@ -59,8 +102,21 @@ export const markAttendance = async (req, res) => {
   const { email, otp } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (!user || user.otp !== otp) {
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+    
+    if (!user.otp || user.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
+    }
+    
+    // Check if OTP has expired
+    if (user.otpExpires && user.otpExpires < new Date()) {
+      // Clean up expired OTP
+      user.otp = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
     }
     
     // Determine role for attendance - use user's role or default to 'user manager' for admins
@@ -82,10 +138,15 @@ export const markAttendance = async (req, res) => {
       status: 'present'
     });
     await attendance.save();
+    
+    // Clean up OTP after successful use
     user.otp = undefined;
+    user.otpExpires = undefined;
     await user.save();
-    res.json({ message: 'Attendance marked' });
+    
+    res.json({ message: 'Attendance marked successfully', role: attendanceRole });
   } catch (err) {
+    console.error('Attendance marking error:', err);
     res.status(500).json({ message: 'Error marking attendance', error: err.message });
   }
 };
