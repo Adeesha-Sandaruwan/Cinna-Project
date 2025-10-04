@@ -27,7 +27,7 @@ const Supplier = () => {
   });
 
   // API base URL - replace with your actual backend URL
-  const API_BASE = 'http://localhost:5000/api/suppliers';
+  const API_BASE = 'http://localhost:3000/api/suppliers';
 
   // Mock data for demonstration
   const mockSuppliers = [

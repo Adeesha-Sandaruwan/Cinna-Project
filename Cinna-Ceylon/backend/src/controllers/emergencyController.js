@@ -14,31 +14,23 @@ export const createEmergency = async (req, res) => {
 // READ all
 export const getEmergencies = async (req, res) => {
   try {
-    const emergencies = await Emergency.find().populate("vehicle");
-    // Only populate driver if it exists
-    // No need to populate if no driver collection
+    const emergencies = await Emergency.find().populate("vehicle").populate("driver");
     res.json(emergencies);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // READ one
 export const getEmergencyById = async (req, res) => {
   try {
-    const emergency = await Emergency.findById(req.params.id)
-      .populate("vehicle")
-      .populate({ path: "driver", model: "Driver" });
+    const emergency = await Emergency.findById(req.params.id).populate("vehicle").populate("driver");
     if (!emergency) return res.status(404).json({ message: "Emergency not found" });
     res.json(emergency);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // UPDATE
 export const updateEmergency = async (req, res) => {

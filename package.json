@@ -21,8 +21,5 @@
     "nodejs"
   ],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "axios": "^1.12.2"
-  }
+  "license": "ISC"
 }

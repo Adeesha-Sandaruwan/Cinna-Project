@@ -5,17 +5,6 @@ const deliverySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Order",
     required: true,
-    unique: true, // Ensure one delivery per order
-  },
-  driver: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  vehicle: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Order",
-    required: true,
     unique: true },// Ensure one delivery per order
   driver: {
     type: mongoose.Schema.Types.ObjectId,

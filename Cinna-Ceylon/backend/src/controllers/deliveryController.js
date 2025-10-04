@@ -160,7 +160,6 @@ export const deleteDelivery = async (req, res) => {
 const driverRequestCache = new Map();
 const RATE_LIMIT_MS = 1000; // 1 second between requests per driver
 
-// Get deliveries by driver
 export const getDeliveriesByDriver = async (req, res) => {
   try {
     const { driverId } = req.params;
@@ -208,7 +207,6 @@ export const getDeliveriesByDriver = async (req, res) => {
       .sort({ createdAt: -1 });
     
     console.log(`Found ${deliveries.length} deliveries for driver ${driverId}`);
-    console.log('Delivery IDs:', deliveries.map(d => d._id));
     
     // Remove any potential duplicates at the application level (extra safety)
     const uniqueDeliveries = deliveries.filter((delivery, index, self) => 

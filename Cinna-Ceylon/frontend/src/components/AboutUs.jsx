@@ -166,8 +166,7 @@ function AboutUs() {
         </section>
       </main>
 
-      {/* Bottom footer */}
-      <Footer />
+      <Footer /> {/* Bottom footer */}
     </div>
   );
 }

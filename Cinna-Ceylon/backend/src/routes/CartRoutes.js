@@ -1,15 +1,13 @@
 import express from 'express';
-import { addToCart, getCart, clearCart, addOfferToCart } from '../controllers/CartController.js';
+import { addToCart, getCart, clearCart } from '../controllers/CartController.js';
 
 const router = express.Router();
 
 // ---------------------- CART ROUTES ---------------------- //
 
-// Add a product to the cart
+// Add an item to the cart (creates a cart if it doesn’t exist for the user)
+// - Body typically contains: userId, productId, qty
 router.post('/', addToCart);
-
-// Add an offer to the cart
-router.post('/offer', addOfferToCart);
 
 // Get the cart for a specific user by userId
 router.get('/:userId', getCart);

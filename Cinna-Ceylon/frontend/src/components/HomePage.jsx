@@ -84,8 +84,7 @@ function HomePage() {
           </div>
         </section>
 
-        {/* About Section */}
-        <AnimatedSection className="py-16">
+        <AnimatedSection className="py-16"> {/* About section */}
           <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="mt-4 text-gray-700 leading-relaxed">
@@ -124,8 +123,7 @@ function HomePage() {
           </div>
         </AnimatedSection>
 
-        {/* Why Choose Us */}
-        <AnimatedSection className="py-12">
+        <AnimatedSection className="py-12"> {/* Why choose us */}
           <div className="max-w-7xl mx-auto px-6 md:px-8 text-center">
             <h3 className="text-xl font-semibold" style={{ color: COLORS.RICH_GOLD }}>Why choose CinnaCeylon?</h3>
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -153,8 +151,7 @@ function HomePage() {
           </div>
         </AnimatedSection>
 
-        {/* Featured Products */}
-        <AnimatedSection className="py-16">
+        <AnimatedSection className="py-16"> {/* Featured products */}
           <div className="max-w-7xl mx-auto px-6 md:px-8">
             <div className="text-center max-w-2xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: COLORS.DARK_SLATE }}>
@@ -204,8 +201,7 @@ function HomePage() {
           </div>
         </AnimatedSection>
 
-        {/* Newsletter */}
-        <section className="py-16 bg-gradient-to-r from-white to-white">
+        <section className="py-16 bg-gradient-to-r from-white to-white"> {/* Newsletter */}
           <div className="max-w-3xl mx-auto px-6">
             <h3 className="text-2xl font-bold" style={{ color: COLORS.DARK_SLATE }}>Join the Spice Route</h3>
             <p className="mt-2 text-gray-600">Sign up for offers, recipes & stories.</p>
