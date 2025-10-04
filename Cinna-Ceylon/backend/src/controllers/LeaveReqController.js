@@ -3,6 +3,12 @@ import LeaveRequest from "../models/LeaveReq.js";
 // Create
 export const createLeaveRequest = async (req, res) => {
   try {
+    // Prevent HR Manager from creating leave requests
+    // If an auth layer sets req.user, prefer that; else fall back to a custom header.
+    const requesterRole = (req.user?.role || req.headers['x-user-role'] || '').toString().toLowerCase();
+    if (requesterRole === 'hr_manager' || requesterRole === 'hr manager') {
+      return res.status(403).json({ error: 'HR Manager is not permitted to submit leave requests.' });
+    }
     const leave = await LeaveRequest.create(req.body);
     res.status(201).json(leave);
   } catch (err) {

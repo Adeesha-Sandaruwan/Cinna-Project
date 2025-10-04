@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
   },
   role: { 
     type: String,
+    // Removed explicit null from enum; absence of role is "undefined" which is allowed.
     enum: [
       'admin',
       'delivery_manager',
@@ -25,7 +26,7 @@ const userSchema = new mongoose.Schema({
       'user_manager',
       'vehicle_manager',
       'supplier_manager',
-      null
+      'hr_manager'
     ]
   },
   isAdmin: { type: Boolean, default: false },

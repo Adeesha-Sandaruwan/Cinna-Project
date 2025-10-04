@@ -126,11 +126,24 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 Frontend should connect to: http://localhost:3002`);
   
   // Connect to MongoDB after server starts
-  connectDB().catch(err => {
-    console.error('❌ Database connection failed:', err);
-    server.close(); // Shut down server if DB connection fails
-    process.exit(1); // Exit process with error
-  });
+  connectDB()
+    .then(async () => {
+      try {
+        const updated = await privatizeExpiredProductsAtStartup();
+        if (updated > 0) {
+          console.log(`🔒 Expired products privatized on startup: ${updated}`);
+        } else {
+          console.log('✅ No expired public products needed privatization at startup');
+        }
+      } catch (e) {
+        console.warn('⚠️  Failed to run expiry privatization on startup:', e.message);
+      }
+    })
+    .catch(err => {
+      console.error('❌ Database connection failed:', err);
+      server.close(); // Shut down server if DB connection fails
+      process.exit(1); // Exit process with error
+    });
 });
 
 // Handle server startup errors

@@ -2,8 +2,7 @@ import React from 'react'; // Import React
 import { Link } from 'react-router-dom'; // For page navigation
 import { HeartIcon, UsersIcon, SparklesIcon, StarIcon, GlobeAltIcon, AcademicCapIcon } from '@heroicons/react/24/outline'; // Icons
 import AnimatedSection from './AnimatedSection'; // Animation wrapper
-import Header from './Header'; // Top navigation bar
-import Footer from './Footer'; // Bottom footer
+// Header & Footer removed (provided globally by App layout)
 
 // Theme colors
 const COLORS = {
@@ -166,8 +165,6 @@ function AboutUs() {
         </section>
       </main>
 
-      {/* Bottom footer */}
-      <Footer />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Header from './Header.jsx';
-import Footer from './Footer.jsx';
+// Header & Footer removed (handled globally)
 import OfferCard from './OfferCard.jsx';
 import OfferForm from './OfferForm.jsx';
 
@@ -85,22 +84,17 @@ const OffersPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-        <Header />
-        <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading offers...</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex justify-center items-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading offers...</p>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <Header />
       
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
@@ -205,7 +199,6 @@ const OffersPage = () => {
         />
       )}
 
-      <Footer />
     </div>
   );
 };

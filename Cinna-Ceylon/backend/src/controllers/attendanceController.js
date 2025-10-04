@@ -2,6 +2,12 @@ import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import nodemailer from 'nodemailer';
 
+// Role normalization helper (convert underscores to spaces, lowercase)
+function normalizeRole(role) {
+  if (!role) return '';
+  return String(role).replace(/_/g, ' ').toLowerCase().trim();
+}
+
 // Helper to generate OTP
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -186,15 +192,16 @@ export const markAttendance = async (req, res) => {
     }
     
     // Determine role for attendance - use user's role or default to 'user manager' for admins
-    let attendanceRole = user.role;
-    if (!attendanceRole && user.isAdmin) {
-      attendanceRole = 'user manager'; // Default role for admin users without specific role
+    let attendanceRole = normalizeRole(user.role);
+    // If role is literally 'admin' (or user.isAdmin true) map to a default functional role
+    if ((!attendanceRole || attendanceRole === 'admin') && user.isAdmin) {
+      attendanceRole = 'user manager'; // Default role for admin users without specific functional role
     }
     
     console.log('🔒 Attendance role determined:', attendanceRole);
     
     // Validate that the role is one of the allowed values
-    const allowedRoles = ['delivery manager', 'product manager', 'finance manager', 'user manager'];
+  const allowedRoles = ['delivery manager', 'product manager', 'finance manager', 'user manager', 'hr manager']; // 'admin' normalized to user manager above
     if (!allowedRoles.includes(attendanceRole)) {
       console.log('❌ Invalid role for attendance:', attendanceRole);
       return res.status(400).json({ message: 'Invalid user role for attendance' });
@@ -202,7 +209,7 @@ export const markAttendance = async (req, res) => {
     
     const attendance = new Attendance({
       user: user._id,
-      role: attendanceRole,
+      role: attendanceRole, // already normalized with spaces
       otp,
       status: 'present',
       date: new Date()

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { sanitizePhone, allowPhoneKey, handlePhonePaste } from '../utils/validations.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -224,7 +225,16 @@ function Register() {
                   name="profile.phone"
                   placeholder="Enter your phone number"
                   value={form.profile.phone}
-                  onChange={handleChange}
+                  onKeyDown={allowPhoneKey}
+                  onPaste={(e) => handlePhonePaste(e, (val) => handleChange({ target: { name: 'profile.phone', value: sanitizePhone(val) } }))}
+                  onChange={(e) => {
+                    const sanitized = sanitizePhone(e.target.value);
+                    handleChange({ target: { name: 'profile.phone', value: sanitized } });
+                  }}
+                  inputMode="tel"
+                  // New rule: up to 11 digits (no +), or + with up to 12 digits.
+                  maxLength={form.profile.phone.startsWith('+') ? 13 : 11}
+                  title="Up to 11 digits, or + followed by up to 12 digits."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent transition"
                 />
               </div>

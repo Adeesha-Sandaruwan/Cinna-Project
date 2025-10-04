@@ -94,47 +94,47 @@ const BuyerOffersPage = () => {
 
   const handleBuyNow = async (offer) => {
     try {
-      // Get the current user ID
-      const userId = localStorage.getItem('userId') || 'default';
-      
-      // Add the offer to cart first
-      const response = await fetch('http://localhost:5000/api/cart/offer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user: userId,
-          offerId: offer._id,
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      if (!token || !userId) {
+        showNotification('Please log in first', 'error');
+        return;
+      }
+
+      // Directly create a one-off order for the offer (bypassing cart stock mixing)
+      const orderPayload = {
+        items: [{
+          offer: offer._id,
           qty: 1,
-        }),
+          price: offer.discountedPrice || offer.price || 0,
+          itemType: 'offer',
+          originalPrice: offer.products ? offer.products.reduce((s,p)=> s + (p.price||0),0) : undefined
+        }],
+        total: offer.discountedPrice || offer.price || 0,
+        shippingAddress: {}, // will be filled at checkout update
+        paymentMethod: 'Pay at Delivery'
+      };
+
+      const res = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(orderPayload)
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to add offer to cart');
+
+      if (!res.ok) {
+        const errData = await res.json().catch(()=>({}));
+        throw new Error(errData.error || errData.message || 'Failed to create quick order');
       }
-      
-      // Show success notification
+
+      const newOrder = await res.json();
       showNotification('Redirecting to checkout...', 'success');
-      
-      // Update cart count by fetching the updated cart
-      const cartResponse = await fetch(`http://localhost:5000/api/cart/${userId || 'default'}`);
-      if (cartResponse.ok) {
-        const cartData = await cartResponse.json();
-        const offerCount = cartData.offerItems ? cartData.offerItems.reduce((sum, item) => sum + (item.qty || 0), 0) : 0;
-        const productCount = cartData.items ? cartData.items.reduce((sum, item) => sum + (item.qty || 0), 0) : 0;
-        const totalCount = offerCount + productCount;
-        window.dispatchEvent(new CustomEvent('cartCountUpdate', { detail: totalCount }));
-      }
-      
-      // Redirect to checkout page after a brief delay
+      // Navigate to checkout in buy-now mode with orderId
       setTimeout(() => {
-        window.location.href = '/checkout';
-      }, 1000);
-      
+        window.location.href = `/checkout?orderId=${newOrder._id}&buyNow=true`;
+      }, 600);
     } catch (err) {
       console.error('Error in buy now:', err);
-      showNotification('Failed to process your request. Please try again.', 'error');
+      showNotification(err.message || 'Failed to process your request.', 'error');
     }
   };
 

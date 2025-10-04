@@ -11,6 +11,7 @@ import logo from '../assets/images/logo.png';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import ProductSearch from './ProductSearch';
 
 const COLORS = {
   RICH_GOLD: '#c5a35a',
@@ -24,7 +25,6 @@ const navLinks = [
   { name: 'Home', href: '/' },
   { name: 'Products', href: '/products' },
   { name: 'Wholesale', href: '/wholesale' },
-  { name: 'Suppliers', href: '/supplierform' },
   { name: 'About Us', href: '/about' },
   { name: 'Contact Us', href: '/contact' },
   { name: 'Offers', href: '/buyer-offers' },
@@ -85,30 +85,10 @@ export default function Header() {
         {/* Logo */}
         <div
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
-          onClick={() => {
-            closeAllMenus();
-            if (user) {
-              if (user.isAdmin) navigate('/dashboard/admin');
-              else if (user.userType === 'buyer') navigate('/dashboard/buyer');
-              else if (user.userType === 'supplier') navigate('/dashboard/supplier');
-              else if (user.userType === 'driver') navigate('/dashboard/driver');
-              else navigate('/');
-            } else navigate('/');
-          }}
+          onClick={() => { closeAllMenus(); navigate('/'); }}
           role="button"
           tabIndex={0}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              closeAllMenus();
-              if (user) {
-                if (user.isAdmin) navigate('/dashboard/admin');
-                else if (user.userType === 'buyer') navigate('/dashboard/buyer');
-                else if (user.userType === 'supplier') navigate('/dashboard/supplier');
-                else if (user.userType === 'driver') navigate('/dashboard/driver');
-                else navigate('/');
-              } else navigate('/');
-            }
-          }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { closeAllMenus(); navigate('/'); } }}
         >
           <img src={logo} alt="CinnaCeylon Logo" className="h-12 w-auto" />
           <span className="font-bold text-xl tracking-wide hidden sm:block">CinnaCeylon</span>
@@ -126,31 +106,25 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.isAdmin ? (
-              <Link to="/dashboard/admin" className="hover:text-[#FFD700] transition-colors duration-200">Admin Dashboard</Link>
-            ) : user.userType === 'buyer' ? (
-              <Link to="/buyer/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Buyer Dashboard</Link>
-            ) : user.userType === 'supplier' ? (
+            user.userType === 'supplier' ? (
               <Link to="/supplier/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
             ) : user.userType === 'driver' ? (
+<<<<<<< HEAD
               <Link to="/dashboard/driver" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
             ) : null
+=======
+              <Link to="/driver/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
+            ) : null /* Intentionally hide Buyer Dashboard link for buyers */
+>>>>>>> 02cc9dd7424c0b0a7fb45df357870fcf09f9328d
           )}
         </div>
 
         {/* Right side icons and auth */}
         <div className="flex items-center gap-4">
-          {/* Search Bar (Desktop) */}
-          <form className="hidden lg:flex items-center bg-white rounded-full px-3 py-1 shadow-inner">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 w-32"
-            />
-            <button type="submit" className="bg-[#FFD700] text-black rounded-full px-3 py-1 hover:bg-yellow-400 transition text-sm">
-              Search
-            </button>
-          </form>
+          {/* Dynamic Product Search (Desktop) */}
+          <div className="hidden lg:block">
+            <ProductSearch />
+          </div>
 
           {/* Cart Icon */}
           <Link to="/cart" className="relative text-white hover:text-gray-200 transition">
@@ -182,7 +156,13 @@ export default function Header() {
                 </button>
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-white text-gray-800 rounded-lg shadow-lg z-50 border">
-                    <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 rounded-t-lg transition-colors" onClick={() => setProfileOpen(false)}>Profile</Link>
+                    {user?.isAdmin && (
+                      <Link to="/dashboard/admin" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Admin Dashboard</Link>
+                    )}
+                    {user?.userType === 'buyer' && (
+                      <Link to="/dashboard/buyer" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Buyer Dashboard</Link>
+                    )}
+                    <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 transition-colors" onClick={() => setProfileOpen(false)}>Profile</Link>
                     <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg transition-colors border-t border-gray-200">Logout</button>
                   </div>
                 )}
@@ -218,11 +198,9 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.isAdmin ? <Link to="/dashboard/admin" onClick={closeAllMenus}>Admin Dashboard</Link> :
-            user.userType === 'buyer' ? <Link to="/buyer/dashboard" onClick={closeAllMenus}>Buyer Dashboard</Link> :
             user.userType === 'supplier' ? <Link to="/supplier/dashboard" onClick={closeAllMenus}>Supplier Dashboard</Link> :
             user.userType === 'driver' ? <Link to="/driver/dashboard" onClick={closeAllMenus}>Driver Dashboard</Link> :
-            null
+            null /* Buyer Dashboard link hidden intentionally */
           )}
         </div>
 
@@ -240,6 +218,12 @@ export default function Header() {
                 <span className="font-medium truncate">{user?.username || user?.email || 'User'}</span>
               </div>
               <div className="flex flex-col gap-2">
+                {user?.isAdmin && (
+                  <Link to="/dashboard/admin" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>Admin Dashboard</Link>
+                )}
+                {user?.userType === 'buyer' && (
+                  <Link to="/dashboard/buyer" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>Buyer Dashboard</Link>
+                )}
                 <Link to="/profile" className="bg-white text-gray-800 rounded px-3 py-2 hover:bg-gray-100 transition text-center text-sm" onClick={closeAllMenus}>View Profile</Link>
                 <button onClick={handleLogout} className="bg-red-600 text-white rounded px-3 py-2 hover:bg-red-700 transition text-center text-sm">Logout</button>
               </div>
@@ -256,10 +240,9 @@ export default function Header() {
         </div>
 
         {/* Mobile Search */}
-        <form className="flex items-center bg-white rounded-full px-3 py-2 shadow-inner mb-6">
-          <input type="text" placeholder="Search products..." className="bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 flex-1" />
-          <button type="submit" className="bg-[#FFD700] text-black rounded-full px-3 py-1 hover:bg-yellow-400 transition text-sm">Search</button>
-        </form>
+        <div className="mb-6">
+          <ProductSearch className="w-full" />
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
