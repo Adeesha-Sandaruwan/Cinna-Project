@@ -89,13 +89,3 @@ export const deleteProfile = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-// Get all drivers (users with userType 'driver')
-export const getDrivers = async (req, res) => {
-  try {
-    const drivers = await User.find({ userType: 'driver' }).select('-password');
-    res.json(drivers);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};

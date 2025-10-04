@@ -52,7 +52,7 @@ const teamMembers = [
 function AboutUs() {
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }}>
-       {/* Show top bar */}
+      <Header /> {/* Show top bar */}
 
       <main>
         {/* Hero Section */}

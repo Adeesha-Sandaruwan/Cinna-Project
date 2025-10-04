@@ -16,14 +16,18 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 const storage = multer.diskStorage({
 	destination: function (req, file, cb) {
+		console.log("Multer destination - file:", file);
 		cb(null, path.join(__dirname, "../uploads"));
 	},
 	filename: function (req, file, cb) {
+		console.log("Multer filename - file:", file);
 		const filename = Date.now() + "-" + file.originalname;
+		console.log("Generated filename:", filename);
 		cb(null, filename);
 	}
 });
@@ -31,9 +35,19 @@ const storage = multer.diskStorage({
 const upload = multer({ 
 	storage,
 	fileFilter: (req, file, cb) => {
+		console.log("Multer fileFilter - file:", file);
 		cb(null, true);
 	}
 });
+
+// Debug middleware
+const debugMiddleware = (req, res, next) => {
+  console.log("Debug - Request content-type:", req.get('content-type'));
+  console.log("Debug - Request body:", req.body);
+  console.log("Debug - Request files before multer:", req.files);
+  console.log("Debug - Request file before multer:", req.file);
+  next();
+};
 
 router.post(
 	"/",
@@ -65,11 +79,13 @@ router.delete("/:id", deleteVehicle);
 
 // Maintenance and Accident report submission routes
 router.put("/:id/maintenance", 
+  debugMiddleware,
   upload.single("maintenanceReport"), 
   submitMaintenanceReport
 );
 
 router.put("/:id/accident", 
+  debugMiddleware,
   upload.single("accidentReport"), 
   submitAccidentReport
 );

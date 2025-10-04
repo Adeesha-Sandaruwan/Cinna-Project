@@ -8,7 +8,6 @@ const vehicleSchema = new mongoose.Schema({
   },
   vehicleType: {
     type: String,
-    required: true,
     enum: ["Truck", "truck", "Van", "van", "Bike", "bike", "Car", "car"],
   },
   capacity: {
@@ -22,7 +21,6 @@ const vehicleSchema = new mongoose.Schema({
   },
   insuranceNo: {
     type: String,
-    required: true,
     unique: true,
   },
   insuranceExpDate: {
@@ -57,41 +55,10 @@ const vehicleSchema = new mongoose.Schema({
 // Auto-generate vehicleId before saving (incremental)
 vehicleSchema.pre('save', async function(next) {
   if (!this.vehicleId) {
-    try {
-      const Vehicle = mongoose.model('Vehicle');
-      
-      // Find the highest existing vehicleId number to avoid duplicates
-      const lastVehicle = await Vehicle.findOne(
-        { vehicleId: { $regex: /^VEH - \d+$/ } },
-        { vehicleId: 1 }
-      ).sort({ vehicleId: -1 }).lean();
-      
-      let nextNum = 1;
-      
-      if (lastVehicle && lastVehicle.vehicleId) {
-        // Extract the number from the last vehicleId (e.g., "VEH - 05" -> 5)
-        const match = lastVehicle.vehicleId.match(/VEH - (\d+)/);
-        if (match) {
-          nextNum = parseInt(match[1], 10) + 1;
-        }
-      }
-      
-      // Generate new vehicleId with proper padding
-      this.vehicleId = `VEH - ${nextNum.toString().padStart(2, '0')}`;
-      
-      // Double-check for uniqueness (extra safety)
-      const existingVehicle = await Vehicle.findOne({ vehicleId: this.vehicleId });
-      if (existingVehicle) {
-        // If still exists, try next number
-        nextNum++;
-        this.vehicleId = `VEH - ${nextNum.toString().padStart(2, '0')}`;
-      }
-      
-    } catch (error) {
-      console.error('Error generating vehicleId:', error);
-      // Fallback to timestamp-based ID if all else fails
-      this.vehicleId = `VEH - ${Date.now().toString().slice(-6)}`;
-    }
+    const Vehicle = mongoose.model('Vehicle');
+    const count = await Vehicle.countDocuments();
+    const nextNum = count + 1;
+    this.vehicleId = `VEH - ${nextNum.toString().padStart(2, '0')}`;
   }
   next();
 });

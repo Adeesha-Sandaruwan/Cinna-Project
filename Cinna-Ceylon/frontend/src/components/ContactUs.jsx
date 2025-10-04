@@ -15,7 +15,7 @@ const COLORS = {
 function ContactUs() {
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased"> {/* Main container with background */}
-       {/* Navigation bar at top */}
+      <Header /> {/* Navigation bar at top */}
 
       <main className="text-gray-800"> {/* Content wrapper */}
 

@@ -74,15 +74,9 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/admin/attendance", attendanceAdminRoutes);
 
 // Root test endpoint
-// Global error handling middleware
-import { handleError } from './utils/errorHandler.js';
-
 app.get('/', (req, res) => {
   res.send('🌿 CinnaCeylon API is running 🚀');
 });
-
-// Error handling middleware should be after all routes
-app.use(handleError);
 
 // Port - Fixed to 5000 to avoid conflicts
 const PORT = process.env.PORT || 5000;

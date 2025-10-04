@@ -35,12 +35,11 @@
     "webpack-dev-server": "^5.2.2"
   },
   "scripts": {
-    "start": "webpack serve --mode development --open --no-client-overlay --stats=errors-warnings",
+    "start": "webpack serve --mode development --open",
     "build": "webpack --mode production"
   },
   "description": "",
   "main": "postcss.config.js",
-  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC"

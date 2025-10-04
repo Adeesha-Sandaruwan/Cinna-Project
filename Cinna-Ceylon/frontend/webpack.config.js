@@ -1,11 +1,7 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export default {
+module.exports = {
   entry: './src/index.jsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -55,25 +51,6 @@ export default {
     ],
     hot: true,
     compress: true,
-    // Suppress source map warnings for node_modules
-    client: {
-      logging: 'warn',
-      overlay: {
-        errors: true,
-        warnings: false,
-      },
-    },
   },
   mode: 'development',
-  // Suppress source map warnings for dependencies
-  ignoreWarnings: [
-    {
-      module: /node_modules/,
-      message: /source-map/,
-    },
-    {
-      module: /node_modules/,
-      message: /sourcemap/,
-    },
-  ],
 };
