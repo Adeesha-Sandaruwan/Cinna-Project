@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from "react";// brings react in to scope and use effect support fetching data
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable'; // direct import for reliability
-import logo from '../assets/images/logo.png';
 import { Link } from "react-router-dom";//link navigates between routes without reloading the page.
 import {
   PencilIcon,
@@ -10,27 +7,11 @@ import {
   MagnifyingGlassIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";//import some visual icons from hereicons(delete , search and view)
-import ExpiryBar from './ExpiryBar.jsx';
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
 }; // using this we can centrelize the brand colors later reuse instead of hex values
-
-// ---------------- Inventory Helpers ----------------
-const daysToExpiry = (expiryDate) => {
-  if (!expiryDate) return '';
-  const now = new Date();
-  const exp = new Date(expiryDate);
-  const diff = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
-  return diff; // can be negative if already expired
-};
-
-const stockStatusLabel = (stock) => {
-  if (stock <= 5) return 'Low';
-  if (stock <= 20) return 'Medium';
-  return 'Good';
-};
 
 // Reusable small components
 const Modal = ({ open, onClose, children }) =>//open - whether to show the model,onclose - calls when user closes, children - jsx
@@ -75,156 +56,6 @@ export default function ProductManagement() { // defines and exports the main pa
 
   const [editProduct, setEditProduct] = useState(null); // holds the product which is about to be updated part. null if model is closed
   const [deleteProduct, setDeleteProduct] = useState(null); // holds product user intends to delete.
-
-  // --------------- Report Data Builders ---------------
-  const buildReportRows = () => {
-    return filtered.map(p => {
-      const dte = daysToExpiry(p.expiryDate);
-      const status = stockStatusLabel(p.stock);
-      const value = (p.price || 0) * (p.stock || 0);
-      return {
-        name: p.name,
-        sku: p.sku || '',
-        type: p.type,
-        price: p.price,
-        stock: p.stock,
-        status,
-        expiryDays: dte === '' ? '' : dte,
-        expiryDate: p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '',
-        value
-      };
-    });
-  };
-
-
-  const downloadPDF = () => {
-    const rows = buildReportRows();
-    if (!rows.length) return;
-    const doc = new jsPDF({ orientation: 'landscape' });
-    const totalValue = rows.reduce((sum,r)=> sum + r.value,0);
-  // Header layout constants
-  const PAGE_WIDTH = doc.internal.pageSize.getWidth();
-  const HEADER_HEIGHT = 26; // increase to fit larger logo
-  const LOGO_W = 42; // enlarged logo width
-  const LOGO_H = 20; // enlarged logo height
-  const LOGO_X = 6;
-  const LOGO_Y = 3;
-  const TITLE_Y = 15; // vertical center alignment visually
-
-  // Draw header bar first (full width dynamic)
-  doc.setFillColor(204,119,34); // cinnamon tone
-  doc.rect(0,0,PAGE_WIDTH,HEADER_HEIGHT,'F');
-    // Attempt to add logo (synchronous assumption since bundler provides resolved path)
-    try {
-      const img = new Image();
-      img.src = logo;
-      // We use onload to ensure image is ready before adding, then continue generation
-      img.onload = () => {
-        doc.addImage(img, 'PNG', LOGO_X, LOGO_Y, LOGO_W, LOGO_H); // x,y,w,h
-        finalizePDF();
-      };
-      img.onerror = () => {
-        finalizePDF();
-      };
-      return; // exit early; finalizePDF will finish and save
-    } catch {
-      // If something goes wrong just proceed without logo
-    }
-    finalizePDF();
-
-    function finalizePDF(){
-      doc.setTextColor(255,255,255);
-  doc.setFontSize(20);
-  doc.text('CinnaCeylon Inventory Report', PAGE_WIDTH / 2, TITLE_Y, { align: 'center' });
-      doc.setTextColor(0,0,0);
-  doc.setFontSize(10);
-  const metaBaseY = HEADER_HEIGHT + 6;
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, metaBaseY);
-  doc.text(`Products: ${rows.length}`, 14, metaBaseY + 6);
-  doc.text(`Total Inventory Value: Rs.${totalValue.toFixed(2)}`, 14, metaBaseY + 12);
-
-    // Derived metrics
-  const lowCount = rows.filter(r=> r.status==='Low').length;
-  doc.text(`Low Stock Items: ${lowCount}`, 90, 32);
-
-  const startTableY = HEADER_HEIGHT + 24;
-
-    try {
-      autoTable(doc, {
-        startY: startTableY,
-        head: [[ 'Name','SKU','Type','Price','Stock','Status','Expiry (Days)','Expiry Date','Value' ]],
-        body: rows.map(r => [ r.name, r.sku, r.type, r.price, r.stock, r.status, r.expiryDays, r.expiryDate, r.value.toFixed(2) ]),
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [204,119,34], halign: 'center' },
-        bodyStyles: { valign: 'middle' },
-        didParseCell: function(data) {
-          if (data.section === 'body') {
-            const statusColIndex = 5; // Status column
-            if (data.column.index === statusColIndex) {
-              const val = data.cell.text[0];
-              if (val === 'Low') {
-                data.cell.styles.fillColor = [255,230,230];
-                data.cell.styles.textColor = [200,0,0];
-              } else if (val === 'Medium') {
-                data.cell.styles.fillColor = [255,247,225];
-                data.cell.styles.textColor = [180,120,0];
-              } else if (val === 'Good') {
-                data.cell.styles.fillColor = [230,255,234];
-                data.cell.styles.textColor = [0,120,40];
-              }
-            }
-            const expiryDaysCol = 6;
-            if (data.column.index === expiryDaysCol) {
-              const val = parseInt(data.cell.text[0],10);
-              if (!isNaN(val) && val <= 7 && val >= 0) {
-                data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.textColor = [200,0,0];
-              }
-              if (!isNaN(val) && val < 0) {
-                data.cell.styles.textColor = [150,0,0];
-                data.cell.styles.fontStyle = 'italic';
-              }
-            }
-          }
-        },
-        didDrawPage: function(data) {
-          const pageCount = doc.getNumberOfPages();
-          doc.setFontSize(8);
-          doc.setTextColor(100);
-          doc.text(`Page ${data.pageNumber} of ${pageCount}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
-        }
-      });
-
-      // Add Summary on a NEW PAGE
-      doc.addPage('landscape');
-      // Header bar for summary page
-      doc.setFillColor(204,119,34);
-      doc.rect(0,0,PAGE_WIDTH,HEADER_HEIGHT,'F');
-      doc.setTextColor(255,255,255);
-      doc.setFontSize(18);
-      doc.text('Inventory Summary', PAGE_WIDTH/2, TITLE_Y, { align: 'center' });
-      doc.setTextColor(0,0,0);
-      const summaryStartY = HEADER_HEIGHT + 8;
-      autoTable(doc, {
-        startY: summaryStartY,
-        head: [['Metric','Value']],
-        body: [
-          ['Products', rows.length],
-          ['Low Stock Items', lowCount],
-          ['Total Inventory Value', `Rs.${totalValue.toFixed(2)}`]
-        ],
-        theme: 'grid',
-        styles: { fontSize: 10 },
-        headStyles: { fillColor: [60,60,60] }
-      });
-      doc.save(`inventory_report_${new Date().toISOString().slice(0,10)}.pdf`);
-    } catch(err) {
-      console.error('PDF generation error:', err);
-      alert('PDF generation failed. Check console for details.');
-      doc.save(`inventory_report_${new Date().toISOString().slice(0,10)}.pdf`);
-    }
-  };
-  };
 
   // API helper
   const apiRequest = async (url, options, successMsg) => { //define const apiRequest it will hold an asynchronous function that takes three parameters: url, options, and successMsg.
@@ -355,34 +186,7 @@ export default function ProductManagement() { // defines and exports the main pa
           >
             <PlusIcon className="w-5 mr-1" /> Add Product
           </Link>
-          {/* Report Export Button (PDF only) */}
-          <div className="flex gap-2 w-full md:w-auto">
-            <button
-              onClick={downloadPDF}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl shadow-sm w-full md:w-auto"
-            >
-              Download PDF
-            </button>
-          </div>
         </div>
-
-        {/* Inventory Summary */}
-        {!loading && (
-          <div className="mb-4 bg-white p-4 rounded-xl shadow flex flex-wrap gap-6 text-sm">
-            {(() => {
-              const rows = buildReportRows();
-              const totalValue = rows.reduce((s,r)=> s + r.value,0);
-              const lowCount = rows.filter(r=> r.status === 'Low').length;
-              return (
-                <>
-                  <div><span className="font-semibold">Products:</span> {rows.length}</div>
-                  <div><span className="font-semibold">Low Stock:</span> {lowCount}</div>
-                  <div><span className="font-semibold">Total Inventory Value:</span> Rs.{totalValue.toFixed(2)}</div>
-                </>
-              );
-            })()}
-          </div>
-        )}
 
         {/* Table */}
         {loading ? (
@@ -398,7 +202,6 @@ export default function ProductManagement() { // defines and exports the main pa
                   <th className="p-3">Price</th>
                   <th className="p-3">Stock</th>
                   <th className="p-3">Status</th>
-                  <th className="p-3">Expiry</th>
                   <th className="p-3">Visibility</th>
                   <th className="p-3">Actions</th>
                 </tr>
@@ -409,17 +212,9 @@ export default function ProductManagement() { // defines and exports the main pa
                     <td className="p-3 font-medium">{p.name}</td>
                     <td className="p-3">{p.sku}</td>
                     <td className="p-3 capitalize">{p.type}</td>
-                    <td className="p-3">Rs.{p.price}</td>
+                    <td className="p-3">${p.price}</td>
                     <td className="p-3">{p.stock}</td>
                     <td className="p-3"><StockStatus stock={p.stock} /></td>
-                    <td className="p-3 w-28">
-                      {p.expiryDate && (
-                        <ExpiryBar createdAt={p.createdAt} expiryDate={p.expiryDate} compact />
-                      )}
-                      <div className="text-[10px] mt-1">
-                        {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '—'}
-                      </div>
-                    </td>
                     <td className="p-3">
                       <button
                         onClick={() => toggleVisibility(p)}
@@ -511,14 +306,6 @@ export default function ProductManagement() { // defines and exports the main pa
                 onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
                 className="border p-2 rounded"
                 placeholder="Stock"
-              />
-              <input
-                type="date"
-                value={editProduct.expiryDate ? editProduct.expiryDate.split('T')[0] : ''}
-                onChange={(e) => setEditProduct({ ...editProduct, expiryDate: e.target.value })}
-                className="border p-2 rounded"
-                min={new Date().toISOString().split('T')[0]}
-                placeholder="Expiry Date"
               />
               <textarea
                 value={editProduct.description}

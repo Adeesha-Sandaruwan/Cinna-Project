@@ -153,24 +153,3 @@ export const validateImage = async (image) => {
     img.src = URL.createObjectURL(image);
   });
 };
-
-// Optional phone utilities (in case product-related forms capture a supplier contact phone)
-export const sanitizePhone = (raw = '') => {
-  if (typeof raw !== 'string') return '';
-  let cleaned = raw.replace(/[^\d+]/g, '');
-  if (cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned.slice(1).replace(/\+/g, '');
-  } else {
-    cleaned = cleaned.replace(/\+/g, '');
-  }
-  return cleaned;
-};
-
-export const validatePhoneGeneric = (phone) => {
-  const value = sanitizePhone(phone);
-  const re = /^\+?\d{7,15}$/;
-  if (!re.test(value)) {
-    return 'Phone must be digits only (7-15) with optional leading +';
-  }
-  return '';
-};

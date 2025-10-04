@@ -1,6 +1,7 @@
 import React from 'react'; // Import React to build component
 import { PhoneIcon, EnvelopeIcon, MapPinIcon, ClockIcon } from '@heroicons/react/24/outline'; // Import icons
-// Header & Footer removed (now globally rendered in App)
+import Header from './Header'; // Import header component
+import Footer from './Footer'; // Import footer component
 
 /* Theme colors used across page */
 const COLORS = {
@@ -14,10 +15,7 @@ const COLORS = {
 function ContactUs() {
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased"> {/* Main container with background */}
-<<<<<<< HEAD
        {/* Navigation bar at top */}
-=======
->>>>>>> 02cc9dd7424c0b0a7fb45df357870fcf09f9328d
 
       <main className="text-gray-800"> {/* Content wrapper */}
 
@@ -198,6 +196,8 @@ function ContactUs() {
         </section>
       </main>
 
+      {/* Bottom footer */}
+      <Footer />
     </div>
   );
 }

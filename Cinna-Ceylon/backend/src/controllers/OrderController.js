@@ -4,14 +4,11 @@ import Product from '../models/Product.js';
 // Create order
 export const createOrder = async (req, res) => {
   try {
-    // Extract fields from request body (user is derived from auth if available)
-    const { user: userFromBody, items, total, shippingAddress, paymentMethod } = req.body;
-
-    // Prefer authenticated user id; fallback to provided userFromBody (legacy behavior)
-    const userId = req.user?.id || userFromBody;
+    // Extract fields from request body
+    const { user, items, total, shippingAddress, paymentMethod } = req.body;
 
     // Validate required fields
-    if (!userId || !items || !total) {
+    if (!user || !items || !total) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -39,7 +36,7 @@ export const createOrder = async (req, res) => {
 
     // Create the order in DB
     const order = await Order.create({
-      user: userId,
+      user,
       items,
       total,
       shippingAddress,
@@ -50,7 +47,7 @@ export const createOrder = async (req, res) => {
     // Populate product details and user info for frontend
     const populatedOrder = await Order.findById(order._id)
       .populate('items.product')
-      .populate({ path: 'user', select: '_id username email userType' });
+      .populate({ path: 'user', select: '_id name email' });
 
     res.status(201).json(populatedOrder);
 
@@ -65,7 +62,6 @@ export const getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate('items.product') // Include product details
-      .populate({ path: 'user', select: '_id username email userType' })
       .sort({ createdAt: -1 }); // Latest first
     res.json(orders);
   } catch (err) {
@@ -77,12 +73,9 @@ export const getOrders = async (req, res) => {
 // Get all orders of a specific user
 export const getUserOrders = async (req, res) => {
   try {
-    const { userId } = req.params; // legacy param route
-    const effectiveUserId = userId || req.user?.id;
-    if (!effectiveUserId) return res.status(400).json({ error: 'User id missing' });
-    const orders = await Order.find({ user: effectiveUserId })
+    const { userId } = req.params;
+    const orders = await Order.find({ user: userId })
       .populate('items.product')
-      .populate({ path: 'user', select: '_id username email userType' })
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
@@ -95,9 +88,7 @@ export const getUserOrders = async (req, res) => {
 export const getOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const order = await Order.findById(orderId)
-      .populate('items.product')
-      .populate({ path: 'user', select: '_id username email userType' });
+    const order = await Order.findById(orderId).populate('items.product');
 
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });

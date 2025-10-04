@@ -103,29 +103,9 @@ npm run build
 ## 📝 API Endpoints
 
 - `GET /api/products` - Get all products
-- `GET /api/products?q=term` - Search products by partial name or description (case-insensitive). Combine with `&admin=true` to include expired/private if authorized.
 - `POST /api/products` - Create new product
 - `GET /api/products/:id` - Get specific product
 - `PUT /api/products/:id` - Update product
 - `DELETE /api/products/:id` - Delete product
 
 And many more endpoints for cart, orders, inventory, etc.
-
-### 🔎 Dynamic Product Search (Frontend)
-The header now includes a dynamic, debounced product search (`ProductSearch.jsx`).
-
-Features:
-- Debounced (400ms) network requests to `/api/products?q=...`
-- Aborts in-flight requests when typing quickly
-- Keyboard navigation (Up/Down/Enter/Escape)
-- Shows loading / empty / error states
-- Limits suggestions to 8 items
-
-To reuse elsewhere:
-```jsx
-import ProductSearch from './components/ProductSearch';
-
-<ProductSearch minChars={2} debounceMs={300} />
-```
-
-Back-end filtering still excludes expired/private products for non-admin users.

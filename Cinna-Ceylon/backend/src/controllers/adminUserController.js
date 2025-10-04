@@ -15,14 +15,7 @@ export const getAllUsers = async (req, res) => {
 // Create a new user (admin only)
 export const createUser = async (req, res) => {
   try {
-  let { username, email, password, userType, role, profile } = req.body;
-
-    // Normalization: if client sent a specific manager role as userType (e.g. hr_manager)
-    // convert to base userType 'manager' and move into role.
-    if (userType && typeof userType === 'string' && userType.endsWith('_manager')) {
-      role = userType.trim(); // capture specific manager role
-      userType = 'manager';
-    }
+    const { username, email, password, userType, role, profile } = req.body;
     
     // Validate required fields
     if (!username || !email || !password || !userType) {
@@ -43,7 +36,7 @@ export const createUser = async (req, res) => {
           return res.status(400).json({ message: 'Manager must have a valid manager role' });
         }
         isAdmin = true;
-        effectiveRole = role; // includes hr_manager now
+        effectiveRole = role;
         break;
         
       case 'admin':
@@ -63,9 +56,15 @@ export const createUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const userDoc = { username, email, password: hashedPassword, userType, isAdmin, profile };
-    if (effectiveRole) userDoc.role = effectiveRole;
-    const user = new User(userDoc);
+    const user = new User({ 
+      username, 
+      email, 
+      password: hashedPassword, 
+      userType, 
+      role: effectiveRole,
+      isAdmin, 
+      profile 
+    });
     
     await user.save();
     res.status(201).json({ 
@@ -89,13 +88,7 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    let { username, email, password, userType, profile, role } = req.body;
-
-    // Normalize role-style userType values on update too
-    if (userType && userType.endsWith('_manager')) {
-      role = userType;
-      userType = 'manager';
-    }
+    const { username, email, password, userType, profile } = req.body;
     
     let updateData = { 
       username, 
@@ -105,15 +98,15 @@ export const updateUser = async (req, res) => {
 
     // Handle role and permissions based on the requested user type
     if (userType) {
-  updateData.userType = userType;
+      updateData.userType = userType;
       
       if (userType === 'admin') {
         updateData.role = 'admin';
         updateData.isAdmin = true;
       } else if (userType === 'manager') {
-        const effectiveRole = role || req.body.role;
-        if (effectiveRole && effectiveRole.includes('_manager')) {
-          updateData.role = effectiveRole; // hr_manager allowed
+        // If it's a manager, we need the specific role from the request
+        if (req.body.role && req.body.role.includes('_manager')) {
+          updateData.role = req.body.role;
           updateData.isAdmin = true;
         } else {
           return res.status(400).json({ message: 'Manager requires a specific role' });

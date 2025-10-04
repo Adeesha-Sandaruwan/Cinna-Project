@@ -51,20 +51,12 @@ export const addToCart = async (req, res) => {
       }
     } else {
       if (existingItemIndex !== -1) {
-        // Increment existing item quantity instead of replacing
-        const current = cart.items[existingItemIndex].qty;
-        let newQty = current + qty; // additive behavior
-        if (newQty > availableStock) {
-          newQty = availableStock; // clamp to available
-        }
-        cart.items[existingItemIndex].qty = newQty;
-        cart.items[existingItemIndex].priceAtAdd = finalPrice; // update latest price snapshot
+        // Update existing item
+        cart.items[existingItemIndex].qty = qty;
+        cart.items[existingItemIndex].priceAtAdd = finalPrice;
       } else {
         // Add new item to cart
-        const initQty = qty > availableStock ? availableStock : qty;
-        if (initQty > 0) {
-          cart.items.push({ product: productId, qty: initQty, priceAtAdd: finalPrice });
-        }
+        cart.items.push({ product: productId, qty, priceAtAdd: finalPrice });
       }
     }
 

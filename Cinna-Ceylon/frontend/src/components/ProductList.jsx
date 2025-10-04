@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import ExpiryBar from './ExpiryBar.jsx';
 
 const COLORS = { 
   RICH_GOLD: "#c5a35a",
@@ -30,25 +29,10 @@ const ProductList = () => {
 
         // Filter out private products unless user is admin
         const isAdmin = false; // TODO: Replace with actual admin check
-<<<<<<< HEAD
         const filteredProducts = isAdmin
           ? data
           : data.filter((product) => product.visibility === "public");
 
-=======
-        const todayStart = new Date();
-        todayStart.setHours(0,0,0,0);
-        const filteredProducts = isAdmin 
-          ? data 
-          : data.filter(product => {
-              if (product.visibility !== 'public') return false;
-              if (product.expiryDate) {
-                const exp = new Date(product.expiryDate);
-                return exp >= todayStart; // only keep not-expired
-              }
-              return true; // if no expiryDate treat as non-expiring
-            });
->>>>>>> 02cc9dd7424c0b0a7fb45df357870fcf09f9328d
         setProducts(filteredProducts);
       } catch (err) {
         console.error("❌ Error fetching products:", err);
@@ -102,14 +86,13 @@ const ProductList = () => {
                   {product.name}
                 </h2>
                 <p
-                  className="text-md font-bold mb-2 text-center"
+                  className="text-md font-bold mb-4 text-center"
                   style={{ color: COLORS.DEEP_CINNAMON }}
                 >
                   LKR {product.price.toLocaleString()}
                 </p>
-                {product.expiryDate && (
-                  <ExpiryBar createdAt={product.createdAt} expiryDate={product.expiryDate} compact />
-                )}
+
+                {/* Button */}
                 <div className="mt-auto">
                   <Link
                     to={`/products/${product._id}`}

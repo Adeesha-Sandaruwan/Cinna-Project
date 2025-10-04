@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Toasts
 import { ToastContainer } from 'react-toastify';
@@ -29,7 +29,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 
 // Dashboards
-import { BuyerDashboard, SupplierDashboard, DriverDashboard, AdminDashboard } from './components/dashboard';
+import { BuyerDashboard, SupplierDashboard, AdminDashboard } from './components/dashboard/index.jsx';
 import AttendanceRecords from './components/dashboard/AttendanceRecords';
 import DriverDashboard from './components/DriverDashboard.jsx';
 
@@ -49,16 +49,13 @@ import MaintenanceManagement from "./components/MaintenanceManagement.jsx";
 import AccidentManagement from "./components/AccidentManagement.jsx";
 import EmergencyManagement from "./components/EmergencyManagement.jsx";
 
-// Inner component to allow useLocation hook (for conditional layout)
-function AppContent() {
-  const location = useLocation();
-  const noLayoutRoutes = ['/login', '/register'];
-  const hideLayout = noLayoutRoutes.includes(location.pathname.toLowerCase());
-
+function App() {
   return (
-    <>
-      {!hideLayout && <Header />}
-      <Routes>
+    <AuthProvider>
+      <CartProvider>
+        <Router>
+          <Header />
+          <Routes>
             {/* Main Website Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutUs />} />
@@ -80,12 +77,11 @@ function AppContent() {
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
 
-            {/* Dashboards */}
-            <Route path="/dashboard/buyer" element={<BuyerDashboard />} />
-            <Route path="/dashboard/supplier" element={<SupplierDashboard />} />
-            <Route path="/dashboard/driver" element={<DriverDashboard />} />
-            <Route path="/dashboard/admin" element={<AdminDashboard />} />
-            <Route path="/dashboard/attendance-records" element={<AttendanceRecords />} />
+          {/* E-commerce */}
+          <Route path="/cart/:userId?" element={<Cart />} />
+          <Route path="/checkout/:userId?" element={<Checkout />} />
+          <Route path="/leaverequestform" element={<LeaveRequestForm />} />
+          <Route path="/supplierform" element={<SupplierForm />} />
 
             {/* Supplier & HR Management */}
             <Route path="/supplierform" element={<SupplierForm />} />
@@ -121,7 +117,7 @@ function AppContent() {
             <Route path="/emergencies" element={<EmergencyManagement />} />
           </Routes>
           <Footer />
-          <ToastContainer />
+          <ToastContainer position="top-right" autoClose={3000} />
         </Router>
       </CartProvider>
     </AuthProvider>

@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
 
 const LeaveRequestForm = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [formData, setFormData] = useState({
     employeeName: '',
     employeeId: '',
@@ -15,16 +13,6 @@ const LeaveRequestForm = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Access control: buyers cannot submit leave here (not an employee), HR manager should view approvals only
-  useEffect(() => {
-    if (!user) return; // wait for auth load
-    if (user.userType === 'buyer') {
-      navigate('/');
-    } else if (user.role === 'hr_manager') {
-      navigate('/dashboard/hr');
-    }
-  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 const { Schema, model, Types } = mongoose;
 
 const orderSchema = new Schema({
-  // Reference to the user who placed the order (ObjectId -> User)
-  user: { type: Types.ObjectId, ref: 'User', required: true },
+  user: { type: String, required: true },
   // Items can be either a product or an offer/bundle
   items: [
     {

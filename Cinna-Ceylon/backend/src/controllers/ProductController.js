@@ -1,27 +1,5 @@
 import Product from "../models/Product.js"; // import the Product model to interact with the products collection
 
-// Helper: determine if a product is expired (expiryDate strictly before start of today)
-const isExpired = (expiryDate) => {
-  if (!expiryDate) return false;
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  return new Date(expiryDate) < todayStart;
-};
-
-// Helper: mark all expired public products as private (used lazily within requests; can be refactored to a cron later)
-const privatizeExpiredProducts = async () => {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  try {
-    await Product.updateMany(
-      { expiryDate: { $lt: todayStart }, visibility: "public" },
-      { $set: { visibility: "private" } }
-    );
-  } catch (e) {
-    // Swallow to avoid breaking main requests; could log with a logger util
-  }
-};
-
 // Create product
 export const createProduct = async (req, res) => {
   try {
@@ -53,30 +31,9 @@ export const createProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const isAdmin = req.query.admin === 'true'; // check if admin query param is true
-    const search = (req.query.q || req.query.search || '').trim(); // optional search term
 
-    // First, lazily enforce privatization of expired products
-    await privatizeExpiredProducts();
-
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    // Base query: exclude expired products for non-admins by visibility AND by expiryDate
-    // Admins can see all (including expired) to manage them
-    const query = {};
-    if (!isAdmin) {
-      query.visibility = "public";
-      query.expiryDate = { $gte: todayStart };
-    }
-
-    // If a search term is provided, apply case-insensitive regex on name and (optionally) description
-    if (search.length > 0) {
-      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); // escape then case-insensitive
-      query.$or = [
-        { name: regex },
-        { description: regex }
-      ];
-    }
+    // If admin, show all products; else only public products
+    const query = isAdmin ? {} : { visibility: "public" };
 
     // Find products based on query and sort newest first
     const products = await Product.find(query).sort("-createdAt");
@@ -89,24 +46,9 @@ export const getProducts = async (req, res) => {
 // Get single product by ID
 export const getProduct = async (req, res) => {
   try {
-    const isAdmin = req.query.admin === 'true';
     const product = await Product.findById(req.params.id); // find product by ID
-    if (!product) return res.status(404).json({ error: "Not found" });
-
-    // Auto privatize if expired and still public (lazy enforcement)
-    if (isExpired(product.expiryDate) && product.visibility !== 'private') {
-      product.visibility = 'private';
-      await product.save();
-    }
-
-    // If not admin: hide if now private OR expired
-    if (!isAdmin) {
-      if (product.visibility !== 'public' || isExpired(product.expiryDate)) {
-        return res.status(404).json({ error: "Not found" });
-      }
-    }
-
-    res.json(product);
+    if (!product) return res.status(404).json({ error: "Not found" }); // if not found
+    res.json(product); // return the product
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
