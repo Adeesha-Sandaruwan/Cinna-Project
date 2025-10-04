@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Header from "./Header.jsx";
-import Footer from "./Footer.jsx";
 
 const COLORS = { 
   RICH_GOLD: "#c5a35a",
@@ -20,22 +18,29 @@ const ProductList = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Using relative URL to work with webpack proxy
-        const res = await fetch("/api/products");
+        // Using environment variable for API URL
+        const baseUrl = process.env.REACT_APP_API_URL || "http://localhost:5001";
+        const res = await fetch(`${baseUrl}/api/products`);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         const data = await res.json();
         console.log("Fetched products:", data); // Debug log
+
         // Filter out private products unless user is admin
         const isAdmin = false; // TODO: Replace with actual admin check
-        const filteredProducts = isAdmin 
-          ? data 
-          : data.filter(product => product.visibility === "public");
+        const filteredProducts = isAdmin
+          ? data
+          : data.filter((product) => product.visibility === "public");
+
         setProducts(filteredProducts);
       } catch (err) {
         console.error("❌ Error fetching products:", err);
-        setError(err.message);
+        setError(`Error loading products: ${err.message}`);
+        console.log(
+          "Backend URL:",
+          process.env.REACT_APP_API_URL || "http://localhost:5001"
+        );
       } finally {
         setLoading(false);
       }
@@ -101,8 +106,13 @@ const ProductList = () => {
             </div>
           ))}
         </div>
+
+        {loading && (
+          <p className="text-center mt-6 text-gray-500">Loading products...</p>
+        )}
+
+        {error && <p className="text-center mt-6 text-red-500">{error}</p>}
       </div>
-      <Footer />
     </div>
   );
 };

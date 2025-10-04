@@ -197,7 +197,6 @@ const DriverDashboard = () => {
       
       const data = await response.json();
       console.log('Response data:', data);
-
       if (response.ok) {
         setDeliveries(data);
         setMessage("");

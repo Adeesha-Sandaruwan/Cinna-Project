@@ -1,111 +1,218 @@
-import Cart from '../models/Cart.js'; // import Cart model to interact with cart collection
-import Product from '../models/Product.js'; // import Product model to validate stock and prices
+import Cart from '../models/Cart.js';
+import Product from '../models/Product.js';
+import Offer from '../models/Offer.js'; // Import Offer model
 
-// Create or Update cart
-export const addToCart = async (req, res) => { // controller to add/update items in user's cart
-  try { // start try block to handle errors
-    const { user, productId, qty } = req.body; // destructure user, productId, and qty from request body
-    
-    if (!user || !productId || qty === undefined) { // validate required fields are present
-      return res.status(400).json({ error: 'Missing required fields: user, productId, qty' }); // return 400 if any field is missing
+// Create or update cart for regular products
+export const addToCart = async (req, res) => {
+  try {
+    // Destructure values sent in the request body
+    const { user, productId, qty, priceAtAdd } = req.body;
+
+    // Validate required fields
+    if (!user || !productId || qty === undefined) { 
+      return res.status(400).json({ error: 'Missing required fields: user, productId, qty' });
     }
 
-    if (qty < 0) { // check if quantity is negative
-      return res.status(400).json({ error: 'Quantity cannot be negative' }); // return 400 if invalid
+    // Prevent negative quantity
+    if (qty < 0) {
+      return res.status(400).json({ error: 'Quantity cannot be negative' });
     }
 
-    const product = await Product.findById(productId); // find product by ID in database
-    if (!product) { // if product not found
-      return res.status(404).json({ error: 'Product not found' }); // return 404 error
+    // Check if product exists
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
     }
 
-    const availableStock = Math.max(0, product.stock - product.safetyStock); // calculate available stock = actual stock - safety stock
-    if (qty > 0 && availableStock < qty) { // check if requested quantity is greater than available stock
-      return res.status(400).json({  // return 400 error if not enough stock
+    // Calculate available stock (considering safety stock)
+    const availableStock = Math.max(0, product.stock - product.safetyStock);
+    if (qty > 0 && availableStock < qty) {
+      return res.status(400).json({ 
         error: `Insufficient stock available. Available: ${availableStock}, Requested: ${qty}` 
       });
     }
 
-    let cart = await Cart.findOne({ user, status: 'active' }); // find active cart for the user
-    if (!cart) { // if no cart exists
-      cart = new Cart({ user, items: [] }); // create a new cart with empty items
+    // Find active cart or create a new one
+    let cart = await Cart.findOne({ user, status: 'active' });
+    if (!cart) {
+      cart = new Cart({ user, items: [], offerItems: [] });
     }
 
-    const existingItemIndex = cart.items.findIndex(i => i.product.toString() === productId); // check if product already exists in cart
-    
-    if (qty <= 0) { // if quantity is 0 or negative
-      if (existingItemIndex !== -1) { // and product exists in cart
-        cart.items.splice(existingItemIndex, 1); // remove the item from cart
+    // Check if product already exists in the cart
+    const existingItemIndex = cart.items.findIndex(i => i.product.toString() === productId);
+
+    // Use given price or default product price
+    const finalPrice = priceAtAdd !== undefined ? priceAtAdd : product.price;
+
+    if (qty <= 0) {
+      // Remove item if qty is 0 or negative
+      if (existingItemIndex !== -1) {
+        cart.items.splice(existingItemIndex, 1);
       }
     } else {
-      if (existingItemIndex !== -1) { // if item already exists
-        cart.items[existingItemIndex].qty = qty; // update its quantity
+      if (existingItemIndex !== -1) {
+        // Update existing item
+        cart.items[existingItemIndex].qty = qty;
+        cart.items[existingItemIndex].priceAtAdd = finalPrice;
       } else {
-        cart.items.push({ product: productId, qty, priceAtAdd: product.price }); // otherwise add as a new item with current product price
+        // Add new item to cart
+        cart.items.push({ product: productId, qty, priceAtAdd: finalPrice });
       }
     }
 
-    cart.subtotal = cart.items.reduce((sum, i) => sum + i.qty * i.priceAtAdd, 0); // recalculate subtotal by summing qty × priceAtAdd
-    cart.total = cart.subtotal; // assign subtotal to total (can be used for discounts/taxes later)
+    // Recalculate totals
+    const productSubtotal = cart.items.reduce((sum, i) => sum + i.qty * i.priceAtAdd, 0);
+    const offerSubtotal = cart.offerItems.reduce((sum, i) => sum + i.qty * i.discountedPrice, 0);
+    cart.subtotal = productSubtotal + offerSubtotal;
+    cart.total = cart.subtotal;
 
-    await cart.save(); // save updated cart to database
-    
-    const populatedCart = await Cart.findById(cart._id).populate('items.product'); // re-fetch cart with product details populated
-    res.json(populatedCart); // return populated cart in response
-  } catch (err) { // catch errors
-    console.error('Cart error:', err); // log error in console
-    res.status(500).json({ error: err.message }); // return 500 with error message
+    // Save cart
+    await cart.save();
+
+    // Populate product and offer details for response
+    const populatedCart = await Cart.findById(cart._id)
+      .populate('items.product')
+      .populate('offerItems.offer');
+      
+    res.json(populatedCart);
+
+  } catch (err) {
+    console.error('Cart error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Add or update offer in cart (NO comments as requested)
+export const addOfferToCart = async (req, res) => {
+  try {
+    const { user, offerId, qty } = req.body;
+
+    if (!user || !offerId || qty === undefined) {
+      return res.status(400).json({ error: 'Missing required fields: user, offerId, qty' });
+    }
+
+    if (qty < 0) {
+      return res.status(400).json({ error: 'Quantity cannot be negative' });
+    }
+
+    const offer = await Offer.findById(offerId).populate('products');
+    if (!offer) {
+      return res.status(404).json({ error: 'Offer not found' });
+    }
+
+    if (offer.status !== 'Active') {
+      return res.status(400).json({ error: 'This offer is no longer available' });
+    }
+
+    for (const product of offer.products) {
+      const availableStock = Math.max(0, product.stock - product.safetyStock);
+      if (availableStock < qty) {
+        return res.status(400).json({ 
+          error: `Insufficient stock for ${product.name}. Available: ${availableStock}, Requested: ${qty}` 
+        });
+      }
+    }
+
+    let cart = await Cart.findOne({ user, status: 'active' });
+    if (!cart) {
+      cart = new Cart({ user, items: [], offerItems: [] });
+    }
+
+    const existingOfferIndex = cart.offerItems.findIndex(i => i.offer.toString() === offerId);
+    const originalPrice = offer.products.reduce((sum, product) => sum + product.price, 0);
+
+    if (qty <= 0) {
+      if (existingOfferIndex !== -1) {
+        cart.offerItems.splice(existingOfferIndex, 1);
+      }
+    } else {
+      if (existingOfferIndex !== -1) {
+        cart.offerItems[existingOfferIndex].qty = qty;
+      } else {
+        cart.offerItems.push({ 
+          offer: offerId, 
+          qty, 
+          discountedPrice: offer.discountedPrice,
+          originalPrice: originalPrice
+        });
+      }
+    }
+
+    const productSubtotal = cart.items.reduce((sum, i) => sum + i.qty * i.priceAtAdd, 0);
+    const offerSubtotal = cart.offerItems.reduce((sum, i) => sum + i.qty * i.discountedPrice, 0);
+    cart.subtotal = productSubtotal + offerSubtotal;
+    cart.total = cart.subtotal;
+
+    await cart.save();
+
+    const populatedCart = await Cart.findById(cart._id)
+      .populate('items.product')
+      .populate('offerItems.offer');
+      
+    res.json(populatedCart);
+
+  } catch (err) {
+    console.error('Offer cart error:', err);
+    res.status(500).json({ error: err.message });
   }
 };
 
 // Get user cart
-export const getCart = async (req, res) => { // controller to fetch a user's cart
-  try { // start try block
-    const { userId } = req.params; // extract userId from request parameters
-    
-    if (!userId) { // if no userId provided
-      return res.status(400).json({ error: 'User ID is required' }); // return 400 error
+export const getCart = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Validate
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const cart = await Cart.findOne({ user: userId, status: 'active' }).populate('items.product'); 
-    // find active cart for user and populate product details
-    
-    if (!cart) { // if cart not found
-      return res.json({ // return an empty cart object
+    // Find active cart for user
+    const cart = await Cart.findOne({ user: userId, status: 'active' })
+      .populate('items.product')
+      .populate('offerItems.offer');
+
+    // Return empty cart if none found
+    if (!cart) {
+      return res.json({
         user: userId,
         items: [],
+        offerItems: [],
         subtotal: 0,
         total: 0,
         status: 'active'
       });
     }
-    
-    res.json(cart); // return the found cart
-  } catch (err) { // catch errors
-    console.error('Get cart error:', err); // log error in console
-    res.status(500).json({ error: err.message }); // return 500 with error message
+
+    res.json(cart);
+
+  } catch (err) {
+    console.error('Get cart error:', err);
+    res.status(500).json({ error: err.message });
   }
 };
 
 // Clear cart
-export const clearCart = async (req, res) => { // controller to clear user's cart
-  try { // start try block
-    const { userId } = req.params; // extract userId from request parameters
-    
-    if (!userId) { // validate userId
-      return res.status(400).json({ error: 'User ID is required' }); // return 400 if missing
+export const clearCart = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Validate
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const result = await Cart.findOneAndDelete({ user: userId, status: 'active' }); 
-    // find and delete user's active cart
-    
-    if (!result) { // if cart not found
-      return res.status(404).json({ error: 'Cart not found' }); // return 404 error
+    // Delete active cart
+    const result = await Cart.findOneAndDelete({ user: userId, status: 'active' });
+
+    if (!result) {
+      return res.status(404).json({ error: 'Cart not found' });
     }
-    
-    res.json({ message: 'Cart cleared successfully' }); // return success message
-  } catch (err) { // catch errors
-    console.error('Clear cart error:', err); // log error in console
-    res.status(500).json({ error: err.message }); // return 500 with error message
+
+    res.json({ message: 'Cart cleared successfully' });
+
+  } catch (err) {
+    console.error('Clear cart error:', err);
+    res.status(500).json({ error: err.message });
   }
 };
