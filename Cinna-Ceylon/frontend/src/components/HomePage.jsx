@@ -4,7 +4,6 @@ import { BeakerIcon, GlobeAltIcon, LockClosedIcon, SparklesIcon } from '@heroico
 import Carousel from './Carousel'; // Custom image slider
 import AnimatedSection from './AnimatedSection'; // Animation wrapper
 import Header from './Header'; // Top navigation bar
-import Footer from './Footer'; // Bottom footer
 
 const COLORS = { // Theme colors
   RICH_GOLD: '#c5a35a',
@@ -42,7 +41,7 @@ function HomePage() {
 
   return (
     <div style={{ backgroundColor: COLORS.SOFT_WHITE }} className="antialiased"> {/* Page background */}
-      <Header /> {/* Navbar */}
+     {/* Navbar */}
 
       <main className="text-gray-800"> {/* Main content */}
         <section className="relative h-[70vh] md:h-[80vh] w-full"> {/* Hero section */}
@@ -217,8 +216,6 @@ function HomePage() {
           </div>
         </section>
       </main>
-
-      <Footer /> {/* Footer */}
     </div>
   );
 }

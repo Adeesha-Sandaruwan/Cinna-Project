@@ -44,16 +44,4 @@ const maintenanceSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-// Virtual for download URL (assuming static serving from /uploads)
-maintenanceSchema.virtual('maintenanceReportUrl').get(function() {
-  if (this.maintenanceReport) {
-    return `/uploads/${this.maintenanceReport}`;
-  }
-  return null;
-});
-
-
-maintenanceSchema.set('toJSON', { virtuals: true });
-maintenanceSchema.set('toObject', { virtuals: true });
-
 export default mongoose.model("Maintenance", maintenanceSchema);

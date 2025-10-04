@@ -5,9 +5,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
 
 // Common Pages
-import HomePage from './components/HomePage';
-import AboutUs from './components/AboutUs';
-import ContactUs from './components/ContactUs';
+import HomePage from './pages/HomePage';
+import AboutUs from './pages/AboutUs';
+import ContactUs from './pages/ContactUs';
 import ProductForm from './components/ProductForm';
 import ProductList from "./components/ProductList.jsx";
 import ProductDetails from "./components/ProductDetails.jsx";
@@ -23,14 +23,15 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 
 // Dashboards
-import { BuyerDashboard, SupplierDashboard, DriverDashboard, AdminDashboard } from './components/dashboard';
+import { BuyerDashboard, SupplierDashboard, AdminDashboard } from './components/dashboard/index.jsx';
 import AttendanceRecords from './components/dashboard/AttendanceRecords';
+import DriverDashboard from './components/DriverDashboard.jsx';
 
 // E-commerce
 import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
 import Cart from "./components/Cart.jsx";
 import Checkout from "./components/Checkout.jsx";
-import SuplierForm from "./components/SupplierForm.jsx";
+import SupplierForm from "./components/SupplierForm.jsx";
 
 // Vehicle Management
 import VehicleManagerDashboard from "./components/VehicleManagerDashboard.jsx";
@@ -76,7 +77,7 @@ function App() {
           <Route path="/cart/:userId?" element={<Cart />} />
           <Route path="/checkout/:userId?" element={<Checkout />} />
           <Route path="/leaverequestform" element={<LeaveRequestForm />} />
-          <Route path="/supplierform" element={<SuplierForm />} />
+          <Route path="/supplierform" element={<SupplierForm />} />
 
           {/* Vehicle Management */}
           <Route path="/vehicles" element={<VehicleManagerDashboard />} />

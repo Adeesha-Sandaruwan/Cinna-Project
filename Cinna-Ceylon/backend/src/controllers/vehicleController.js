@@ -14,10 +14,36 @@ export const createVehicle = async (req, res) => {
     }
     if (req.files && req.files.maintenanceReport) data.maintenanceReport = path.basename(req.files.maintenanceReport[0].path);
     if (req.files && req.files.accidentReport) data.accidentReport = path.basename(req.files.accidentReport[0].path);
+    
     const vehicle = await Vehicle.create(data);
     res.status(201).json(vehicle);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    // Handle duplicate key error specifically
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      const value = error.keyValue[field];
+      
+      if (field === 'vehicleId') {
+        res.status(400).json({ 
+          message: `Vehicle ID "${value}" already exists. The system will automatically generate a unique ID.`,
+          error: 'DUPLICATE_VEHICLE_ID',
+          suggestion: 'Try creating the vehicle again - a new unique ID will be generated automatically.'
+        });
+      } else if (field === 'insuranceNo') {
+        res.status(400).json({ 
+          message: `Insurance number "${value}" already exists. Please use a different insurance number.`,
+          error: 'DUPLICATE_INSURANCE_NO'
+        });
+      } else {
+        res.status(400).json({ 
+          message: `Duplicate value for ${field}: "${value}"`,
+          error: 'DUPLICATE_KEY'
+        });
+      }
+    } else {
+      console.error('Vehicle creation error:', error);
+      res.status(400).json({ message: error.message });
+    }
   }
 };
 
@@ -104,12 +130,18 @@ export const updateVehicle = async (req, res) => {
     // Create detailed accident record if accident data is provided
     if (req.files && req.files.accidentReport && req.body.accidentCost) {
       try {
+        const parsedDate = new Date(req.body.accidentDate);
+        if (isNaN(parsedDate.getTime())) {
+          console.error("Invalid accident date:", req.body.accidentDate);
+          throw new Error("Invalid accident date format");
+        }
+        
         await Accident.create({
           vehicle: req.params.id,
           accidentCost: Number(req.body.accidentCost),
-          accidentReport: req.files.accidentReport[0].path,
+          accidentReport: path.basename(req.files.accidentReport[0].path),
           description: "Accident report submitted via vehicle details page",
-          accidentDate: new Date(),
+          accidentDate: parsedDate,
           severity: "Minor" // Default, can be updated later
         });
         console.log("Accident record created successfully");
@@ -192,34 +224,50 @@ export const submitAccidentReport = async (req, res) => {
     console.log("Accident submission - Files:", req.files);
     console.log("Accident submission - File (single):", req.file);
 
-    const { accidentCost, severity = "Minor", location, driverName } = req.body;
     const vehicleId = req.params.id;
+    console.log('Raw request body:', req.body);
+    console.log('Raw request files:', req.files);
+    console.log('Raw request file:', req.file);
+    
+    console.log('Processing accident submission with raw body:', req.body);
+    const { accidentCost, severity = "Minor", location, driverName, accidentDate: inputDate } = req.body;
+    console.log('Parsed input date:', inputDate);
 
     if (!accidentCost) {
       return res.status(400).json({ message: "Accident cost is required" });
+    }
+
+    if (!inputDate) {
+      console.log('Missing accident date in request');
+      return res.status(400).json({ message: "Accident date is required" });
     }
 
     if (!req.file) {
       return res.status(400).json({ message: "Accident report file is required" });
     }
 
+    const parsedDate = new Date(inputDate);
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: "Invalid accident date format" });
+    }
+    
     // Update vehicle with accident cost and report
     const vehicleUpdateData = {
       accidentCost: Number(accidentCost),
-      accidentReport: req.file.path,
+      accidentReport: path.basename(req.file.path),
       status: severity === "Critical" ? "Inactive" : "Maintenance"
     };
 
     const vehicle = await Vehicle.findByIdAndUpdate(vehicleId, vehicleUpdateData, { new: true });
     if (!vehicle) return res.status(404).json({ message: "Vehicle not found" });
-
-    // Create detailed accident record
+    
     const accidentRecord = await Accident.create({
       vehicle: vehicleId,
       accidentCost: Number(accidentCost),
-      accidentReport: req.file.path,
+      accidentReport: path.basename(req.file.path),
       description: "Accident report submitted via vehicle details page",
       severity: severity,
+      accidentDate: parsedDate,
       location: location || "",
       driverName: driverName || ""
     });

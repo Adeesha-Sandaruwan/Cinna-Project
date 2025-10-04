@@ -4,22 +4,18 @@ const emergencySchema = new mongoose.Schema({
   vehicle: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Vehicle",
-    required: true,
-  },
+    required: true},
   driver: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Driver", 
-    required: true,
-  },
+    required: true},
   description: {
     type: String,
     required: true,
-    trim: true,
-  },
+    trim: true},
   accidentDate: {
     type: Date,
-    required: true,
-  },
+    required: true},
 }, { timestamps: true });
 
 export default mongoose.model("Emergency", emergencySchema);
