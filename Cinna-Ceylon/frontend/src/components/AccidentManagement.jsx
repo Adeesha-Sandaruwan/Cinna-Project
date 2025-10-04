@@ -56,6 +56,20 @@ const AccidentManagement = () => {
       : 'http://localhost:5000/api/accidents';
     
     const method = editingRecord ? 'PUT' : 'POST';
+    
+    // Ensure all required fields are present
+    if (!form.vehicle || !form.accidentDate || !form.accidentCost || !form.description) {
+      setMessage('Please fill in all required fields');
+      return;
+    }
+
+    // Convert form data to match backend schema
+    const formData = {
+      ...form,
+      accidentCost: parseFloat(form.accidentCost) // Ensure cost is a number
+    };
+    
+    console.log('Submitting accident record:', formData);
 
     try {
       const response = await fetch(url, {
@@ -63,7 +77,7 @@ const AccidentManagement = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
@@ -71,7 +85,8 @@ const AccidentManagement = () => {
         fetchAccidentRecords();
         resetForm();
       } else {
-        setMessage('Error saving accident record');
+        const error = await response.json();
+        setMessage(error.message || 'Error saving accident record');
       }
     } catch (error) {
       console.error('Error saving accident record:', error);
