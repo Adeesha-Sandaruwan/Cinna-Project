@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ExpiryBar from './ExpiryBar.jsx';
+import { safeRequest, isOk } from '../utils/api';
 
 const COLORS = { 
   RICH_GOLD: "#c5a35a",
@@ -19,13 +20,11 @@ const ProductList = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Using environment variable for API URL
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-        const res = await fetch(`${baseUrl}/api/products`);
-        if (!res.ok) {
+        // Use shared API helper with CRA proxy (frontend dev server proxies to backend)
+        const { res, data } = await safeRequest('/products');
+        if (!isOk(res)) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const data = await res.json();
         console.log("Fetched products:", data); // Debug log
         // Filter out private products unless user is admin
         const isAdmin = false; // TODO: Replace with actual admin check
@@ -45,7 +44,6 @@ const ProductList = () => {
       } catch (err) {
         console.error("❌ Error fetching products:", err);
         setError(`Error loading products: ${err.message}`);
-        console.log('Backend URL:', process.env.REACT_APP_API_URL || 'http://localhost:5001');
       } finally {
         setLoading(false);
       }
