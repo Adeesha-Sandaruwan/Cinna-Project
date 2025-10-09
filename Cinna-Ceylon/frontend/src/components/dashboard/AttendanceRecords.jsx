@@ -41,8 +41,15 @@ const AttendanceRecords = () => {
         const data = await res.json();
         throw new Error(data.message || 'Failed to download report');
       }
-      const csv = await res.text();
-      downloadCSV(csv);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'attendance_report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       toast.error(err.message || 'Download failed');
     }

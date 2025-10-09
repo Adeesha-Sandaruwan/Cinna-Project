@@ -36,6 +36,15 @@ const userSchema = new mongoose.Schema({
     address: String,
     phone: String
   }
+  ,
+  notifications: [
+    {
+      message: { type: String },
+      read: { type: Boolean, default: false },
+      announcement: { type: mongoose.Schema.Types.ObjectId, ref: 'Announcement' },
+      createdAt: { type: Date, default: Date.now }
+    }
+  ]
 }, { timestamps: true });
 
 export default mongoose.model('User', userSchema);

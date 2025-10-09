@@ -10,6 +10,7 @@ function Register() {
     username: '', 
     email: '', 
     password: '', 
+    confirmPassword: '',
     userType: 'buyer',
     profile: {
       name: '',
@@ -18,6 +19,7 @@ function Register() {
     }
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -36,7 +38,20 @@ function Register() {
       }));
     } else {
       setForm(prev => ({ ...prev, [name]: value }));
+      // clear field error when user types
+      setFieldErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  // validation helpers
+  const isValidEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidUsername = username => /^[a-zA-Z0-9_-]{3,30}$/.test(username);
+  const isStrongPassword = pwd => pwd.length >= 8 && /[0-9]/.test(pwd) && /[a-zA-Z]/.test(pwd);
+  const isValidPhone = phone => {
+    if (!phone) return true; // optional
+    // strip non-digits
+    const digits = phone.replace(/\D/g, '');
+    return digits.length === 10;
   };
 
   const handleSubmit = async (e) => {
@@ -44,6 +59,22 @@ function Register() {
     setError('');
     setSuccess('');
     setLoading(true);
+    setFieldErrors({});
+
+    // client-side validation
+    const errors = {};
+    if (!isValidUsername(form.username)) errors.username = 'Username must be 3-30 chars and contain only letters, numbers, _ or -.';
+    if (!isValidEmail(form.email)) errors.email = 'Please enter a valid email address.';
+    if (!isStrongPassword(form.password)) errors.password = 'Password must be at least 8 characters and include letters and numbers.';
+    if (form.password !== form.confirmPassword) errors.confirmPassword = 'Passwords do not match.';
+  if (!isValidPhone(form.profile.phone)) errors['profile.phone'] = 'Phone must contain exactly 10 digits.';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please fix validation errors and try again.');
+      setLoading(false);
+      return;
+    }
     
     try {
       const res = await fetch('http://localhost:5000/api/users/register', {
@@ -129,6 +160,7 @@ function Register() {
                     required
                   />
                 </div>
+                {fieldErrors.username && <p className="text-xs text-red-600 mt-1">{fieldErrors.username}</p>}
               </div>
 
               {/* Email */}
@@ -148,6 +180,7 @@ function Register() {
                     required
                   />
                 </div>
+                {fieldErrors.email && <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
               </div>
 
               {/* Password */}
@@ -174,6 +207,27 @@ function Register() {
                     {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                   </button>
                 </div>
+                {fieldErrors.password && <p className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <FaLock size={16} />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    placeholder="Repeat your password"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent transition"
+                    required
+                  />
+                </div>
+                {fieldErrors.confirmPassword && <p className="text-xs text-red-600 mt-1">{fieldErrors.confirmPassword}</p>}
               </div>
 
               {/* User Type */}
@@ -237,6 +291,7 @@ function Register() {
                   title="Up to 11 digits, or + followed by up to 12 digits."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent transition"
                 />
+                {fieldErrors['profile.phone'] && <p className="text-xs text-red-600 mt-1">{fieldErrors['profile.phone']}</p>}
               </div>
 
               {/* Address */}

@@ -40,10 +40,27 @@ const deliverySchema = new mongoose.Schema({
     ref: "User",
     required: false,
   },
+  order: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order",
+    required: false,
+  },
   status: {
     type: String,
-    enum: ["pending", "assigned", "accepted", "rejected"],
+    enum: ["pending", "assigned", "accepted", "rejected", "in-transit", "delivered", "cancelled"],
     default: "pending",
+  },
+  assignedAt: {
+    type: Date,
+    default: null,
+  },
+  actualDelivery: {
+    type: Date,
+    default: null,
+  },
+  notes: {
+    type: String,
+    trim: true,
   },
 }, { timestamps: true });
 

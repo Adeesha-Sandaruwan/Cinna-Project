@@ -42,6 +42,9 @@ const AdminDashboard = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementTarget, setAnnouncementTarget] = useState('users');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,6 +63,8 @@ const AdminDashboard = () => {
 
   const token = localStorage.getItem('token');
 
+
+
   // Navigate to Product Management Dashboard
   const goToProductDashboard = () => {
     navigate('/admin/dashboard');
@@ -69,14 +74,34 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      if (!token) {
+        toast.error('No authentication token found. Please login again.');
+        navigate('/login');
+        return;
+      }
+
       const res = await fetch('http://localhost:5000/api/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
       const data = await res.json();
-      if (res.ok) setUsers(data);
-      else toast.error(data.message || 'Failed to fetch users');
+      
+      if (res.ok) {
+        setUsers(data);
+      } else {
+        if (res.status === 401) {
+          toast.error('Authentication failed. Please login again.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login');
+        } else if (res.status === 403) {
+          toast.error('Admin access required');
+        } else {
+          toast.error(data.message || 'Failed to fetch users');
+        }
+      }
     } catch (err) {
-      toast.error('Network error');
+      toast.error('Network error: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -85,7 +110,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
-  // Download attendance report as CSV
+  // Download attendance report as PDF
   const handleDownloadReport = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/admin/attendance/report', {
@@ -95,8 +120,15 @@ const AdminDashboard = () => {
         const data = await res.json();
         throw new Error(data.message || 'Failed to download report');
       }
-      const csv = await res.text();
-      downloadCSV(csv);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'attendance_report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       toast.error(err.message || 'Download failed');
     }
@@ -152,6 +184,33 @@ const AdminDashboard = () => {
       toast.error('Network error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Create announcement
+  const handleCreateAnnouncement = async (e) => {
+    e?.preventDefault();
+    if (!announcementMessage.trim()) return toast.error('Message is required');
+    try {
+      const res = await fetch('http://localhost:5000/api/announcements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: announcementMessage, target: announcementTarget })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Announcement sent');
+        setAnnouncementMessage('');
+        setAnnouncementTarget('users');
+        setShowAnnouncement(false);
+      } else {
+        toast.error(data.message || 'Failed to send announcement');
+      }
+    } catch (err) {
+      toast.error('Network error');
     }
   };
 
@@ -526,7 +585,7 @@ const AdminDashboard = () => {
                 </motion.button>
 
                 <motion.button 
-                  onClick={() => navigate('/dashboard/attendance')} 
+                  onClick={() => navigate('/dashboard/attendance-records')} 
                   className="group flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition-all duration-300"
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -556,6 +615,20 @@ const AdminDashboard = () => {
                   </motion.div>
                   Download Report
                 </motion.button>
+
+                <motion.button 
+                  onClick={() => setShowAnnouncement(true)}
+                  className="group flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition-all duration-300"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <motion.div className="p-1 bg-white/20 rounded-lg">
+                    <Activity size={18} />
+                  </motion.div>
+                  Announcement
+                </motion.button>
+
+
               </div>
 
               {/* Stats Cards */}
@@ -778,6 +851,38 @@ const AdminDashboard = () => {
                       </div>
                     </motion.form>
                   </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Announcement Modal */}
+          <AnimatePresence>
+            {showAnnouncement && (
+              <motion.div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold">Send Announcement</h3>
+                    <button onClick={() => setShowAnnouncement(false)} className="text-slate-500"><X /></button>
+                  </div>
+                  <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold">Message</label>
+                      <textarea value={announcementMessage} onChange={e=>setAnnouncementMessage(e.target.value)} className="w-full border p-3 rounded-md" rows={4} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold">Target</label>
+                      <select value={announcementTarget} onChange={e=>setAnnouncementTarget(e.target.value)} className="w-full border p-3 rounded-md">
+                        <option value="users">Other Users</option>
+                        <option value="admin">Admins</option>
+                        <option value="all">All</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                      <button type="button" onClick={()=>setShowAnnouncement(false)} className="px-4 py-2 rounded-md border">Cancel</button>
+                      <button type="submit" className="px-4 py-2 rounded-md bg-indigo-600 text-white">Send</button>
+                    </div>
+                  </form>
                 </motion.div>
               </motion.div>
             )}

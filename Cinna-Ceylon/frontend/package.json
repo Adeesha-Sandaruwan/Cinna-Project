@@ -2,6 +2,7 @@
   "name": "cinnaceylon-frontend",
   "version": "1.0.0",
   "private": true,
+  "proxy": "http://localhost:5000",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -48,7 +49,6 @@
     "eject": "react-scripts eject",
     "dev": "webpack serve --mode development --open"
   },
-  "proxy": "http://localhost:5000",
   "browserslist": {
     "production": [
       ">0.2%",

@@ -107,9 +107,9 @@ export default function Header() {
           ))}
           {user && (
             user.userType === 'supplier' ? (
-              <Link to="/supplier/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
+              <Link to="/dashboard/supplier" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
             ) : user.userType === 'driver' ? (
-              <Link to="/driver/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
+              <Link to="/dashboard/driver" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
             ) : null /* Intentionally hide Buyer Dashboard link for buyers */
           )}
         </div>

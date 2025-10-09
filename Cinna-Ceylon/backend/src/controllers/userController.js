@@ -4,12 +4,28 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
+console.log('🔐 User controller JWT_SECRET:', JWT_SECRET);
 
 export const register = async (req, res) => {
   try {
     const { username, email, password, userType, profile } = req.body;
+
+    // Basic validation
+    if (!username || !email || !password) return res.status(400).json({ message: 'username, email and password are required' });
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) return res.status(400).json({ message: 'Invalid email format' });
+    const usernameRe = /^[a-zA-Z0-9_-]{3,30}$/;
+    if (!usernameRe.test(username)) return res.status(400).json({ message: 'Invalid username. Use 3-30 chars: letters, numbers, _ or -' });
+    if (password.length < 8 || !/[0-9]/.test(password) || !/[a-zA-Z]/.test(password)) return res.status(400).json({ message: 'Password must be at least 8 characters and include letters and numbers' });
+
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) return res.status(400).json({ message: 'User already exists' });
+    if (existingUser) return res.status(400).json({ message: 'User with that email or username already exists' });
+    // Validate phone if provided
+    const phone = profile?.phone;
+    if (phone) {
+      const digits = String(phone).replace(/\D/g, '');
+      if (digits.length !== 10) return res.status(400).json({ message: 'Phone number must contain exactly 10 digits' });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     // isAdmin is not settable by normal registration
     // Set isAdmin and role based on userType
@@ -51,9 +67,30 @@ export const login = async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-    const token = jwt.sign({ id: user._id, userType: user.userType, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email, userType: user.userType, role: user.role, isAdmin: user.isAdmin, profile: user.profile } });
+    
+    // Create token payload
+    const tokenPayload = { id: user._id, userType: user.userType, isAdmin: user.isAdmin };
+    console.log('🔑 Creating JWT token with payload:', tokenPayload);
+    
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '1d' });
+    
+    const responseData = {
+      token, 
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email, 
+        userType: user.userType, 
+        role: user.role, 
+        isAdmin: user.isAdmin, 
+        profile: user.profile 
+      }
+    };
+    
+    console.log('✅ Login successful for user:', { email, userType: user.userType, isAdmin: user.isAdmin });
+    res.json(responseData);
   } catch (err) {
+    console.error('❌ Login error:', err);
     res.status(500).json({ message: err.message });
   }
 };
