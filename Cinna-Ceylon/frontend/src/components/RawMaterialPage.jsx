@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './RawMaterialPage.css';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const RawMaterialPage = () => {
@@ -19,24 +20,159 @@ const RawMaterialPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Validation function
+  const validateField = (name, value) => {
+    let error = '';
+
+    switch (name) {
+      case 'materialPhoto':
+        if (!value) {
+          error = 'Material photo is required';
+        } else if (value.size > 5 * 1024 * 1024) {
+          error = 'File size must be less than 5MB';
+        } else if (!['image/jpeg', 'image/jpg', 'image/png'].includes(value.type)) {
+          error = 'Only JPG, JPEG, and PNG formats are allowed';
+        }
+        break;
+      case 'quantity':
+        if (!value || value === '') {
+          error = 'Quantity is required';
+        } else if (Number(value) <= 0) {
+          error = 'Quantity must be greater than 0';
+        } else if (Number(value) > 100000) {
+          error = 'Quantity seems too large. Please verify';
+        }
+        break;
+      case 'quality':
+        if (!value || value === '') {
+          error = 'Quality grade is required';
+        }
+        break;
+      case 'pricePerKg':
+        if (!value || value === '') {
+          error = 'Price per kg is required';
+        } else if (Number(value) <= 0) {
+          error = 'Price must be greater than 0';
+        } else if (Number(value) > 100000) {
+          error = 'Price seems too high. Please verify';
+        }
+        break;
+      case 'moistureContent':
+        if (value !== '' && (Number(value) < 0 || Number(value) > 100)) {
+          error = 'Moisture content must be between 0 and 100';
+        }
+        break;
+      case 'harvestDate':
+        if (value && new Date(value) > new Date()) {
+          error = 'Harvest date cannot be in the future';
+        }
+        break;
+      case 'description':
+        if (value && value.length > 1000) {
+          error = 'Description must be less than 1000 characters';
+        } else if (value && !/^[A-Za-z0-9\s,.]+$/.test(value)) {
+          error = 'Use only letters, numbers, spaces, comma and full stop';
+        }
+        break;
+      case 'location':
+        if (value && !/^[A-Za-z0-9\s,.]+$/.test(value)) {
+          error = 'Location may contain letters, numbers, spaces, comma and full stop only';
+        }
+        break;
+      default:
+        break;
+    }
+
+    return error;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let v = value;
+    if (name === 'location' || name === 'description') {
+      v = value.replace(/[^A-Za-z0-9\s,.]/g, '');
+    }
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: v
+    }));
+
+    // Clear error when user starts typing
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    
+    const error = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
     }));
   };
 
   const handleImageChange = (e) => {
+    const file = e.target.files[0];
     setFormData(prev => ({
       ...prev,
-      materialPhoto: e.target.files[0]
+      materialPhoto: file
+    }));
+    setTouched(prev => ({ ...prev, materialPhoto: true }));
+
+    // Validate image
+    const error = validateField('materialPhoto', file);
+    setErrors(prev => ({
+      ...prev,
+      materialPhoto: error
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    const allTouched = {
+      materialPhoto: true,
+      quantity: true,
+      quality: true,
+      pricePerKg: true,
+      moistureContent: true,
+      harvestDate: true,
+      description: true,
+      location: true
+    };
+    setTouched(allTouched);
+
+    // Validate all fields
+    const newErrors = {};
+    newErrors.materialPhoto = validateField('materialPhoto', formData.materialPhoto);
+    newErrors.quantity = validateField('quantity', formData.quantity);
+    newErrors.quality = validateField('quality', formData.quality);
+    newErrors.pricePerKg = validateField('pricePerKg', formData.pricePerKg);
+    newErrors.moistureContent = validateField('moistureContent', formData.moistureContent);
+    newErrors.harvestDate = validateField('harvestDate', formData.harvestDate);
+    newErrors.description = validateField('description', formData.description);
+    newErrors.location = validateField('location', formData.location);
+
+    setErrors(newErrors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    if (hasErrors) {
+      setError('Please fix all validation errors before submitting');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -67,7 +203,7 @@ const RawMaterialPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-8 px-4">
+    <div className="rmp rmp-hero min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -80,7 +216,7 @@ const RawMaterialPage = () => {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-3xl shadow-2xl p-8 border border-emerald-200">
+        <div className="rmp-card bg-white rounded-3xl shadow-2xl p-8 border border-emerald-200">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Material Photo */}
@@ -93,9 +229,11 @@ const RawMaterialPage = () => {
                   name="materialPhoto"
                   onChange={handleImageChange}
                   accept="image/*"
-                  required
-                  className="w-full px-4 py-4 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200"
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 ${touched.materialPhoto && errors.materialPhoto ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200'}`}
                 />
+                {touched.materialPhoto && errors.materialPhoto && (
+                  <p className="text-red-600 text-sm mt-1">{errors.materialPhoto}</p>
+                )}
               </div>
 
               {/* Quantity */}
@@ -108,12 +246,15 @@ const RawMaterialPage = () => {
                   name="quantity"
                   value={formData.quantity}
                   onChange={handleChange}
-                  required
+                  onBlur={handleBlur}
                   min="0.1"
                   step="0.1"
-                  className="w-full px-4 py-4 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 text-lg"
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 text-lg ${touched.quantity && errors.quantity ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200'}`}
                   placeholder="Enter quantity in kg"
                 />
+                {touched.quantity && errors.quantity && (
+                  <p className="text-red-600 text-sm mt-1">{errors.quantity}</p>
+                )}
               </div>
 
               {/* Quality */}
@@ -125,8 +266,8 @@ const RawMaterialPage = () => {
                   name="quality"
                   value={formData.quality}
                   onChange={handleChange}
-                  required
-                  className="w-full px-4 py-4 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 text-lg"
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 text-lg ${touched.quality && errors.quality ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200'}`}
                 >
                   <option value="">Select Quality Grade</option>
                   <option value="ALBA">🌟 ALBA (Premium)</option>
@@ -139,6 +280,9 @@ const RawMaterialPage = () => {
                   <option value="M5">🔥 M5 (Medium Grade)</option>
                   <option value="M4">💫 M4 (Medium Grade)</option>
                 </select>
+                {touched.quality && errors.quality && (
+                  <p className="text-red-600 text-sm mt-1">{errors.quality}</p>
+                )}
               </div>
 
               {/* Price per kg */}
@@ -151,12 +295,15 @@ const RawMaterialPage = () => {
                   name="pricePerKg"
                   value={formData.pricePerKg}
                   onChange={handleChange}
-                  required
+                  onBlur={handleBlur}
                   min="0"
                   step="0.01"
-                  className="w-full px-4 py-4 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 text-lg"
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 text-lg ${touched.pricePerKg && errors.pricePerKg ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200'}`}
                   placeholder="Enter price per kg"
                 />
+                {touched.pricePerKg && errors.pricePerKg && (
+                  <p className="text-red-600 text-sm mt-1">{errors.pricePerKg}</p>
+                )}
               </div>
 
               {/* Location */}
@@ -169,9 +316,13 @@ const RawMaterialPage = () => {
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full px-4 py-4 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 text-lg"
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 text-lg ${touched.location && errors.location ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200'}`}
                   placeholder="Enter location"
                 />
+                {touched.location && errors.location && (
+                  <p className="text-red-600 text-sm mt-1">{errors.location}</p>
+                )}
               </div>
 
               {/* Harvest Date */}
@@ -184,9 +335,13 @@ const RawMaterialPage = () => {
                   name="harvestDate"
                   value={formData.harvestDate}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   max={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-4 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 text-lg"
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 text-lg ${touched.harvestDate && errors.harvestDate ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200'}`}
                 />
+                {touched.harvestDate && errors.harvestDate && (
+                  <p className="text-red-600 text-sm mt-1">{errors.harvestDate}</p>
+                )}
               </div>
 
               {/* Moisture Content */}
@@ -199,12 +354,16 @@ const RawMaterialPage = () => {
                   name="moistureContent"
                   value={formData.moistureContent}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   min="0"
                   max="100"
                   step="0.1"
-                  className="w-full px-4 py-4 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 text-lg"
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 text-lg ${touched.moistureContent && errors.moistureContent ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200'}`}
                   placeholder="Enter moisture content"
                 />
+                {touched.moistureContent && errors.moistureContent && (
+                  <p className="text-red-600 text-sm mt-1">{errors.moistureContent}</p>
+                )}
               </div>
 
               {/* Processing Method */}

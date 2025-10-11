@@ -16,7 +16,7 @@ const vehicleSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Available", "In Use", "Maintenance", "Inactive"],
+    enum: ["Available", "In Use", "Maintenance", "Out of Service", "Inactive"],
     default: "Available",
   },
   insuranceNo: {

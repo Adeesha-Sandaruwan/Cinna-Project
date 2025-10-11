@@ -9,6 +9,7 @@ const LeaveRequestManagement = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
+  const [category, setCategory] = useState('all');
 
   useEffect(() => {
   // Revised access control:
@@ -93,9 +94,24 @@ const LeaveRequestManagement = () => {
     }
   };
 
+  // Normalize employee category into stable keys matching UI filters
+  const normalizeCategory = (req) => {
+    const raw = (req?.category || req?.employeeType || req?.role || '')
+      .toString()
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+    if (raw === 'delivery_manager' || raw === 'delivery') return 'delivery_manager';
+    if (raw === 'admin') return 'other';
+    if (raw === 'product_manager' || raw === 'hr_manager' || raw === 'hrmanager' || raw === 'hr') return 'product_manager';
+    if (raw === 'financial_manager' || raw === 'finance_manager' || raw === 'financial' || raw === 'finance') return 'financial_manager';
+    return 'other';
+  };
+
   const filteredRequests = leaveRequests.filter(request => {
-    if (filter === 'all') return true;
-    return request.status === filter;
+    const statusOk = filter === 'all' || request.status === filter;
+    const cat = category === 'all' ? 'all' : normalizeCategory(request);
+    const categoryOk = category === 'all' || cat === category;
+    return statusOk && categoryOk;
   });
 
   if (loading) {
@@ -200,10 +216,45 @@ const LeaveRequestManagement = () => {
           </div>
         </div>
 
+        {/* Categories Card */}
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Categories</h3>
+          <p className="text-sm text-gray-500 mb-4">Filter by leave type</p>
+          <div className="space-y-2">
+            {[
+              { label: 'All', value: 'all' },
+              { label: 'Delivery Manager', value: 'delivery_manager' },
+              { label: 'Product Manager', value: 'product_manager' },
+              { label: 'Financial Manager', value: 'financial_manager' },
+              { label: 'Other', value: 'other' }
+            ].map(cat => { const list = leaveRequests.filter(r => (filter === 'all' || r.status === filter));
+ const count = cat.value === 'all'
+  ? list.length
+  : list.filter(r => normalizeCategory(r) === cat.value).length;
+              const active = category === cat.value;
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategory(cat.value)}
+                  className={`w-full flex items-center justify-between px-4 py-2 rounded-lg border text-sm ${
+                    active
+                      ? 'bg-amber-50 border-amber-200 text-amber-800'
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{cat.label}</span>
+                  <span className={`inline-flex items-center justify-center text-xs font-semibold rounded-full px-2 py-0.5 ${
+                    active ? 'bg-amber-200 text-amber-900' : 'bg-gray-100 text-gray-700'
+                  }`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {/* Leave Requests List */}
         {filteredRequests.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-6xl mb-6 text-gray-400">📝</div>
+            <div className="text-6xl mb-6 text-gray-400">ðŸ“</div>
             <h3 className="text-2xl font-semibold text-gray-900 mb-4">No Leave Requests</h3>
             <p className="text-gray-600">No leave requests found for the selected filter</p>
           </div>
@@ -267,7 +318,7 @@ const LeaveRequestManagement = () => {
                         {request.status.toUpperCase()}
                       </span>
                       <span className="text-gray-500 text-sm">
-                        Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                        Submitted: {new Date(request.createdAt).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -300,3 +351,6 @@ const LeaveRequestManagement = () => {
 };
 
 export default LeaveRequestManagement;
+
+
+

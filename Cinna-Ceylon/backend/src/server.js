@@ -8,6 +8,12 @@ import { fileURLToPath } from 'url';  // Helper to get __filename and __dirname 
 // Import database connection function
 import connectDB from './config/db.js';
 import privatizeExpiredProductsAtStartup from './utils/expireProducts.js';
+import ensureIndexes from './utils/ensureIndexes.js';
+
+
+// Import middleware for debug endpoints
+import auth from './middleware/auth.js';
+import isAdmin from './middleware/isAdmin.js';
   
 // Import application routes (organized by features/modules)
 import productRoutes from './routes/ProductRoutes.js';
@@ -34,6 +40,7 @@ import maintenanceRoutes from './routes/maintenanceRoutes.js';
 // User & Attendance Routes
 import userRoutes from "./routes/userRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
+import announcementRoutes from './routes/announcementRoutes.js';
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import attendanceAdminRoutes from "./routes/attendanceAdminRoutes.js";
 
@@ -73,7 +80,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 
 // Supplier & Raw Material Management
-app.use('/api/suppliers', supplierRoutes);
+app.use('/api/suppliers', userRoutes); // Use userRoutes for supplier data as they are stored in the users collection
 app.use('/api/supply-records', supplyRecordRoutes);
 app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/leave-requests', leaveReqRoutes);
@@ -95,6 +102,7 @@ app.use("/api/offers", offerRoutes);
 // User Management
 app.use("/api/users", userRoutes);              // Normal users
 app.use("/api/admin/users", adminUserRoutes);   // Admin-level user management
+app.use('/api/announcements', announcementRoutes);
 
 // Attendance Management
 app.use("/api/attendance", attendanceRoutes);              // Normal attendance
@@ -103,6 +111,88 @@ app.use("/api/admin/attendance", attendanceAdminRoutes);   // Admin-level attend
 // Root test endpoint (just to check if API is running)
 app.get('/', (req, res) => {
   res.send('🌿 CinnaCeylon API is running 🚀');
+});
+
+// Debug endpoint to test token validation
+app.get('/api/debug/token', auth, (req, res) => {
+  res.json({
+    message: 'Token is valid',
+    user: req.user,
+    isAdmin: req.user?.isAdmin || false
+  });
+});
+
+// Debug endpoint to test admin access
+app.get('/api/debug/admin', auth, isAdmin, (req, res) => {
+  res.json({
+    message: 'Admin access confirmed',
+    user: req.user
+  });
+});
+
+// Emergency endpoint to create admin user (remove in production)
+app.post('/api/debug/create-admin', async (req, res) => {
+  try {
+    const bcrypt = await import('bcryptjs');
+    const User = (await import('./models/User.js')).default;
+    
+    const { username, email, password } = req.body;
+    
+    // Check if admin already exists
+    const existingAdmin = await User.findOne({ 
+      $or: [
+        { email }, 
+        { username },
+        { isAdmin: true }
+      ] 
+    });
+    
+    if (existingAdmin) {
+      return res.json({ 
+        message: 'Admin user already exists', 
+        adminFound: {
+          username: existingAdmin.username,
+          email: existingAdmin.email,
+          isAdmin: existingAdmin.isAdmin,
+          userType: existingAdmin.userType
+        }
+      });
+    }
+    
+    // Create new admin user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const adminUser = new User({
+      username: username || 'admin',
+      email: email || 'admin@cinnaceylon.com',
+      password: hashedPassword,
+      userType: 'admin',
+      isAdmin: true,
+      role: 'admin',
+      profile: {
+        name: 'System Administrator',
+        address: 'System',
+        phone: '000-000-0000'
+      }
+    });
+    
+    await adminUser.save();
+    
+    res.json({
+      message: 'Admin user created successfully',
+      admin: {
+        id: adminUser._id,
+        username: adminUser.username,
+        email: adminUser.email,
+        userType: adminUser.userType,
+        isAdmin: adminUser.isAdmin,
+        role: adminUser.role
+      }
+    });
+    
+  } catch (error) {
+    console.error('Create admin error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ------------------ SERVER SETUP ------------------
@@ -119,6 +209,7 @@ const server = app.listen(PORT, () => {
   connectDB()
     .then(async () => {
       try {
+        await ensureIndexes();
         const updated = await privatizeExpiredProductsAtStartup();
         if (updated > 0) {
           console.log(`🔒 Expired products privatized on startup: ${updated}`);

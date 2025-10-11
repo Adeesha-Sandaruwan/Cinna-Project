@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react"; // Import React core, and th
 import { useParams, Link, useNavigate } from "react-router-dom"; // Import routing hooks for accessing URL params, creating links, and programmatic navigation.
 import { useAuth } from "../context/AuthContext";
 import ExpiryBar from './ExpiryBar.jsx';
+import Review from './Review.jsx';
 
 // Define a constant object to hold the theme colors for consistent styling.
 const COLORS = {
@@ -39,8 +40,6 @@ const ProductDetails = () => {
   // State to track if the "Buy Now" process is active.
   const [buyingNow, setBuyingNow] = useState(false);
 
-  // Mock (placeholder) data for product reviews until a real review system is built.
-  const reviews = { rating: 4.5, count: 24 };
 
   // This effect runs once when the component is first mounted.
   useEffect(() => {
@@ -268,7 +267,7 @@ const ProductDetails = () => {
                       key={i} // Unique key for each star.
                       className={`w-5 h-5 ${
                         // Conditionally color the star based on the rating.
-                        i < Math.floor(reviews.rating)
+                        i < Math.floor(product?.ratingAverage || 0)
                           ? "fill-current" // Filled star
                           : "fill-gray-300" // Empty star
                       }`}
@@ -279,7 +278,7 @@ const ProductDetails = () => {
                   ))}
                 </div>
                 <span className="ml-2 text-sm text-gray-600">
-                  {reviews.rating} ({reviews.count} reviews) {/* Display rating and count */}
+                  {(product?.ratingAverage || 0).toFixed(1)} ({product?.ratingCount || 0} reviews)
                 </span>
               </div>
 
@@ -437,7 +436,7 @@ const ProductDetails = () => {
           </ul>
         </div>
 
-        {/* Customer Reviews Summary Section */}
+  {/* Customer Reviews Summary Section */}
         <div className="bg-white rounded-2xl shadow-xl max-w-7xl mx-auto mb-8 p-8 text-center">
           <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
           <div className="flex justify-center mb-2 text-yellow-400 text-2xl">
@@ -446,7 +445,7 @@ const ProductDetails = () => {
               <svg
                 key={i}
                 className={`w-8 h-8 ${
-                  i < Math.floor(reviews.rating) ? "fill-current" : "fill-gray-300"
+                  i < Math.floor(product?.ratingAverage || 0) ? "fill-current" : "fill-gray-300"
                 }`}
                 viewBox="0 0 20 20"
               >
@@ -454,9 +453,12 @@ const ProductDetails = () => {
               </svg>
             ))}
           </div>
-          <p className="text-xl font-bold">{reviews.rating} out of 5</p>
-          <p className="text-gray-600">Based on {reviews.count} reviews</p>
+          <p className="text-xl font-bold">{(product?.ratingAverage || 0).toFixed(1)} out of 5</p>
+          <p className="text-gray-600">Based on {product?.ratingCount || 0} reviews</p>
         </div>
+
+  {/* Reviews List + Write Review (only if purchased) */}
+  <Review productId={product._id} />
 
      {/* Related Products Section */}
      <div className="bg-white rounded-2xl shadow-xl max-w-7xl mx-auto p-8">

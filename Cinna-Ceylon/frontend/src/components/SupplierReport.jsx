@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import logo from '../assets/images/logo.png';
+import { useAuth } from '../context/AuthContext';
+import jsPDF from 'jspdf';
 
 const SupplierReport = () => {
   const { id } = useParams();
@@ -7,6 +10,7 @@ const SupplierReport = () => {
   const [supplier, setSupplier] = useState(null);
   const [rawMaterials, setRawMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchData();
@@ -14,19 +18,42 @@ const SupplierReport = () => {
 
   const fetchData = async () => {
     try {
-      const [supplierRes, materialsRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/suppliers/${id}`),
-        fetch(`http://localhost:5000/api/raw-materials/supplier/${id}`)
-      ]);
+      // Try using the ID from the URL
+      let targetId = id;
+      let supplierOk = false;
 
-      if (supplierRes.ok) {
-        const supplierData = await supplierRes.json();
-        setSupplier(supplierData);
+      if (targetId) {
+        const supplierRes = await fetch(`http://localhost:5000/api/suppliers/${targetId}`);
+        if (supplierRes.ok) {
+          const supplierData = await supplierRes.json();
+          setSupplier(supplierData);
+          supplierOk = true;
+          const materialsRes = await fetch(`http://localhost:5000/api/raw-materials/supplier/${targetId}`);
+          if (materialsRes.ok) {
+            const materialsData = await materialsRes.json();
+            setRawMaterials(materialsData);
+          }
+        }
       }
 
-      if (materialsRes.ok) {
-        const materialsData = await materialsRes.json();
-        setRawMaterials(materialsData);
+      // Fallback: locate supplier by current user's email
+      if (!supplierOk && user?.email) {
+        const listRes = await fetch('http://localhost:5000/api/suppliers');
+        const list = listRes.ok ? await listRes.json() : [];
+        const match = Array.isArray(list)
+          ? list.find(s => (s?.email || '').toLowerCase() === user.email.toLowerCase())
+          : null;
+        if (match && (match._id || match.id)) {
+          const sid = match._id || match.id;
+          setSupplier(match);
+          const materialsRes = await fetch(`http://localhost:5000/api/raw-materials/supplier/${sid}`);
+          if (materialsRes.ok) {
+            const materialsData = await materialsRes.json();
+            setRawMaterials(materialsData);
+          }
+          // Normalize URL silently
+          if (id !== sid) navigate(`/supplier-report/${sid}`, { replace: true });
+        }
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -38,133 +65,84 @@ const SupplierReport = () => {
   const generatePDF = () => {
     // Calculate statistics
     const totalMaterials = rawMaterials.length;
-    const totalQuantity = rawMaterials.reduce((sum, material) => sum + material.quantity, 0);
-    const totalValue = rawMaterials.reduce((sum, material) => sum + (material.quantity * material.pricePerKg), 0);
+    const totalQuantity = rawMaterials.reduce((sum, material) => sum + Number(material.quantity || 0), 0);
+    const totalValue = rawMaterials.reduce((sum, material) => sum + (Number(material.quantity || 0) * Number(material.pricePerKg || 0)), 0);
     const averagePrice = totalQuantity > 0 ? totalValue / totalQuantity : 0;
 
-    // Create HTML content for PDF
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Supplier Report - ${supplier?.name}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #d97706; padding-bottom: 20px; }
-          .header h1 { color: #92400e; margin: 0; font-size: 28px; }
-          .header p { color: #a16207; margin: 5px 0; }
-          .section { margin-bottom: 25px; }
-          .section h2 { color: #92400e; border-bottom: 2px solid #fbbf24; padding-bottom: 5px; }
-          .stats { display: flex; justify-content: space-around; margin: 20px 0; }
-          .stat-card { background: #fef3c7; padding: 15px; border-radius: 8px; text-align: center; min-width: 120px; }
-          .stat-value { font-size: 24px; font-weight: bold; color: #92400e; }
-          .stat-label { color: #a16207; font-size: 14px; }
-          .supplier-info { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .info-row { margin: 8px 0; }
-          .info-label { font-weight: bold; color: #374151; }
-          .materials-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          .materials-table th, .materials-table td { border: 1px solid #d1d5db; padding: 12px; text-align: left; }
-          .materials-table th { background: #f3f4f6; font-weight: bold; color: #374151; }
-          .materials-table tr:nth-child(even) { background: #f9fafb; }
-          .quality-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-          .quality-ALBA { background: #e9d5ff; color: #7c3aed; }
-          .quality-C5 { background: #dbeafe; color: #2563eb; }
-          .quality-C4 { background: #c7d2fe; color: #4338ca; }
-          .quality-H1 { background: #dcfce7; color: #16a34a; }
-          .quality-H2 { background: #bbf7d0; color: #15803d; }
-          .quality-H3 { background: #a7f3d0; color: #047857; }
-          .quality-H4 { background: #99f6e4; color: #0d9488; }
-          .quality-M5 { background: #fed7aa; color: #ea580c; }
-          .quality-M4 { background: #fde68a; color: #d97706; }
-          .status-available { background: #dcfce7; color: #16a34a; }
-          .status-sold { background: #fecaca; color: #dc2626; }
-          .status-reserved { background: #fef3c7; color: #d97706; }
-          .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>🌿 CinnaCeylon Supplier Report</h1>
-          <p>Generated on ${new Date().toLocaleDateString()}</p>
-        </div>
+    const doc = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    let y = margin;
 
-        <div class="section">
-          <h2>Supplier Information</h2>
-          <div class="supplier-info">
-            <div class="info-row"><span class="info-label">Name:</span> ${supplier?.name}</div>
-            <div class="info-row"><span class="info-label">Email:</span> ${supplier?.email}</div>
-            <div class="info-row"><span class="info-label">Contact:</span> ${supplier?.contactNumber}</div>
-            ${supplier?.whatsappNumber ? `<div class="info-row"><span class="info-label">WhatsApp:</span> ${supplier.whatsappNumber}</div>` : ''}
-            <div class="info-row"><span class="info-label">Address:</span> ${supplier?.address}</div>
-            <div class="info-row"><span class="info-label">Registration Date:</span> ${new Date(supplier?.createdAt).toLocaleDateString()}</div>
-          </div>
-        </div>
+    // Header with logo and contact
+    try {
+      const img = new Image();
+      img.src = logo;
+      doc.addImage(img, 'PNG', margin, y, 50, 50);
+    } catch (_) {}
+    doc.setFontSize(18); doc.setTextColor('#92400e');
+    doc.text('CinnaCeylon Supplier Report', margin + 60, y + 18);
+    doc.setFontSize(10); doc.setTextColor('#6b7280');
+    doc.text('Contact: info@cinnaceylon.com  •  +94 77 123 4567  •  +94 11 234 5678  •  www.cinnaceylon.com', margin + 60, y + 36);
+    doc.setDrawColor('#d97706'); doc.setLineWidth(2);
+    doc.line(margin, y + 60, pageWidth - margin, y + 60);
+    y += 80;
 
-        <div class="section">
-          <h2>Statistics Summary</h2>
-          <div class="stats">
-            <div class="stat-card">
-              <div class="stat-value">${totalMaterials}</div>
-              <div class="stat-label">Total Materials</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">${totalQuantity.toFixed(1)} kg</div>
-              <div class="stat-label">Total Quantity</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">LKR ${totalValue.toFixed(2)}</div>
-              <div class="stat-label">Total Value</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">LKR ${averagePrice.toFixed(2)}</div>
-              <div class="stat-label">Avg Price/kg</div>
-            </div>
-          </div>
-        </div>
+    // Supplier info
+    doc.setFontSize(12); doc.setTextColor('#92400e');
+    doc.text('Supplier Information', margin, y); y += 16;
+    doc.setFontSize(11); doc.setTextColor('#111111');
+    doc.text(`Name: ${supplier?.name || '-'}`, margin, y); y += 14;
+    doc.text(`Email: ${supplier?.email || '-'}`, margin, y); y += 14;
+    doc.text(`Contact: ${supplier?.contactNumber || '-'}`, margin, y); y += 14;
+    if (supplier?.whatsappNumber) { doc.text(`WhatsApp: ${supplier.whatsappNumber}`, margin, y); y += 14; }
+    doc.text(`Address: ${supplier?.address || '-'}`, margin, y); y += 20;
 
-        <div class="section">
-          <h2>Raw Materials Inventory</h2>
-          <table class="materials-table">
-            <thead>
-              <tr>
-                <th>Quality</th>
-                <th>Quantity (kg)</th>
-                <th>Price/kg (LKR)</th>
-                <th>Total Value (LKR)</th>
-                <th>Status</th>
-                <th>Location</th>
-                <th>Harvest Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rawMaterials.map(material => `
-                <tr>
-                  <td><span class="quality-badge quality-${material.quality}">${material.quality}</span></td>
-                  <td>${material.quantity}</td>
-                  <td>${material.pricePerKg}</td>
-                  <td>${(material.quantity * material.pricePerKg).toFixed(2)}</td>
-                  <td><span class="quality-badge status-${material.status}">${material.status}</span></td>
-                  <td>${material.location || 'N/A'}</td>
-                  <td>${material.harvestDate ? new Date(material.harvestDate).toLocaleDateString() : 'N/A'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
+    // Stats
+    doc.setFontSize(12); doc.setTextColor('#92400e');
+    doc.text('Statistics Summary', margin, y); y += 16; doc.setFontSize(11); doc.setTextColor('#111111');
+    doc.text(`Total Materials: ${totalMaterials}`, margin, y); y += 14;
+    doc.text(`Total Quantity: ${Number(totalQuantity).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`, margin, y); y += 14;
+    doc.text(`Total Value: LKR ${Number(totalValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin, y); y += 14;
+    doc.text(`Avg Price/kg: LKR ${Number(averagePrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin, y); y += 20;
 
-        <div class="footer">
-          <p>This report was generated by CinnaCeylon Management System</p>
-          <p>For more information, contact: info@cinnaceylon.com</p>
-        </div>
-      </body>
-      </html>
-    `;
+    // Table header
+    const columns = ['Quality', 'Qty (kg)', 'Price/kg', 'Total (LKR)', 'Status'];
+    const colX = [margin, margin + 150, margin + 250, margin + 350, margin + 470];
+    doc.setFontSize(11); doc.setTextColor('#374151');
+    columns.forEach((c, i) => doc.text(c, colX[i], y));
+    doc.setDrawColor('#fbbf24'); doc.setLineWidth(1); doc.line(margin, y + 4, pageWidth - margin, y + 4);
+    y += 16; doc.setTextColor('#111111');
 
-    // Create and download PDF
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.print();
+    // Rows
+    rawMaterials.forEach((m) => {
+      if (y > pageHeight - margin) { // new page
+        doc.addPage(); y = margin; doc.setFontSize(11); doc.setTextColor('#374151');
+        columns.forEach((c, i) => doc.text(c, colX[i], y));
+        doc.setDrawColor('#fbbf24'); doc.line(margin, y + 4, pageWidth - margin, y + 4);
+        y += 16; doc.setTextColor('#111111');
+      }
+      const qty = Number(m.quantity || 0);
+      const price = Number(m.pricePerKg || 0);
+      const total = qty * price;
+      const status = (m.status || '').toString();
+      doc.text(`${m.quality || '-'}`, colX[0], y);
+      doc.text(`${qty.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`, colX[1], y);
+      doc.text(`${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, colX[2], y);
+      doc.text(`${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, colX[3], y);
+      doc.text(`${status}`, colX[4], y);
+      y += 16;
+    });
+
+    // Footer
+    if (y > pageHeight - margin - 30) { doc.addPage(); y = margin; }
+    doc.setFontSize(9); doc.setTextColor('#6b7280');
+    doc.text('This report was generated by CinnaCeylon Management System', pageWidth / 2, pageHeight - 30, { align: 'center' });
+    doc.text('For more information, contact: info@cinnaceylon.com', pageWidth / 2, pageHeight - 16, { align: 'center' });
+
+    const filename = `supplier-report-${(supplier?.name || 'supplier').toString().replace(/\s+/g,'-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
   };
 
   if (loading) {
@@ -222,19 +200,24 @@ const SupplierReport = () => {
             </div>
             <div className="bg-green-100 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-green-800">
-                {rawMaterials.reduce((sum, material) => sum + material.quantity, 0).toFixed(1)} kg
+                {Number(rawMaterials.reduce((sum, material) => sum + Number(material.quantity || 0), 0)).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg
               </div>
               <div className="text-green-600 text-sm">Total Quantity</div>
             </div>
             <div className="bg-blue-100 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-blue-800">
-                LKR {rawMaterials.reduce((sum, material) => sum + (material.quantity * material.pricePerKg), 0).toFixed(2)}
+                LKR {Number(rawMaterials.reduce((sum, material) => sum + (Number(material.quantity || 0) * Number(material.pricePerKg || 0)), 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="text-blue-600 text-sm">Total Value</div>
             </div>
             <div className="bg-purple-100 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-purple-800">
-                LKR {rawMaterials.length > 0 ? (rawMaterials.reduce((sum, material) => sum + (material.quantity * material.pricePerKg), 0) / rawMaterials.reduce((sum, material) => sum + material.quantity, 0)).toFixed(2) : '0.00'}
+                LKR {rawMaterials.length > 0 
+                  ? Number(
+                      rawMaterials.reduce((sum, material) => sum + (Number(material.quantity || 0) * Number(material.pricePerKg || 0)), 0) /
+                      rawMaterials.reduce((sum, material) => sum + Number(material.quantity || 0), 0)
+                    ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                  : '0.00'}
               </div>
               <div className="text-purple-600 text-sm">Avg Price/kg</div>
             </div>

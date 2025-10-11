@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { safeRequest, isOk } from '../../utils/api';
+import { generateReceiptPDF } from '../../components/ReceiptPDF';
 
 // Simple utility to format currency (fallback to raw number if invalid)
 const fmt = (v) => {
@@ -73,6 +74,7 @@ export default function BuyerDashboard() {
   const paid = orders.filter(o => o.status === 'paid').length;
   const lastOrder = orders[0];
   const totalSpent = orders.reduce((sum, o) => sum + (typeof o.total === 'number' ? o.total : 0), 0);
+  const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto">
@@ -85,7 +87,67 @@ export default function BuyerDashboard() {
           <Link to="/products" className="px-4 py-2 bg-[#8B4513] text-white rounded-lg text-sm hover:bg-[#A0522D] transition">Browse Products</Link>
           <Link to="/cart" className="px-4 py-2 bg-yellow-500 text-black rounded-lg text-sm hover:bg-yellow-400 transition">View Cart</Link>
           <Link to="/buyer-offers" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-500 transition">Special Offers</Link>
-          <Link to="/profile" className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300 transition">Profile</Link>
+        </div>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+        <div className="bg-white rounded-xl shadow p-4">
+          <p className="text-xs text-gray-500">Total Orders</p>
+          <p className="text-2xl font-bold">{totalOrders}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow p-4">
+          <p className="text-xs text-gray-500">Pending</p>
+          <p className="text-2xl font-bold text-yellow-600">{pending}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow p-4">
+          <p className="text-xs text-gray-500">Paid</p>
+          <p className="text-2xl font-bold text-green-600">{paid}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow p-4">
+          <p className="text-xs text-gray-500">Total Spent</p>
+          <p className="text-2xl font-bold text-[#CC7722]">LKR {totalSpent.toLocaleString()}</p>
+        </div>
+      </div>
+
+      {/* Recent Orders */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Your Recent Orders</h2>
+          {/* Placeholder for a 'View All' if an orders page exists */}
+        </div>
+        {loading && (
+          <div className="text-sm text-gray-500">Loading orders...</div>
+        )}
+        {error && !loading && (
+          <div className="text-sm text-red-600">{error}</div>
+        )}
+        {!loading && !error && recentOrders.length === 0 && (
+          <div className="text-sm text-gray-500">You have not placed any orders yet.</div>
+        )}
+        <div className="space-y-3">
+          {recentOrders.map(o => (
+            <div key={o._id} className="p-4 rounded-xl border border-amber-100 bg-white hover:shadow transition flex justify-between items-start gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-amber-700">Order #{String(o._id).slice(-6)}</p>
+                <p className="text-xs text-gray-600">Placed: {o.createdAt ? new Date(o.createdAt).toLocaleString() : '-'}</p>
+                <p className="text-xs text-gray-600">Items: {o.items?.length || 0}</p>
+                <p className="text-xs">
+                  <span className="font-medium">Status:</span>{' '}
+                  <span className={`capitalize px-2 py-0.5 rounded text-xs ${o.status === 'paid' ? 'bg-green-100 text-green-700' : o.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+                    {o.status || 'unknown'}
+                  </span>
+                </p>
+                <p className="text-sm font-bold text-amber-800">LKR {typeof o.total === 'number' ? o.total.toLocaleString() : o.total}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => generateReceiptPDF(o, { items: o.items?.filter(i=>i.product), offerItems: o.items?.filter(i=>i.offer) })}
+                  className="text-xs px-3 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
+                >Receipt</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -6,6 +6,7 @@ const WholesalePage = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [supplierNameCache, setSupplierNameCache] = useState({});
   const [filters, setFilters] = useState({
     quality: '',
     supplier: '',
@@ -20,24 +21,27 @@ const WholesalePage = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [rawMaterials, filters]);
+  }, [rawMaterials, suppliers, filters]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [materialsRes, suppliersRes] = await Promise.all([
         fetch('http://localhost:5000/api/raw-materials'),
         fetch('http://localhost:5000/api/suppliers')
       ]);
 
-      if (materialsRes.ok) {
-        const materialsData = await materialsRes.json();
-        setRawMaterials(materialsData);
-      }
+      const materialsData = materialsRes.ok ? await materialsRes.json() : [];
+      const suppliersData = suppliersRes.ok ? await suppliersRes.json() : [];
+      
+      setRawMaterials(Array.isArray(materialsData) ? materialsData : []);
+      setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
+      const initialCache = (Array.isArray(suppliersData) ? suppliersData : []).reduce((acc, s) => {
+        if (s && s._id) acc[s._id] = s.name || 'Unknown Supplier';
+        return acc;
+      }, {});
+      setSupplierNameCache(initialCache);
 
-      if (suppliersRes.ok) {
-        const suppliersData = await suppliersRes.json();
-        setSuppliers(suppliersData);
-      }
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -45,13 +49,46 @@ const WholesalePage = () => {
     }
   };
 
+  const getSupplierName = (supplierId) => {
+    if (!supplierId) return 'Unknown Supplier';
+    if (supplierNameCache[supplierId]) return supplierNameCache[supplierId];
+    const supplier = suppliers.find(s => s._id === supplierId);
+    return supplier ? supplier.name : 'Unknown Supplier';
+  };
+
+  useEffect(() => {
+    if (!filteredMaterials.length) return;
+    const ids = Array.from(new Set(
+      filteredMaterials
+        .map(m => (typeof m.supplier === 'string' ? m.supplier : m.supplier?._id))
+        .filter(id => id && !supplierNameCache[id])
+    ));
+    if (!ids.length) return;
+    Promise.all(
+      ids.map(id => fetch(`http://localhost:5000/api/suppliers/${id}`).then(r => (r.ok ? r.json() : null)))
+    )
+      .then(list => {
+        const add = {};
+        list.filter(Boolean).forEach(s => {
+          if (s && s._id) add[s._id] = s.name || 'Unknown Supplier';
+        });
+        if (Object.keys(add).length) setSupplierNameCache(prev => ({ ...prev, ...add }));
+      })
+      .catch(() => {});
+  }, [filteredMaterials, suppliers]);
+
   const applyFilters = () => {
+    if (!rawMaterials.length) {
+        setFilteredMaterials([]);
+        return;
+    }
     let filtered = rawMaterials.filter(material => {
+      const supplierId = typeof material.supplier === 'string' ? material.supplier : material.supplier?._id;
       return (
         material.status === 'available' &&
         material.visibility === 'public' &&
         (!filters.quality || material.quality === filters.quality) &&
-        (!filters.supplier || material.supplier._id === filters.supplier) &&
+        (!filters.supplier || supplierId === filters.supplier) &&
         (!filters.minPrice || material.pricePerKg >= parseFloat(filters.minPrice)) &&
         (!filters.maxPrice || material.pricePerKg <= parseFloat(filters.maxPrice)) &&
         (!filters.location || material.location?.toLowerCase().includes(filters.location.toLowerCase()))
@@ -66,66 +103,6 @@ const WholesalePage = () => {
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleWhatsAppContact = (supplier) => {
-    if (supplier.whatsappNumber) {
-      const message = `Hello ${supplier.name}, I'm interested in your ${supplier.quality} grade cinnamon. Can we discuss pricing and availability?`;
-      const whatsappUrl = `https://wa.me/${supplier.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-    } else {
-      alert('WhatsApp number not available for this supplier');
-    }
-  };
-
-  const getQualityColor = (quality) => {
-    switch (quality?.toLowerCase()) {
-      case 'alba':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'c5':
-        return 'bg-green-100 text-green-800';
-      case 'c4':
-        return 'bg-blue-100 text-blue-800';
-      case 'h1':
-        return 'bg-purple-100 text-purple-800';
-      case 'h2':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'h3':
-        return 'bg-pink-100 text-pink-800';
-      case 'h4':
-        return 'bg-red-100 text-red-800';
-      case 'm5':
-        return 'bg-orange-100 text-orange-800';
-      case 'm4':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getQualityEmoji = (quality) => {
-    switch (quality?.toLowerCase()) {
-      case 'alba':
-        return '⭐';
-      case 'c5':
-        return '🌟';
-      case 'c4':
-        return '✨';
-      case 'h1':
-        return '💎';
-      case 'h2':
-        return '🔸';
-      case 'h3':
-        return '🔹';
-      case 'h4':
-        return '🔺';
-      case 'm5':
-        return '🔶';
-      case 'm4':
-        return '🔷';
-      default:
-        return '📦';
-    }
   };
 
   const getQualityBadgeColor = (quality) => {
@@ -155,23 +132,21 @@ const WholesalePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
+      <div className="bg-gradient-to-r from-amber-600 to-orange-700">
         <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Wholesale Marketplace</h1>
-            <p className="text-xl text-gray-600 mb-6">Premium Cinnamon Raw Materials from Trusted Suppliers</p>
-            <div className="bg-gray-100 rounded-lg p-6 max-w-4xl mx-auto">
-              <p className="text-gray-700">Discover the finest quality cinnamon from certified suppliers across Sri Lanka</p>
+          <div className="text-center text-white">
+            <h1 className="text-4xl font-bold mb-2">Raw Cinnamon Products</h1>
+            <p className="text-lg text-amber-100 mb-6">Premium Cinnamon Raw Materials from Trusted Suppliers</p>
+            <div className="bg-white/10 border border-white/20 rounded-xl p-6 max-w-4xl mx-auto backdrop-blur-sm">
+              <p className="text-amber-50">Discover the finest quality cinnamon from certified suppliers across Sri Lanka</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8 border border-gray-200">
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-amber-100">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Filter Materials</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
@@ -180,7 +155,7 @@ const WholesalePage = () => {
                 name="quality"
                 value={filters.quality}
                 onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
               >
                 <option value="">All Grades</option>
                 <option value="ALBA">ALBA (Premium)</option>
@@ -201,7 +176,7 @@ const WholesalePage = () => {
                 name="supplier"
                 value={filters.supplier}
                 onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
               >
                 <option value="">All Suppliers</option>
                 {suppliers.map(supplier => (
@@ -219,7 +194,7 @@ const WholesalePage = () => {
                 name="minPrice"
                 value={filters.minPrice}
                 onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
                 placeholder="Min price"
               />
             </div>
@@ -231,7 +206,7 @@ const WholesalePage = () => {
                 name="maxPrice"
                 value={filters.maxPrice}
                 onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
                 placeholder="Max price"
               />
             </div>
@@ -243,21 +218,19 @@ const WholesalePage = () => {
                 name="location"
                 value={filters.location}
                 onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
                 placeholder="Search location"
               />
             </div>
           </div>
         </div>
 
-        {/* Results Count */}
         <div className="mb-6">
           <p className="text-lg text-gray-700 font-medium">
             Found {filteredMaterials.length} materials available
           </p>
         </div>
 
-        {/* Materials Grid */}
         {filteredMaterials.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-6 text-gray-400">📦</div>
@@ -266,161 +239,77 @@ const WholesalePage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMaterials.map((material) => (
-              <div key={material._id} className="bg-white rounded-lg shadow border border-gray-200 hover:shadow-md transition-shadow duration-200">
-                {/* Material Image */}
-                <div className="relative h-48 bg-gray-100 rounded-t-lg">
-                  {material.materialPhoto ? (
-                    <img
-                      src={`http://localhost:5000/uploads/${material.materialPhoto}`}
-                      alt="Raw Material"
-                      className="w-full h-full object-cover rounded-t-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="text-4xl text-gray-400">📦</div>
-                    </div>
-                  )}
-                  
-                  {/* Quality Badge */}
-                  <div className="absolute top-3 left-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getQualityBadgeColor(material.quality)}`}>
-                      {material.quality}
-                    </span>
-                  </div>
+            {filteredMaterials.map((material) => {
+              const supplierId = typeof material.supplier === 'string' ? material.supplier : material.supplier?._id;
+              const supplierName = material.supplier?.name || getSupplierName(supplierId);
+              const supplierDisplayName = supplierName === 'Unknown Supplier' ? '' : supplierName;
 
-                  {/* Status Badge */}
-                  <div className="absolute top-3 right-3">
-                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-                      Available
-                    </span>
-                  </div>
-                </div>
-
-                {/* Material Details */}
-                <div className="p-6">
-                  {/* Supplier Info */}
-                  <div className="mb-6">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {material.supplier?.name?.charAt(0) || 'S'}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {material.supplier?.name || 'Unknown Supplier'}
-                        </h3>
-                        <p className="text-gray-600 text-sm">{material.location || 'Location not specified'}</p>
-                      </div>
+              return (
+                <div key={material._id} className="bg-white rounded-2xl shadow-xl border border-amber-100 hover:shadow-2xl hover:border-amber-200 transition-all duration-200">
+                  <div className="relative">
+                    <div className="w-full aspect-square bg-white rounded-t-2xl overflow-hidden flex items-center justify-center">
+                      {material.materialPhoto ? (
+                        <img
+                          src={`http://localhost:5000/uploads/${material.materialPhoto}`}
+                          alt="Raw Material"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="text-4xl text-amber-400">📦</div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Material Type & Quality */}
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-gray-700">Material Type:</span>
-                      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm">
-                        Cinnamon Raw Material
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Quality Grade:</span>
-                      <span className={`px-2 py-1 rounded text-sm font-medium ${getQualityColor(material.quality)}`}>
+                    <div className="absolute top-3 left-3">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border shadow-sm ${getQualityBadgeColor(material.quality)}`}>
                         {material.quality}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Available Quantity & Pricing */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="text-sm font-medium text-gray-700 mb-1">Available</div>
-                      <p className="text-xl font-semibold text-gray-900">{material.quantity} kg</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="text-sm font-medium text-gray-700 mb-1">Price per kg</div>
-                      <p className="text-xl font-semibold text-gray-900">LKR {material.pricePerKg}</p>
-                    </div>
-                  </div>
-
-                  {/* Total Value */}
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6 border">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Total Value</span>
-                      <span className="text-xl font-semibold text-gray-900">
-                        LKR {(material.quantity * material.pricePerKg).toFixed(2)}
+                    <div className="absolute top-3 right-3">
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                        Available
                       </span>
                     </div>
                   </div>
-
-                  {/* Additional Details */}
-                  <div className="space-y-2 mb-6">
-                    {material.harvestDate && (
-                      <div className="flex justify-between items-center bg-gray-50 rounded p-2">
-                        <span className="text-sm text-gray-600">Harvest Date:</span>
-                        <span className="text-sm font-medium text-gray-900">{new Date(material.harvestDate).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    {material.moistureContent && (
-                      <div className="flex justify-between items-center bg-gray-50 rounded p-2">
-                        <span className="text-sm text-gray-600">Moisture Content:</span>
-                        <span className="text-sm font-medium text-gray-900">{material.moistureContent}%</span>
-                      </div>
-                    )}
-                    {material.processingMethod && (
-                      <div className="flex justify-between items-center bg-gray-50 rounded p-2">
-                        <span className="text-sm text-gray-600">Processing Method:</span>
-                        <span className="text-sm font-medium text-gray-900">{material.processingMethod}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  {material.description && (
+                  <div className="p-6">
                     <div className="mb-6">
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="text-sm font-medium text-gray-700 mb-2">Description</div>
-                        <p className="text-sm text-gray-600">{material.description}</p>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {supplierDisplayName ? supplierDisplayName.charAt(0) : 'S'}
+                        </div>
+                        <div>
+                          {supplierDisplayName && (
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {supplierDisplayName}
+                            </h3>
+                          )}
+                          <p className="text-gray-600 text-sm">{material.location || 'Location not specified'}</p>
+                        </div>
                       </div>
                     </div>
-                  )}
-
-                  {/* Contact Information */}
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6 border">
-                    <div className="text-sm font-medium text-gray-700 mb-3">Supplier Contact</div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Phone:</span> {material.supplier?.contactNumber || 'Not available'}
-                      </p>
-                      {material.supplier?.whatsappNumber && (
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">WhatsApp:</span> {material.supplier.whatsappNumber}
-                        </p>
-                      )}
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Email:</span> {material.supplier?.email || 'Not available'}
-                      </p>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                        <div className="text-sm font-medium text-gray-700 mb-1">Available</div>
+                        <p className="text-xl font-semibold text-gray-900">{Number(material.quantity || 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                        <div className="text-sm font-medium text-gray-700 mb-1">Price per kg</div>
+                        <p className="text-xl font-semibold text-gray-900">LKR {Number(material.pricePerKg || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => handleWhatsAppContact(material.supplier)}
-                      className="flex-1 px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 font-medium flex items-center justify-center space-x-2"
-                    >
-                      <span>Contact Supplier</span>
-                    </button>
-                    <button
-                      onClick={() => window.open(`https://wa.me/${material.supplier?.contactNumber?.replace(/[^0-9]/g, '')}`, '_blank')}
-                      className="px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200 font-medium"
-                      title="Call Supplier"
-                    >
-                      Call
-                    </button>
+                    <div className="pt-2">
+                      <Link
+                        to={`/wholesale/product/${material._id}`}
+                        className="block w-full text-center text-white py-3 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+                        style={{ backgroundColor: '#c5a35a' }}
+                      >
+                        View Product
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

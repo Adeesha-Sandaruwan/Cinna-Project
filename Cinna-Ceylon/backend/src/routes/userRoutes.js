@@ -17,6 +17,12 @@ router.put('/profile', auth, userController.updateProfile);
 // Delete own profile
 router.delete('/profile', auth, userController.deleteProfile);
 
+// Get all suppliers
+router.get('/suppliers', userController.getSuppliers);
+
+// Get a single supplier by ID
+router.get('/suppliers/:id', userController.getSupplierById);
+
 // Example admin-only route
 router.get('/admin-only', auth, isAdmin, (req, res) => {
 	res.json({ message: 'Welcome, admin user!' });

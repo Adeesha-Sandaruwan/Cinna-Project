@@ -106,10 +106,8 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.userType === 'supplier' ? (
-              <Link to="/supplier/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Supplier Dashboard</Link>
-            ) : user.userType === 'driver' ? (
-              <Link to="/driver/dashboard" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
+            user.userType === 'driver' ? (
+              <Link to="/dashboard/driver" className="hover:text-[#FFD700] transition-colors duration-200">Driver Dashboard</Link>
             ) : null /* Intentionally hide Buyer Dashboard link for buyers */
           )}
         </div>
@@ -193,7 +191,6 @@ export default function Header() {
             </Link>
           ))}
           {user && (
-            user.userType === 'supplier' ? <Link to="/supplier/dashboard" onClick={closeAllMenus}>Supplier Dashboard</Link> :
             user.userType === 'driver' ? <Link to="/driver/dashboard" onClick={closeAllMenus}>Driver Dashboard</Link> :
             null /* Buyer Dashboard link hidden intentionally */
           )}

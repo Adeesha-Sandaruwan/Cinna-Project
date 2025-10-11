@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
+import './RawMaterialList.css';
 
 const RawMaterialList = ({ rawMaterials, onEdit, onDelete }) => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
 
   const handleEdit = (material) => {
+    toast.info('Opening raw material for update...');
     setEditingId(material._id);
     setEditForm({
       quantity: material.quantity,
@@ -19,14 +22,31 @@ const RawMaterialList = ({ rawMaterials, onEdit, onDelete }) => {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
+    let v = value;
+    if (name === 'location' || name === 'description') {
+      v = value.replace(/[^A-Za-z0-9\s,.]/g, '');
+    }
     setEditForm(prev => ({
       ...prev,
-      [name]: value
+      [name]: v
     }));
+  };
+
+  const validateEdit = (data) => {
+    if (!data.quantity || Number(data.quantity) <= 0) return 'Enter a valid quantity';
+    if (data.pricePerKg === '' || Number(data.pricePerKg) < 0) return 'Enter a valid price per kg';
+    if (data.location && !/^[A-Za-z0-9\s,.]+$/.test(data.location)) return 'Location may contain letters, numbers, spaces, comma and full stop only';
+    if (data.description && !/^[A-Za-z0-9\s,.]+$/.test(data.description)) return 'Use only letters, numbers, spaces, comma and full stop';
+    return '';
   };
 
   const handleEditSubmit = async (id) => {
     try {
+      const msg = validateEdit(editForm);
+      if (msg) {
+        toast.error(msg);
+        return;
+      }
       const response = await fetch(`http://localhost:5000/api/raw-materials/${id}`, {
         method: 'PUT',
         headers: {
@@ -38,9 +58,14 @@ const RawMaterialList = ({ rawMaterials, onEdit, onDelete }) => {
       if (response.ok) {
         setEditingId(null);
         onEdit();
+        toast.success('Raw material updated');
+      } else {
+        const err = await response.json().catch(() => ({}));
+        toast.error(err.error || 'Failed to update raw material');
       }
     } catch (err) {
       console.error('Error updating raw material:', err);
+      toast.error('Network error while updating');
     }
   };
 
@@ -95,9 +120,9 @@ const RawMaterialList = ({ rawMaterials, onEdit, onDelete }) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="rml space-y-4">
       {rawMaterials.map((material) => (
-        <div key={material._id} className="bg-white border border-amber-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div key={material._id} className="rml-card bg-white border border-amber-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
           {editingId === material._id ? (
             // Edit Form
             <div className="space-y-4">
@@ -192,10 +217,10 @@ const RawMaterialList = ({ rawMaterials, onEdit, onDelete }) => {
                 {/* Material Details */}
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getQualityColor(material.quality)}`}>
+                    <span className={`rml-badge px-2 py-1 rounded-full text-xs font-semibold ${getQualityColor(material.quality)}`}>
                       {material.quality}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(material.status)}`}>
+                    <span className={`rml-badge px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(material.status)}`}>
                       {material.status}
                     </span>
                   </div>
@@ -203,15 +228,15 @@ const RawMaterialList = ({ rawMaterials, onEdit, onDelete }) => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">Quantity:</span>
-                      <p className="font-semibold text-amber-800">{material.quantity} kg</p>
+                      <p className="font-semibold text-amber-800">{Number(material.quantity || 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Price:</span>
-                      <p className="font-semibold text-amber-800">LKR {material.pricePerKg}/kg</p>
+                      <p className="font-semibold text-amber-800">LKR {Number(material.pricePerKg || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/kg</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Total Value:</span>
-                      <p className="font-semibold text-amber-800">LKR {(material.quantity * material.pricePerKg).toFixed(2)}</p>
+                      <p className="font-semibold text-amber-800">LKR {Number((Number(material.quantity || 0) * Number(material.pricePerKg || 0)) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Location:</span>
@@ -246,7 +271,7 @@ const RawMaterialList = ({ rawMaterials, onEdit, onDelete }) => {
                   onClick={() => handleEdit(material)}
                   className="px-3 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm"
                 >
-                  Edit
+                  Update
                 </button>
                 <button
                   onClick={() => handleDelete(material._id)}

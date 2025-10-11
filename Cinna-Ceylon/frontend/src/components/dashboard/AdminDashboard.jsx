@@ -42,6 +42,9 @@ const AdminDashboard = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementTarget, setAnnouncementTarget] = useState('users');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,15 +53,17 @@ const AdminDashboard = () => {
   const sidebarItems = [
     { name: "Users", icon: Users, path: "/dashboard/users" },
     { name: "Attendance", icon: ClipboardList, path: "/dashboard/attendance-records" },
-  { name: "Leave", icon: CalendarCheck, path: "/leave-management" }, // updated path
+    { name: "Leave Request", icon: CalendarCheck, path: "/leaverequestform" },
+    { name: "HR Manager", icon: CalendarCheck, path: "/dashboard/hr" },
   { name: "Product Manager", icon: Package, path: "/admin/dashboard" }, // points to ProductManagerDashboard component
-    { name: "Supplier Manager", icon: Store, path: "/dashboard/supplier" },
     { name: "Delivery Manager", icon: Truck, path: "/delivery-manager" },
     { name: "Vehicle Manager", icon: Truck, path: "/vehicle-manager" },
     { name: "Financial Manager", icon: DollarSign, path: "/dashboard/finance" },
   ];
 
   const token = localStorage.getItem('token');
+
+
 
   // Navigate to Product Management Dashboard
   const goToProductDashboard = () => {
@@ -69,14 +74,34 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      if (!token) {
+        toast.error('No authentication token found. Please login again.');
+        navigate('/login');
+        return;
+      }
+
       const res = await fetch('http://localhost:5000/api/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
       const data = await res.json();
-      if (res.ok) setUsers(data);
-      else toast.error(data.message || 'Failed to fetch users');
+      
+      if (res.ok) {
+        setUsers(data);
+      } else {
+        if (res.status === 401) {
+          toast.error('Authentication failed. Please login again.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login');
+        } else if (res.status === 403) {
+          toast.error('Admin access required');
+        } else {
+          toast.error(data.message || 'Failed to fetch users');
+        }
+      }
     } catch (err) {
-      toast.error('Network error');
+      toast.error('Network error: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -85,7 +110,12 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
-  // Download attendance report as CSV
+
+  // Navigate to Supplier Dashboard directly
+  const goToSupplierManagerDashboard = async () => {
+    navigate('/dashboard/supplier');
+  };
+  // Download attendance report as PDF
   const handleDownloadReport = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/admin/attendance/report', {
@@ -95,8 +125,15 @@ const AdminDashboard = () => {
         const data = await res.json();
         throw new Error(data.message || 'Failed to download report');
       }
-      const csv = await res.text();
-      downloadCSV(csv);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'attendance_report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       toast.error(err.message || 'Download failed');
     }
@@ -152,6 +189,33 @@ const AdminDashboard = () => {
       toast.error('Network error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Create announcement
+  const handleCreateAnnouncement = async (e) => {
+    e?.preventDefault();
+    if (!announcementMessage.trim()) return toast.error('Message is required');
+    try {
+      const res = await fetch('http://localhost:5000/api/announcements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: announcementMessage, target: announcementTarget })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Announcement sent');
+        setAnnouncementMessage('');
+        setAnnouncementTarget('users');
+        setShowAnnouncement(false);
+      } else {
+        toast.error(data.message || 'Failed to send announcement');
+      }
+    } catch (err) {
+      toast.error('Network error');
     }
   };
 
@@ -345,16 +409,23 @@ const AdminDashboard = () => {
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.1 * index + 0.3 }}
-                  onClick={() => navigate(path)}
+                  onClick={() => {
+                    if (name === 'Supplier Manager') return goToSupplierManagerDashboard();
+                    navigate(path);
+                  }}
                   className={`group flex items-center gap-4 px-4 py-3 mx-1 rounded-xl transition-all duration-300 relative overflow-hidden ${
-                    location.pathname === path
+                    ((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))
                       ? "bg-gradient-to-r from-amber-600 to-orange-600 shadow-lg shadow-amber-500/25"
                       : "hover:bg-white/10 hover:shadow-lg hover:shadow-white/10"
                   }`}
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {location.pathname === path && (
+                  {(((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))) && (
                     <motion.div
                       layoutId="activeTab"
                       className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl"
@@ -364,15 +435,23 @@ const AdminDashboard = () => {
                   <Icon 
                     size={20} 
                     className={`relative z-10 transition-colors ${
-                      location.pathname === path ? "text-white" : "text-blue-300 group-hover:text-white"
+                      ((name === 'Supplier Manager')
+                        ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                        : (location.pathname === path))
+                        ? "text-white" : "text-blue-300 group-hover:text-white"
                     }`} 
                   />
                   <span className={`relative z-10 font-medium transition-colors ${
-                    location.pathname === path ? "text-white" : "text-blue-200 group-hover:text-white"
+                    ((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))
+                      ? "text-white" : "text-blue-200 group-hover:text-white"
                   }`}>
                     {name}
                   </span>
-                  {location.pathname === path && (
+                  {(((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))) && (
                     <motion.div
                       className="absolute right-3 w-2 h-2 bg-yellow-400 rounded-full"
                       initial={{ scale: 0 }}
@@ -526,7 +605,7 @@ const AdminDashboard = () => {
                 </motion.button>
 
                 <motion.button 
-                  onClick={() => navigate('/dashboard/attendance')} 
+                  onClick={() => navigate('/dashboard/attendance-records')} 
                   className="group flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition-all duration-300"
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -556,6 +635,20 @@ const AdminDashboard = () => {
                   </motion.div>
                   Download Report
                 </motion.button>
+
+                <motion.button 
+                  onClick={() => setShowAnnouncement(true)}
+                  className="group flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition-all duration-300"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <motion.div className="p-1 bg-white/20 rounded-lg">
+                    <Activity size={18} />
+                  </motion.div>
+                  Announcement
+                </motion.button>
+
+
               </div>
 
               {/* Stats Cards */}
@@ -778,6 +871,38 @@ const AdminDashboard = () => {
                       </div>
                     </motion.form>
                   </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Announcement Modal */}
+          <AnimatePresence>
+            {showAnnouncement && (
+              <motion.div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold">Send Announcement</h3>
+                    <button onClick={() => setShowAnnouncement(false)} className="text-slate-500"><X /></button>
+                  </div>
+                  <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold">Message</label>
+                      <textarea value={announcementMessage} onChange={e=>setAnnouncementMessage(e.target.value)} className="w-full border p-3 rounded-md" rows={4} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold">Target</label>
+                      <select value={announcementTarget} onChange={e=>setAnnouncementTarget(e.target.value)} className="w-full border p-3 rounded-md">
+                        <option value="users">Other Users</option>
+                        <option value="admin">Admins</option>
+                        <option value="all">All</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                      <button type="button" onClick={()=>setShowAnnouncement(false)} className="px-4 py-2 rounded-md border">Cancel</button>
+                      <button type="submit" className="px-4 py-2 rounded-md bg-indigo-600 text-white">Send</button>
+                    </div>
+                  </form>
                 </motion.div>
               </motion.div>
             )}

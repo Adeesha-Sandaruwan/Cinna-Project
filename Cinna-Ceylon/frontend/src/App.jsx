@@ -33,6 +33,9 @@ import Footer from './components/Footer';
 // Dashboards
 import { BuyerDashboard, SupplierDashboard, DriverDashboard, AdminDashboard, HRManagerDashboard } from './components/dashboard';
 import AttendanceRecords from './components/dashboard/AttendanceRecords';
+import LeaveQuickActions from './components/leave/LeaveQuickActions.jsx';
+import MyLeaves from './components/leave/MyLeaves.jsx';
+import LeaveAnalytics from './components/leave/LeaveAnalytics.jsx';
 
 // E-commerce
 import Cart from "./components/Cart.jsx";
@@ -40,10 +43,10 @@ import Checkout from "./components/Checkout.jsx";
 
 // Supplier & HR
 import SupplierForm from "./components/SupplierForm.jsx";
-import SupplierDashboardPage from "./components/SupplierDashboard.jsx";
 import SupplierReport from "./components/SupplierReport.jsx";
 import RawMaterialPage from "./components/RawMaterialPage.jsx";
 import WholesalePage from "./components/WholesalePage.jsx";
+import WholesaleProductDetails from "./components/WholesaleProductDetails.jsx";
 import LeaveRequestManagement from "./components/LeaveRequestManagement.jsx";
 import LeaveRequestForm from "./components/LeaveRequestForm.jsx";
 import SalaryForm from './components/SalaryForm';
@@ -109,12 +112,15 @@ function AppContent() {
 
             {/* Supplier & HR Management */}
             <Route path="/supplierform" element={<SupplierForm />} />
-            <Route path="/supplier-dashboard/:id" element={<SupplierDashboardPage />} />
+            <Route path="/supplier-dashboard/:id" element={<SupplierDashboard />} />
             <Route path="/supplier-report/:id" element={<SupplierReport />} />
             <Route path="/raw-material-form/:supplierId" element={<RawMaterialPage />} />
             <Route path="/wholesale" element={<WholesalePage />} />
+            <Route path="/wholesale/product/:id" element={<WholesaleProductDetails />} />
             <Route path="/leave-management" element={<LeaveRequestManagement />} />
             <Route path="/leaverequestform" element={<LeaveRequestForm />} />
+            <Route path="/my-leaves" element={<MyLeaves />} />
+            <Route path="/leave-analytics" element={<LeaveAnalytics />} />
             <Route path='/salary_form' element={<SalaryForm />} />
             <Route path='/financial-report-form' element={<FinancialReportForm />} />
             <Route path='/sup-payment-form' element={<SupPaymentForm />} />
@@ -140,6 +146,7 @@ function AppContent() {
             <Route path="/accidents" element={<AccidentManagement />} />
             <Route path="/emergencies" element={<EmergencyManagement />} />
       </Routes>
+      <LeaveQuickActions />
       {!hideLayout && <Footer />}
       <ToastContainer />
     </>
