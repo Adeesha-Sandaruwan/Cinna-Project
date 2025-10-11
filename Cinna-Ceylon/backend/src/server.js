@@ -78,7 +78,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 
 // Supplier & Raw Material Management
-app.use('/api/suppliers', supplierRoutes);
+app.use('/api/suppliers', userRoutes); // Use userRoutes for supplier data as they are stored in the users collection
 app.use('/api/supply-records', supplyRecordRoutes);
 app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/leave-requests', leaveReqRoutes);

@@ -141,6 +141,29 @@ export const updateProfile = async (req, res) => {
 };
 
 // Delete own profile
+// Get all suppliers
+export const getSuppliers = async (req, res) => {
+  try {
+    const suppliers = await User.find({ userType: 'supplier' }).select('-password');
+    res.json(suppliers);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get a single supplier by ID
+export const getSupplierById = async (req, res) => {
+  try {
+    const supplier = await User.findById(req.params.id).select('-password');
+    if (!supplier || supplier.userType !== 'supplier') {
+      return res.status(404).json({ message: 'Supplier not found' });
+    }
+    res.json(supplier);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export const deleteProfile = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.user.id);

@@ -1,0 +1,133 @@
+/* HR Manager Dashboard Theme */
+:root {
+  --hr-brand-1: #8B4513; /* cinnamon brown */
+  --hr-brand-2: #A0522D; /* sienna */
+  --hr-accent: #c5a35a; /* amber-gold */
+  --hr-bg: #faf7f0; /* warm background */
+  --hr-text: #1f2937; /* gray-800 */
+  --hr-muted: #6b7280; /* gray-500 */
+  --hr-border: rgba(197, 163, 90, 0.25);
+}
+
+.hr-dashboard {
+  background: linear-gradient(180deg, #fefcf7 0%, #ffffff 30%, var(--hr-bg) 100%);
+}
+
+/* Standard hero/header used across dashboards */
+.hr-hero {
+  background: linear-gradient(90deg, var(--hr-brand-1), var(--hr-brand-2));
+  color: #fff;
+  border: 1px solid var(--hr-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 16px 32px rgba(139, 69, 19, 0.18);
+}
+.hr-hero h1 {
+  color: #fff;
+}
+.hr-hero p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Cards */
+.hr-card {
+  border: 1px solid var(--hr-border);
+  box-shadow: 0 6px 16px rgba(139, 69, 19, 0.06);
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.hr-card:hover {
+  box-shadow: 0 12px 28px rgba(139, 69, 19, 0.14);
+  transform: translateY(-2px);
+}
+
+/* Tabs */
+.hr-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 14px;
+  color: var(--hr-muted);
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+}
+.hr-tab:hover {
+  color: var(--hr-text);
+}
+.hr-tab.is-active {
+  color: var(--hr-brand-1);
+  border-color: var(--hr-brand-1);
+}
+.hr-tab__count {
+  background: #f3f4f6; /* gray-100 */
+  color: #4b5563; /* gray-600 */
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+}
+.hr-tab__count.is-active {
+  background: rgba(203, 161, 94, 0.18);
+  color: var(--hr-brand-1);
+}
+
+/* Status badges */
+.hr-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.hr-badge--approved {
+  background: #dcfce7; /* green-100 */
+  color: #166534; /* green-800 */
+}
+.hr-badge--rejected {
+  background: #fee2e2; /* red-100 */
+  color: #991b1b; /* red-800 */
+}
+.hr-badge--pending {
+  background: #fef3c7; /* amber-100 */
+  color: #92400e; /* amber-800 */
+}
+
+/* Action buttons */
+.hr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 700;
+  color: #fff;
+  transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+  box-shadow: 0 8px 16px rgba(17, 24, 39, 0.08);
+}
+.hr-btn:active {
+  transform: translateY(1px);
+}
+.hr-btn--approve {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+.hr-btn--approve:hover {
+  filter: brightness(1.05);
+}
+.hr-btn--reject {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+.hr-btn--reject:hover {
+  filter: brightness(1.05);
+}
+.hr-btn--pending {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+/* Utility */
+.hr-muted {
+  color: var(--hr-muted);
+}

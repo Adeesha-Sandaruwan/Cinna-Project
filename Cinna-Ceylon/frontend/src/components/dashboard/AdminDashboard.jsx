@@ -53,9 +53,9 @@ const AdminDashboard = () => {
   const sidebarItems = [
     { name: "Users", icon: Users, path: "/dashboard/users" },
     { name: "Attendance", icon: ClipboardList, path: "/dashboard/attendance-records" },
-  { name: "Leave", icon: CalendarCheck, path: "/leave-management" }, // updated path
+    { name: "Leave Request", icon: CalendarCheck, path: "/leaverequestform" },
+    { name: "HR Manager", icon: CalendarCheck, path: "/dashboard/hr" },
   { name: "Product Manager", icon: Package, path: "/admin/dashboard" }, // points to ProductManagerDashboard component
-    { name: "Supplier Manager", icon: Store, path: "/dashboard/supplier" },
     { name: "Delivery Manager", icon: Truck, path: "/delivery-manager" },
     { name: "Vehicle Manager", icon: Truck, path: "/vehicle-manager" },
     { name: "Financial Manager", icon: DollarSign, path: "/dashboard/finance" },
@@ -110,6 +110,11 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Navigate to Supplier Dashboard directly
+  const goToSupplierManagerDashboard = async () => {
+    navigate('/dashboard/supplier');
+  };
   // Download attendance report as PDF
   const handleDownloadReport = async () => {
     try {
@@ -404,16 +409,23 @@ const AdminDashboard = () => {
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.1 * index + 0.3 }}
-                  onClick={() => navigate(path)}
+                  onClick={() => {
+                    if (name === 'Supplier Manager') return goToSupplierManagerDashboard();
+                    navigate(path);
+                  }}
                   className={`group flex items-center gap-4 px-4 py-3 mx-1 rounded-xl transition-all duration-300 relative overflow-hidden ${
-                    location.pathname === path
+                    ((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))
                       ? "bg-gradient-to-r from-amber-600 to-orange-600 shadow-lg shadow-amber-500/25"
                       : "hover:bg-white/10 hover:shadow-lg hover:shadow-white/10"
                   }`}
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {location.pathname === path && (
+                  {(((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))) && (
                     <motion.div
                       layoutId="activeTab"
                       className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl"
@@ -423,15 +435,23 @@ const AdminDashboard = () => {
                   <Icon 
                     size={20} 
                     className={`relative z-10 transition-colors ${
-                      location.pathname === path ? "text-white" : "text-blue-300 group-hover:text-white"
+                      ((name === 'Supplier Manager')
+                        ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                        : (location.pathname === path))
+                        ? "text-white" : "text-blue-300 group-hover:text-white"
                     }`} 
                   />
                   <span className={`relative z-10 font-medium transition-colors ${
-                    location.pathname === path ? "text-white" : "text-blue-200 group-hover:text-white"
+                    ((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))
+                      ? "text-white" : "text-blue-200 group-hover:text-white"
                   }`}>
                     {name}
                   </span>
-                  {location.pathname === path && (
+                  {(((name === 'Supplier Manager')
+                      ? (location.pathname.startsWith('/dashboard/supplier') || location.pathname.startsWith('/supplier-dashboard'))
+                      : (location.pathname === path))) && (
                     <motion.div
                       className="absolute right-3 w-2 h-2 bg-yellow-400 rounded-full"
                       initial={{ scale: 0 }}

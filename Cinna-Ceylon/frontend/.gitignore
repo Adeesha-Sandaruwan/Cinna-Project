@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+.env
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# build outputs
+dist/
+build/
+coverage/
+
+# editor configs
+.idea/
+.vscode/
+*.swp
+
+# system files
+.DS_Store

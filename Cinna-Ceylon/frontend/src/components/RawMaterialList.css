@@ -1,0 +1,17 @@
+.rml {
+  --rml-accent: #7a4522;
+  --rml-accent-light: #e5cdb4;
+}
+
+.rml-card {
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.rml-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(65, 38, 20, 0.08);
+}
+
+.rml-badge {
+  border: 1px solid rgba(197, 143, 97, 0.3);
+}

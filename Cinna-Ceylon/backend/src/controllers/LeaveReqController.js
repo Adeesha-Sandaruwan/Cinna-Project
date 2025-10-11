@@ -9,6 +9,14 @@ export const createLeaveRequest = async (req, res) => {
     if (requesterRole === 'hr_manager' || requesterRole === 'hr manager') {
       return res.status(403).json({ error: 'HR Manager is not permitted to submit leave requests.' });
     }
+    // If a certification file was uploaded, attach its metadata and public URL
+    if (req.file) {
+      const publicPath = `/uploads/leave-certifications/${req.file.filename}`;
+      req.body.certificationName = req.file.originalname;
+      req.body.certificationMime = req.file.mimetype;
+      req.body.certificationSize = req.file.size;
+      req.body.certificationUrl = `${req.protocol}://${req.get('host')}${publicPath}`;
+    }
     const leave = await LeaveRequest.create(req.body);
     res.status(201).json(leave);
   } catch (err) {

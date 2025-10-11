@@ -1,0 +1,198 @@
+/* Raw Material Form Enhanced Styles */
+
+/* Main form container */
+.rmf {
+  border: 3px solid #d97706 !important;
+  background: linear-gradient(135deg, #fef7ed 0%, #fef3c7 100%) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+  transition: all 300ms ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Top accent bar */
+.rmf::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #d97706, #ea580c);
+  opacity: 0.8;
+}
+
+/* Hover effect */
+.rmf:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Dropzone styling */
+.rmf-dropzone {
+  background: linear-gradient(135deg, #fef7ed 0%, #ffffff 100%) !important;
+  border: 2px dashed #d97706 !important;
+  border-radius: 16px !important;
+  transition: all 300ms ease !important;
+}
+
+.rmf-dropzone:hover {
+  border-color: #b45309 !important;
+  background: linear-gradient(135deg, #fef3c7 0%, #fef7ed 100%) !important;
+  transform: scale(1.02) !important;
+}
+
+/* Submit button */
+.rmf-submit {
+  background: linear-gradient(135deg, #d97706 0%, #ea580c 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  color: white !important;
+  font-weight: 600 !important;
+  transition: all 200ms ease !important;
+}
+
+.rmf-submit:hover {
+  background: linear-gradient(135deg, #b45309 0%, #c2410c 100%) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Form inputs */
+.rmf input[type="text"],
+.rmf input[type="number"],
+.rmf input[type="date"],
+.rmf select,
+.rmf textarea {
+  border: 2px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  transition: all 200ms ease !important;
+}
+
+.rmf input[type="text"]:focus,
+.rmf input[type="number"]:focus,
+.rmf input[type="date"]:focus,
+.rmf select:focus,
+.rmf textarea:focus {
+  border-color: #d97706 !important;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1) !important;
+}
+
+/* Labels */
+.rmf label {
+  color: #7a4522 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Error messages */
+.rmf .text-red-600 {
+  color: #dc2626 !important;
+  font-weight: 500 !important;
+}
+
+/* Image preview */
+.rmf .w-24.h-24 {
+  border: 3px solid #d97706 !important;
+  border-radius: 16px !important;
+  transition: all 200ms ease !important;
+}
+
+.rmf .w-24.h-24:hover {
+  transform: scale(1.05) !important;
+}
+
+/* Total value preview */
+.rmf .bg-cinnamon-50\/60 {
+  background: linear-gradient(135deg, #fef3c7 0%, #fef7ed 100%) !important;
+  border: 2px solid #fbbf24 !important;
+  border-radius: 16px !important;
+}
+
+/* Form header styling */
+.rmf .bg-gradient-to-r {
+  background: linear-gradient(90deg, #7a4522 0%, #5c351c 100%) !important;
+  padding: 24px !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+/* Form body background */
+.rmf .bg-cinnamon-50\/40 {
+  background: rgba(250, 246, 242, 0.6) !important;
+  padding: 32px !important;
+}
+
+/* Input field enhancements */
+.rmf input[type="text"],
+.rmf input[type="number"],
+.rmf input[type="date"],
+.rmf select,
+.rmf textarea {
+  background: white !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
+}
+
+.rmf input[type="text"]:hover,
+.rmf input[type="number"]:hover,
+.rmf input[type="date"]:hover,
+.rmf select:hover,
+.rmf textarea:hover {
+  border-color: #d97706 !important;
+}
+
+/* Cancel button styling */
+.rmf button[type="button"] {
+  background: white !important;
+  border: 2px solid #d97706 !important;
+  color: #7a4522 !important;
+  font-weight: 600 !important;
+  transition: all 200ms ease !important;
+}
+
+.rmf button[type="button"]:hover {
+  background: #fef7ed !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Error message styling */
+.rmf .bg-red-50 {
+  background: #fee2e2 !important;
+  border-left: 4px solid #dc2626 !important;
+  animation: slideIn 300ms ease !important;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Submit button disabled state */
+.rmf-submit:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rmf {
+    margin: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .rmf-submit {
+    width: 100% !important;
+    padding: 16px 24px !important;
+  }
+  
+  .rmf .bg-cinnamon-50\/40 {
+    padding: 20px !important;
+  }
+}
