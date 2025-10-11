@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react"; // React + hooks for lifecycle and state
 import { Link } from "react-router-dom";
-import ExpiryBar from './ExpiryBar.jsx';
+import ExpiryBar from './ExpiryBar.jsx'; // Visual bar for time until expiry
 
-const COLORS = { 
+const COLORS = { // Shared palette used in the cards/buttons
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
   WARM_BEIGE: "#F5EFE6",
@@ -15,7 +15,7 @@ const ProductList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  useEffect(() => { // Fetch visible + not-expired products on mount
     const fetchProducts = async () => {
       try {
         setLoading(true);
@@ -63,7 +63,7 @@ const ProductList = () => {
           🌿 Our Products
         </h1>
 
-        {/* Product Grid */}
+        {/* Product Grid: responsive cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <div
@@ -84,7 +84,7 @@ const ProductList = () => {
                 />
               </div>
 
-              {/* Product Info */}
+              {/* Product Info: name, price, expiry, CTA */}
               <div className="p-4 flex flex-col flex-grow">
                 <h2 className="text-lg font-semibold mb-2 text-gray-800 text-center">
                   {product.name}

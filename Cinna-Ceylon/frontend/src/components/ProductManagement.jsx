@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from "react";// brings react in to scope and use effect support fetching data
+import React, { useState, useEffect } from "react";// React + hooks for state and lifecycle
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable'; // direct import for reliability
 import logo from '../assets/images/logo.png';
-import { Link } from "react-router-dom";//link navigates between routes without reloading the page.
+import { Link } from "react-router-dom";// Client-side navigation (no full page reload)
 import {
   PencilIcon,
   TrashIcon,
   PlusIcon,
   MagnifyingGlassIcon,
   EyeIcon,
-} from "@heroicons/react/24/outline";//import some visual icons from hereicons(delete , search and view)
+} from "@heroicons/react/24/outline";// Icons for actions/search/view/edit
 import ExpiryBar from './ExpiryBar.jsx';
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
-}; // using this we can centrelize the brand colors later reuse instead of hex values
+}; // Centralized brand colors used in UI
 
 // ---------------- Inventory Helpers ----------------
-const daysToExpiry = (expiryDate) => {
+const daysToExpiry = (expiryDate) => { // Helper: how many days until expiry (negative if past)
   if (!expiryDate) return '';
   const now = new Date();
   const exp = new Date(expiryDate);
@@ -26,16 +26,16 @@ const daysToExpiry = (expiryDate) => {
   return diff; // can be negative if already expired
 };
 
-const stockStatusLabel = (stock) => {
+const stockStatusLabel = (stock) => { // Helper: map stock number to Low/Medium/Good
   if (stock <= 5) return 'Low';
   if (stock <= 20) return 'Medium';
   return 'Good';
 };
 
 // Reusable small components
-const Modal = ({ open, onClose, children }) =>//open - whether to show the model,onclose - calls when user closes, children - jsx
+const Modal = ({ open, onClose, children }) =>// Reusable modal wrapper
   !open ? null : (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">//
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">// Full-screen overlay + centered card
       <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg animate-fadeIn">
         {children}
         <div className="flex justify-end mt-4">
@@ -50,7 +50,7 @@ const Modal = ({ open, onClose, children }) =>//open - whether to show the model
     </div>
   );
 
-const StockStatus = ({ stock }) => {
+const StockStatus = ({ stock }) => { // Small pill showing stock status
   const status =
     stock <= 5 //if stock returns lower than 5
       ? { text: "Low", color: "bg-red-100 text-red-700" } //display low
@@ -64,20 +64,20 @@ const StockStatus = ({ stock }) => {
   );
 };
 
-export default function ProductManagement() { // defines and exports the main page component
+export default function ProductManagement() { // Main inventory management page
   const [products, setProducts] = useState([]); //holds full products list from the backend
   const [loading, setLoading] = useState(true); //Controls the loading state (spinner/message).
-  const [message, setMessage] = useState(""); // Holds feedback text (e.g., “ Product updated”, errors, etc.
+  const [message, setMessage] = useState(""); // Feedback toast text (success/error)
   const [search, setSearch] = useState(""); //current text in the search box
   const [filter, setFilter] = useState("all"); //filter type "all","spice","powder"
   const [page, setPage] = useState(1); //current page in the pagination
-  const perPage = 10; //10 products per page
+  const perPage = 10; // Items per page
 
   const [editProduct, setEditProduct] = useState(null); // holds the product which is about to be updated part. null if model is closed
   const [deleteProduct, setDeleteProduct] = useState(null); // holds product user intends to delete.
 
   // --------------- Report Data Builders ---------------
-  const buildReportRows = () => {
+  const buildReportRows = () => { // Flatten UI product into report-friendly rows
     return filtered.map(p => {
       const dte = daysToExpiry(p.expiryDate);
       const status = stockStatusLabel(p.stock);
@@ -97,7 +97,7 @@ export default function ProductManagement() { // defines and exports the main pa
   };
 
 
-  const downloadPDF = () => {
+  const downloadPDF = () => { // Generate PDF report (landscape) using jsPDF + autoTable
     const rows = buildReportRows();
     if (!rows.length) return;
     const doc = new jsPDF({ orientation: 'landscape' });
@@ -227,7 +227,7 @@ export default function ProductManagement() { // defines and exports the main pa
   };
 
   // API helper
-  const apiRequest = async (url, options, successMsg) => { //define const apiRequest it will hold an asynchronous function that takes three parameters: url, options, and successMsg.
+  const apiRequest = async (url, options, successMsg) => { // Generic fetch helper with toast + refresh
     try {
       const res = await fetch(url, options); // use await to wait for the fetch to complete
       if (res.ok) {
@@ -241,7 +241,7 @@ export default function ProductManagement() { // defines and exports the main pa
     return false; //otherwise return false
   };
 
-  const fetchProducts = async () => { //get products from the backend, makes it asynchronus to use await inside the function
+  const fetchProducts = async () => { // Load all products for admin (includes private)
     setLoading(true); //This shows a spinner/loader in the UI while waiting.
     try {
       const res = await fetch("http://localhost:5000/api/products?admin=true"); //fetch ALL products (including private) for admin view
@@ -252,12 +252,12 @@ export default function ProductManagement() { // defines and exports the main pa
     setLoading(false); //hides the spinner
   };
 
-  useEffect(() => { // a react hook to call fetchProducts when the component loads first.
+  useEffect(() => { // Initial load on mount
     fetchProducts();
   }, []);
 
   // Filter + paginate
-  const filtered = products.filter( //takes full products list and returns only matches
+  const filtered = products.filter( // Search + type filter
     (p) =>
       (p.name.toLowerCase().includes(search.toLowerCase()) || //Everything is converted to lowercase
         p.sku.toLowerCase().includes(search.toLowerCase()) ||
@@ -265,12 +265,12 @@ export default function ProductManagement() { // defines and exports the main pa
       (filter === "all" || p.type === filter) //If the user’s filter is "all" → all product types are allowed.
   );
   const totalPages = Math.ceil(filtered.length / perPage); //total number of filtered products / how many pages you need. Math.ceil → rounds up number
-  const current = filtered.slice((page - 1) * perPage, page * perPage);//slice(start, end) cuts out a portion of the array
+  const current = filtered.slice((page - 1) * perPage, page * perPage);// Page slice
 //page - 1 starts from 0 for the first page, so we multiply by perPage to get the correct starting index.
 
   
 // Handlers
-  const saveEdit = async () => {//This will run when the user saves changes to a product.
+  const saveEdit = async () => {// Commit edits to backend and refresh
     const fd = new FormData(); //Creates a new FormData object and it lets you append key/value pairs
     Object.entries(editProduct).forEach(([k, v]) => //Turns the editProduct object into an array of [key, value] pairs and loop through each [key,value]
       !["_id", "createdAt", "updatedAt"].includes(k) && fd.append(k, v) //fd.append(k, v) Adds the remaining key/value pairs into the FormData object.
@@ -286,7 +286,7 @@ export default function ProductManagement() { // defines and exports the main pa
   };//inshort collects all updated product fields (except DB-only ones) → sends them to backend via PUT → if successful, clears edit mode.
 
 
-  const confirmDelete = async () => { //runs when user confirms the delete . Marked async because it makes an API call
+  const confirmDelete = async () => { // Delete selected product
     if (
       await apiRequest(
         `http://localhost:5000/api/products/${deleteProduct._id}`,//inserts specific id into the URL
@@ -297,7 +297,7 @@ export default function ProductManagement() { // defines and exports the main pa
       setDeleteProduct(null);//close the confirmation dialog / modal,
   };
 
-  const toggleVisibility = async (product) => {
+  const toggleVisibility = async (product) => { // Flip public/private visibility
     const newVisibility = product.visibility === 'public' ? 'private' : 'public';
     const fd = new FormData();
     fd.append('visibility', newVisibility);
@@ -320,7 +320,7 @@ export default function ProductManagement() { // defines and exports the main pa
 
 //display the content part....................................................................................................
 
-  return ( // react component that returns JSX that defines what will render
+  return ( // Render admin inventory table + controls
     <div className="bg-gray-50 min-h-screen flex flex-col">  
       <div className="p-6 flex-1">
         {message && (
@@ -329,7 +329,7 @@ export default function ProductManagement() { // defines and exports the main pa
           </div>
         )}
 
-        {/* Controls */}
+  {/* Controls: search, filter, add, export */}
         <div className="flex flex-wrap gap-3 mb-6 items-center">
           <div className="flex border p-2 rounded-xl bg-white shadow-sm w-full md:w-1/3">
             <MagnifyingGlassIcon className="w-5 mr-2 text-gray-500" />
@@ -366,7 +366,7 @@ export default function ProductManagement() { // defines and exports the main pa
           </div>
         </div>
 
-        {/* Inventory Summary */}
+  {/* Inventory Summary: quick metrics */}
         {!loading && (
           <div className="mb-4 bg-white p-4 rounded-xl shadow flex flex-wrap gap-6 text-sm">
             {(() => {
@@ -384,7 +384,7 @@ export default function ProductManagement() { // defines and exports the main pa
           </div>
         )}
 
-        {/* Table */}
+  {/* Table: paginated product rows */}
         {loading ? (
           <p>Loading...</p>
         ) : (
@@ -450,7 +450,7 @@ export default function ProductManagement() { // defines and exports the main pa
           </div>
         )}
 
-        {/* Pagination */}
+  {/* Pagination Controls */}
         <div className="mt-4 flex justify-center gap-3 items-center">
           <button
             disabled={page === 1}
@@ -472,7 +472,7 @@ export default function ProductManagement() { // defines and exports the main pa
         </div>
       </div>
 
-      {/* Edit Modal */}
+  {/* Edit Modal: inline edit form */}
       <Modal open={!!editProduct} onClose={() => setEditProduct(null)}>
         {editProduct && (
           <div>
@@ -550,7 +550,7 @@ export default function ProductManagement() { // defines and exports the main pa
         )}
       </Modal>
 
-      {/* Delete Modal */}
+  {/* Delete Modal: confirm action */}
       <Modal open={!!deleteProduct} onClose={() => setDeleteProduct(null)}>
         <p className="text-lg">Delete <span className="font-bold">{deleteProduct?.name}</span>?</p>
         <div className="mt-4 flex justify-end gap-2">

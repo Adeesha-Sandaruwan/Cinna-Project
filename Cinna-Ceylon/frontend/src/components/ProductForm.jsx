@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from "react"; // React component + local state hook
 import {
   validateName,
   validatePrice,
@@ -11,7 +11,7 @@ import {
   validateGrade,
   validateVisibility
 } from "../utils/product_form_validations";
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"; // For navigation to product list/admin area
 
 const COLORS = {
   RICH_GOLD: "#c5a35a",
@@ -19,9 +19,10 @@ const COLORS = {
   WARM_BEIGE: "#F5EFE6",
   DARK_SLATE: "#2d2d2d",
   SOFT_WHITE: "#FCFBF8",
-};
+}; // Centralized palette used across inputs/buttons
 
 const ProductForm = () => {
+  // Form fields for new product creation
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -35,10 +36,11 @@ const ProductForm = () => {
     customType: "",
     description: "",
   });
-  const [preview, setPreview] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState("");
+  const [preview, setPreview] = useState(null); // Local image preview URL
+  const [errors, setErrors] = useState({}); // Field-level validation messages
+  const [message, setMessage] = useState(""); // Form submit feedback banner
 
+  // Handle any input change (text/select/file)
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
@@ -54,6 +56,7 @@ const ProductForm = () => {
   };
 
   // Validate single field on blur
+  // Validate a single field when leaving the input (onBlur)
   const handleBlur = async (e) => {
     const { name, value, files } = e.target;
     let error = "";
@@ -91,12 +94,14 @@ const ProductForm = () => {
         break;
     }
 
+    // Merge this field's error into the error bag
     setErrors(prev => ({
       ...prev,
       [name]: error
     }));
   };
 
+  // Run all field validations before submit
   const validateForm = async () => {
     let errs = {};
     errs.name = validateName(formData.name);
@@ -109,18 +114,19 @@ const ProductForm = () => {
     errs.grade = validateGrade(formData.grade);
     errs.visibility = validateVisibility(formData.visibility);
     
-    // Image validation is async due to dimension checking
+  // Image validation is async due to dimension checking
     errs.image = await validateImage(formData.image);
 
     // Remove empty error messages
     Object.keys(errs).forEach((key) => {
       if (!errs[key]) delete errs[key];
     });
-    setErrors(errs);
+    setErrors(errs); // Show all current errors
     return Object.keys(errs).length === 0;
   };
   
 
+  // Build multipart payload and POST to backend when valid
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isValid = await validateForm();
@@ -156,7 +162,7 @@ const ProductForm = () => {
         body: dataToSend,
       });
 
-      const data = await res.json();
+      const data = await res.json(); // Backend returns success or error JSON
       if (res.ok) {
         setMessage("✅ Product created successfully!");
         setFormData({
@@ -172,8 +178,8 @@ const ProductForm = () => {
           customType: "",
           description: "",
         });
-        setPreview(null);
-        setErrors({});
+        setPreview(null); // clear image preview
+        setErrors({}); // clear errors after success
       } else {
         setMessage(`❌ Error: ${data.error}`);
       }
@@ -207,9 +213,9 @@ const ProductForm = () => {
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+  <form onSubmit={handleSubmit} className="space-y-4"> {/* Main product form */}
           {/* Name */}
-          <div>
+          <div> {/* Product Name */}
             <input
               type="text"
               name="name"
@@ -223,7 +229,7 @@ const ProductForm = () => {
             {errors.name && <p className="text-red-600 text-sm">{errors.name}</p>}
           </div>
 
-          {/* Description */}
+          {/* Description textarea with length validation */}
 <div>
   <label className="block mb-1 font-medium text-sm">Description</label>
   <textarea
@@ -241,7 +247,7 @@ const ProductForm = () => {
 </div>
 
 
-          {/* SKU */}
+          {/* SKU follows pattern like CIN-XXXX-XXX */}
           <input
             type="text"
             name="sku"
@@ -253,9 +259,9 @@ const ProductForm = () => {
             style={{ borderColor: errors.sku ? 'red' : COLORS.RICH_GOLD }}
           />
 
-{/* Price & Stock */}
+{/* Price & Stock side-by-side inputs */}
 <div className="flex gap-4">
-  {/* Price */}
+  {/* Price (currency with two decimals) */}
   <div className="w-1/2">
     <input
       type="number"
@@ -275,7 +281,7 @@ const ProductForm = () => {
     )}
   </div>
 
-  {/* Stock */}
+  {/* Stock (integer quantities only) */}
   <div className="w-1/2">
     <input
       type="number"
@@ -297,7 +303,7 @@ const ProductForm = () => {
 </div>
 
 <div>
-  <label className="block mb-1 font-medium text-sm">Category</label>
+  <label className="block mb-1 font-medium text-sm">Category</label> {/* Select preset types or Other */}
   <select
     name="type"
     value={formData.type}
@@ -310,7 +316,7 @@ const ProductForm = () => {
     <option value="other">Other</option>
   </select>
 
-  {/* If "Other" is selected → show input */}
+  {/* If "Other" is selected → show input for custom category */}
   {formData.type === "other" && (
     <input
       type="text"
@@ -324,7 +330,7 @@ const ProductForm = () => {
   )}
 </div>
 
-          {/* Grade */}
+          {/* Grade selection (A/B/C) */}
           <select
             name="grade"
             value={formData.grade}
@@ -337,7 +343,7 @@ const ProductForm = () => {
             <option value="C">Grade C</option>
           </select>
 
-         {/* Expiry Date */}
+         {/* Expiry Date cannot be before today */}
 <div>
   <label className="block mb-1 font-medium text-sm">
     Expiry Date
@@ -357,7 +363,7 @@ const ProductForm = () => {
 </div>
 
 
-          {/* Visibility */}
+          {/* Visibility (public/private) controls storefront listing */}
           <div>
             <label className="block mb-1 font-medium text-sm">Visibility</label>
             <div className="flex gap-6">
@@ -384,7 +390,7 @@ const ProductForm = () => {
             </div>
           </div>
 
-          {/* Image */}
+          {/* Image file upload (validated by dimensions/size in utils) */}
 <div>
   <label className="block mb-1 font-medium text-sm">Product Image</label>
   <input
