@@ -9,10 +9,11 @@ import {
   validateSKU,
   validateCategory,
   validateGrade,
-  validateVisibility
+  validateVisibility,
 } from "../utils/product_form_validations";
 import { Link } from "react-router-dom";
 
+// Centralized color palette for consistent design
 const COLORS = {
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
@@ -22,6 +23,7 @@ const COLORS = {
 };
 
 const ProductForm = () => {
+  // Form data state
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -35,29 +37,34 @@ const ProductForm = () => {
     customType: "",
     description: "",
   });
+
+  // Local preview of selected image
   const [preview, setPreview] = useState(null);
+
+  // Stores validation error messages for each input field
   const [errors, setErrors] = useState({});
+
+  // Stores success or failure messages after submitting the form
   const [message, setMessage] = useState("");
 
+  // Handle user input changes (text, number, select, or file)
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
     if (name === "image") {
       const file = files[0];
       setFormData({ ...formData, image: file });
-      if (file) {
-        setPreview(URL.createObjectURL(file));
-      }
+      if (file) setPreview(URL.createObjectURL(file)); // Generate image preview
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
-  // Validate single field on blur
+  // Validate a single field when user moves away from it (onBlur event)
   const handleBlur = async (e) => {
     const { name, value, files } = e.target;
     let error = "";
-    
+
     switch (name) {
       case "name":
         error = validateName(value);
@@ -78,7 +85,7 @@ const ProductForm = () => {
         error = validateSKU(value);
         break;
       case "type":
-        error = validateCategory(value === 'other' ? formData.customType : value);
+        error = validateCategory(value === "other" ? formData.customType : value);
         break;
       case "grade":
         error = validateGrade(value);
@@ -89,76 +96,83 @@ const ProductForm = () => {
       case "image":
         error = await validateImage(files[0]);
         break;
+      default:
+        break;
     }
 
-    setErrors(prev => ({
+    // Store the current field's error message
+    setErrors((prev) => ({
       ...prev,
-      [name]: error
+      [name]: error,
     }));
   };
 
+  // Validate all fields before submission
   const validateForm = async () => {
     let errs = {};
+
     errs.name = validateName(formData.name);
     errs.price = validatePrice(formData.price);
     errs.description = validateDescription(formData.description);
     errs.expiryDate = validateExpiryDate(formData.expiryDate);
     errs.stock = validateStock(formData.stock);
     errs.sku = validateSKU(formData.sku);
-    errs.category = validateCategory(formData.type === 'other' ? formData.customType : formData.type);
+    errs.category = validateCategory(
+      formData.type === "other" ? formData.customType : formData.type
+    );
     errs.grade = validateGrade(formData.grade);
     errs.visibility = validateVisibility(formData.visibility);
-    
-    // Image validation is async due to dimension checking
     errs.image = await validateImage(formData.image);
 
-    // Remove empty error messages
+    // Remove empty or undefined error entries
     Object.keys(errs).forEach((key) => {
       if (!errs[key]) delete errs[key];
     });
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
-  
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const isValid = await validateForm();
     if (!isValid) {
-      setMessage("❌ Please fix form errors before submitting");
+      setMessage("Please fix form errors before submitting.");
       return;
     }
 
     try {
       const dataToSend = new FormData();
-      
-      // Handle each field properly
+
+      // Append fields to FormData, handling special cases
       Object.keys(formData).forEach((key) => {
         if (key === "image") {
-          if (formData[key]) {
-            dataToSend.append(key, formData[key]);
-          }
+          if (formData[key]) dataToSend.append(key, formData[key]);
         } else if (key === "type") {
-          // Handle type field - if "other" is selected, use customType, otherwise use the selected type
-          if (formData.type === "other" && formData.customType) {
-            dataToSend.append("type", formData.customType);
-          } else {
-            dataToSend.append("type", formData.type);
-          }
+          const value =
+            formData.type === "other" && formData.customType
+              ? formData.customType
+              : formData.type;
+          dataToSend.append("type", value);
         } else if (key !== "customType") {
-          // Append all other fields except customType (which is handled above)
           dataToSend.append(key, formData[key]);
         }
       });
 
+      // Send the form data to backend API
       const res = await fetch("http://localhost:5000/api/products", {
         method: "POST",
         body: dataToSend,
       });
 
       const data = await res.json();
+
       if (res.ok) {
-        setMessage("✅ Product created successfully!");
+        setMessage("Product created successfully.");
+
+        // Reset form after success
         setFormData({
           name: "",
           sku: "",
@@ -175,10 +189,10 @@ const ProductForm = () => {
         setPreview(null);
         setErrors({});
       } else {
-        setMessage(`❌ Error: ${data.error}`);
+        setMessage(`Error: ${data.error}`);
       }
     } catch (err) {
-      setMessage(`❌ Request failed: ${err.message}`);
+      setMessage(`Request failed: ${err.message}`);
     }
   };
 
@@ -191,13 +205,16 @@ const ProductForm = () => {
         className="w-full max-w-lg rounded-2xl shadow-xl p-8"
         style={{ backgroundColor: COLORS.SOFT_WHITE }}
       >
+        {/* Header Section */}
         <div className="flex items-center justify-between mb-6">
           <h2
             className="text-2xl font-bold"
             style={{ color: COLORS.DARK_SLATE }}
           >
-            🍂 Add New Product
+            Add New Product
           </h2>
+
+          {/* Link to admin product list */}
           <Link
             to="/admin/products"
             className="text-sm px-4 py-2 rounded-lg border transition-colors"
@@ -207,8 +224,9 @@ const ProductForm = () => {
           </Link>
         </div>
 
+        {/* Product Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
+          {/* Product Name */}
           <div>
             <input
               type="text"
@@ -218,28 +236,31 @@ const ProductForm = () => {
               onChange={handleChange}
               onBlur={handleBlur}
               className="w-full border p-3 rounded focus:outline-none"
-              style={{ borderColor: errors.name ? 'red' : COLORS.RICH_GOLD }}
+              style={{ borderColor: errors.name ? "red" : COLORS.RICH_GOLD }}
             />
-            {errors.name && <p className="text-red-600 text-sm">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-red-600 text-sm">{errors.name}</p>
+            )}
           </div>
 
           {/* Description */}
-<div>
-  <label className="block mb-1 font-medium text-sm">Description</label>
-  <textarea
-    name="description"
-    value={formData.description}
-    onChange={handleChange}
-    onBlur={handleBlur}
-    className="w-full border p-3 rounded h-28 resize-none"
-    style={{ borderColor: errors.description ? 'red' : COLORS.RICH_GOLD }}
-    placeholder="Enter detailed product description (5-1000 characters)..."
-  />
-  {errors.description && (
-    <p className="text-red-600 text-sm">{errors.description}</p>
-  )}
-</div>
-
+          <div>
+            <label className="block mb-1 font-medium text-sm">Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className="w-full border p-3 rounded h-28 resize-none"
+              style={{
+                borderColor: errors.description ? "red" : COLORS.RICH_GOLD,
+              }}
+              placeholder="Enter detailed product description (5-1000 characters)"
+            />
+            {errors.description && (
+              <p className="text-red-600 text-sm">{errors.description}</p>
+            )}
+          </div>
 
           {/* SKU */}
           <input
@@ -250,79 +271,80 @@ const ProductForm = () => {
             onChange={handleChange}
             onBlur={handleBlur}
             className="w-full border p-3 rounded"
-            style={{ borderColor: errors.sku ? 'red' : COLORS.RICH_GOLD }}
+            style={{ borderColor: errors.sku ? "red" : COLORS.RICH_GOLD }}
           />
 
-{/* Price & Stock */}
-<div className="flex gap-4">
-  {/* Price */}
-  <div className="w-1/2">
-    <input
-      type="number"
-      name="price"
-      placeholder="Price (Max: 999,999.99)"
-      value={formData.price}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      step="0.01"
-      min="0.01"
-      max="999999.99"
-      className="w-full border p-3 rounded"
-      style={{ borderColor: errors.price ? 'red' : COLORS.RICH_GOLD }}
-    />
-    {errors.price && (
-      <p className="text-red-600 text-sm">{errors.price}</p>
-    )}
-  </div>
+          {/* Price and Stock */}
+          <div className="flex gap-4">
+            {/* Price */}
+            <div className="w-1/2">
+              <input
+                type="number"
+                name="price"
+                placeholder="Price (Max: 999,999.99)"
+                value={formData.price}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                step="0.01"
+                min="0.01"
+                max="999999.99"
+                className="w-full border p-3 rounded"
+                style={{ borderColor: errors.price ? "red" : COLORS.RICH_GOLD }}
+              />
+              {errors.price && (
+                <p className="text-red-600 text-sm">{errors.price}</p>
+              )}
+            </div>
 
-  {/* Stock */}
-  <div className="w-1/2">
-    <input
-      type="number"
-      name="stock"
-      placeholder="Stock (Min: 5, Max: 100,000)"
-      value={formData.stock}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      min="5"
-      max="100000"
-      step="1"
-      className="w-full border p-3 rounded"
-      style={{ borderColor: errors.stock ? 'red' : COLORS.RICH_GOLD }}
-    />
-    {errors.stock && (
-      <p className="text-red-600 text-sm">{errors.stock}</p>
-    )}
-  </div>
-</div>
+            {/* Stock */}
+            <div className="w-1/2">
+              <input
+                type="number"
+                name="stock"
+                placeholder="Stock (Min: 5, Max: 100,000)"
+                value={formData.stock}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                min="5"
+                max="100000"
+                step="1"
+                className="w-full border p-3 rounded"
+                style={{ borderColor: errors.stock ? "red" : COLORS.RICH_GOLD }}
+              />
+              {errors.stock && (
+                <p className="text-red-600 text-sm">{errors.stock}</p>
+              )}
+            </div>
+          </div>
 
-<div>
-  <label className="block mb-1 font-medium text-sm">Category</label>
-  <select
-    name="type"
-    value={formData.type}
-    onChange={handleChange}
-    className="w-full border p-3 rounded"
-    style={{ borderColor: COLORS.RICH_GOLD }}
-  >
-    <option value="spice">Spice</option>
-    <option value="powder">Powder</option>
-    <option value="other">Other</option>
-  </select>
+          {/* Category */}
+          <div>
+            <label className="block mb-1 font-medium text-sm">Category</label>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              className="w-full border p-3 rounded"
+              style={{ borderColor: COLORS.RICH_GOLD }}
+            >
+              <option value="spice">Spice</option>
+              <option value="powder">Powder</option>
+              <option value="other">Other</option>
+            </select>
 
-  {/* If "Other" is selected → show input */}
-  {formData.type === "other" && (
-    <input
-      type="text"
-      name="customType"
-      placeholder="Enter custom category"
-      value={formData.customType || ""}
-      onChange={handleChange}
-      className="w-full border p-3 rounded mt-2"
-      style={{ borderColor: COLORS.RICH_GOLD }}
-    />
-  )}
-</div>
+            {/* Show custom type input when 'Other' is selected */}
+            {formData.type === "other" && (
+              <input
+                type="text"
+                name="customType"
+                placeholder="Enter custom category"
+                value={formData.customType || ""}
+                onChange={handleChange}
+                className="w-full border p-3 rounded mt-2"
+                style={{ borderColor: COLORS.RICH_GOLD }}
+              />
+            )}
+          </div>
 
           {/* Grade */}
           <select
@@ -337,25 +359,22 @@ const ProductForm = () => {
             <option value="C">Grade C</option>
           </select>
 
-         {/* Expiry Date */}
-<div>
-  <label className="block mb-1 font-medium text-sm">
-    Expiry Date
-  </label>
-  <input
-    type="date"
-    name="expiryDate"
-    value={formData.expiryDate}
-    onChange={handleChange}
-    className="w-full border p-3 rounded"
-    style={{ borderColor: COLORS.RICH_GOLD }}
-    min={new Date().toISOString().split("T")[0]} // ✅ cannot pick before today
-  />
-  {errors.expiryDate && (
-    <p className="text-red-600 text-sm">{errors.expiryDate}</p>
-  )}
-</div>
-
+          {/* Expiry Date */}
+          <div>
+            <label className="block mb-1 font-medium text-sm">Expiry Date</label>
+            <input
+              type="date"
+              name="expiryDate"
+              value={formData.expiryDate}
+              onChange={handleChange}
+              className="w-full border p-3 rounded"
+              style={{ borderColor: COLORS.RICH_GOLD }}
+              min={new Date().toISOString().split("T")[0]}
+            />
+            {errors.expiryDate && (
+              <p className="text-red-600 text-sm">{errors.expiryDate}</p>
+            )}
+          </div>
 
           {/* Visibility */}
           <div>
@@ -384,24 +403,25 @@ const ProductForm = () => {
             </div>
           </div>
 
-          {/* Image */}
-<div>
-  <label className="block mb-1 font-medium text-sm">Product Image</label>
-  <input
-    type="file"
-    name="image"
-    accept="image/*"
-    onChange={(e) =>
-      setFormData({ ...formData, image: e.target.files[0] })
-    }
-    className="w-full border p-3 rounded"
-    style={{ borderColor: COLORS.RICH_GOLD }}
-  />
-  {errors.image && (
-    <p className="text-red-600 text-sm">{errors.image}</p>
-  )}
-</div>
+          {/* Image Upload */}
+          <div>
+            <label className="block mb-1 font-medium text-sm">Product Image</label>
+            <input
+              type="file"
+              name="image"
+              accept="image/*"
+              onChange={(e) =>
+                setFormData({ ...formData, image: e.target.files[0] })
+              }
+              className="w-full border p-3 rounded"
+              style={{ borderColor: COLORS.RICH_GOLD }}
+            />
+            {errors.image && (
+              <p className="text-red-600 text-sm">{errors.image}</p>
+            )}
+          </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             className="w-full py-3 rounded font-bold text-white transition duration-200"
@@ -411,6 +431,7 @@ const ProductForm = () => {
           </button>
         </form>
 
+        {/* Display feedback message */}
         {message && (
           <p
             className="mt-4 text-center font-medium"

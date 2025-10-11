@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url';  // Helper to get __filename and __dirname 
 // Import database connection function
 import connectDB from './config/db.js';
 import privatizeExpiredProductsAtStartup from './utils/expireProducts.js';
+import ensureIndexes from './utils/ensureIndexes.js';
+
 
 // Import middleware for debug endpoints
 import auth from './middleware/auth.js';
@@ -207,6 +209,7 @@ const server = app.listen(PORT, () => {
   connectDB()
     .then(async () => {
       try {
+        await ensureIndexes();
         const updated = await privatizeExpiredProductsAtStartup();
         if (updated > 0) {
           console.log(`🔒 Expired products privatized on startup: ${updated}`);

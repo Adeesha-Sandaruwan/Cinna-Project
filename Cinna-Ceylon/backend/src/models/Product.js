@@ -29,6 +29,9 @@ const productSchema = new mongoose.Schema(
     visibility: { type: String, enum: ["public", "private"], default: "public" },
     // Product image URL/path
     image: { type: String },
+    // Review summary fields for fast read on product pages
+    ratingAverage: { type: Number, default: 0, min: 0, max: 5 },
+    ratingCount: { type: Number, default: 0, min: 0 },
   },
   { 
     // Adds createdAt and updatedAt automatically

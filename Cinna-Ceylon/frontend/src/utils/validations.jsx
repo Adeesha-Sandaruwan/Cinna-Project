@@ -38,35 +38,25 @@ export const validateCardNumber = (number) => {
 
 // Validate expiry date in MM/YY format
 export const validateCardExpiry = (expiry) => {
-  // Must be like "08/27"
-  if (!/^\d{2}\/\d{2}$/.test(expiry)) {
-    throw new Error('Expiry date must be in MM/YY format');
+  // Accept either MM/YY or digits-only MMYY
+  if (!/^\d{2}(\/)?\d{2}$/.test(expiry)) {
+    throw new Error('Expiry date must be MM/YY');
   }
+  const digits = expiry.replace(/\D/g, '');
+  const month = parseInt(digits.slice(0, 2), 10);
+  const year = parseInt(digits.slice(2, 4), 10);
+  const currentYear = new Date().getFullYear() % 100; // last 2 digits
+  const currentMonth = new Date().getMonth() + 1;
 
-  const [month, year] = expiry.split('/').map(part => parseInt(part.trim()));
-  const currentYear = new Date().getFullYear() % 100; // Take last 2 digits of year
-  const currentMonth = new Date().getMonth() + 1;     // JS months are 0-based
-
-  // Month must be 01–12
   if (month < 1 || month > 12) {
-    throw new Error('Month must be between 01 and 12');
+    throw new Error('Month must be 01–12');
   }
-
-  // If card year is before current year → expired
-  if (year < currentYear) {
+  if (year < currentYear || (year === currentYear && month < currentMonth)) {
     throw new Error('Card has expired');
   }
-
-  // If same year but earlier month → expired
-  if (year === currentYear && month < currentMonth) {
-    throw new Error('Card has expired');
-  }
-
-  // Optional check: don’t allow unrealistically far expiry dates (>5 years from now)
   if (year > currentYear + 5) {
-    throw new Error('Invalid expiry date - too far in the future');
+    throw new Error('Invalid expiry date');
   }
-  
   return true;
 };
 
@@ -194,3 +184,73 @@ export const validateAddress = (address) => {
   }
   return true;
 };
+
+// -----------------------------
+// Numeric-only input helpers
+// -----------------------------
+
+// Generic: keep only digits, optionally trim to max digits
+export const sanitizeDigits = (raw = '', maxDigits) => {
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (typeof maxDigits === 'number') digits = digits.slice(0, maxDigits);
+  return digits;
+};
+
+// Control keys commonly allowed during typing
+const CONTROL_KEYS = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Tab'];
+
+// Generic guard for digit-only fields with a max digit count
+export const allowNumericKey = (e, maxDigits) => {
+  const { key, target } = e;
+  if (CONTROL_KEYS.includes(key)) return; // allow navigation/edit keys
+  if (!/^\d$/.test(key)) { e.preventDefault(); return; }
+
+  const value = String(target.value || '');
+  const selectionStart = target.selectionStart ?? value.length;
+  const selectionEnd = target.selectionEnd ?? value.length;
+  const selectionLen = Math.max(0, selectionEnd - selectionStart);
+  const digitsCount = value.replace(/\D/g, '').length;
+  const nextDigits = digitsCount - selectionLen + 1; // simulate replacing selection with one digit
+  if (typeof maxDigits === 'number' && nextDigits > maxDigits) {
+    e.preventDefault();
+  }
+};
+
+// Generic paste handler for digit-only fields
+export const handleNumericPaste = (e, setter, maxDigits) => {
+  e.preventDefault();
+  const pasted = (e.clipboardData || window.clipboardData).getData('text');
+  const sanitized = sanitizeDigits(pasted, maxDigits);
+  if (typeof setter === 'function') setter(sanitized); else if (e.target) e.target.value = sanitized;
+};
+
+// ---- Card Number (16 digits) ----
+export const sanitizeCardNumber = (raw = '') => sanitizeDigits(raw, 16);
+export const allowCardNumberKey = (e) => allowNumericKey(e, 16);
+export const handleCardNumberPaste = (e, setter) => handleNumericPaste(e, setter, 16);
+
+// ---- Expiry Date (MM/YY => 4 digits) ----
+export const formatExpiryFromDigits = (digits) => {
+  const d = sanitizeDigits(digits, 4);
+  const mm = d.slice(0, 2);
+  const yy = d.slice(2, 4);
+  return yy ? `${mm}/${yy}` : mm;
+};
+export const sanitizeExpiry = (raw = '') => formatExpiryFromDigits(raw);
+export const allowExpiryKey = (e) => allowNumericKey(e, 4); // only digits allowed; UI can insert '/'
+export const handleExpiryPaste = (e, setter) => {
+  e.preventDefault();
+  const pasted = (e.clipboardData || window.clipboardData).getData('text');
+  const formatted = formatExpiryFromDigits(pasted);
+  if (typeof setter === 'function') setter(formatted); else if (e.target) e.target.value = formatted;
+};
+
+// ---- CVV (3-4 digits) ----
+export const sanitizeCVVInput = (raw = '') => sanitizeDigits(raw, 4);
+export const allowCVVKey = (e) => allowNumericKey(e, 4);
+export const handleCVVPaste = (e, setter) => handleNumericPaste(e, setter, 4);
+
+// ---- Postal Code (5 digits) ----
+export const sanitizePostalCodeInput = (raw = '') => sanitizeDigits(raw, 5);
+export const allowPostalCodeKey = (e) => allowNumericKey(e, 5);
+export const handlePostalCodePaste = (e, setter) => handleNumericPaste(e, setter, 5);
