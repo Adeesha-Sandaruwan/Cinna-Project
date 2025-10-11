@@ -24,9 +24,9 @@ const ProductDetails = () => {
   // --- STATE MANAGEMENT ---
   // State to hold the fetched product object. Initial value is null.
   const [product, setProduct] = useState(null);
-  // State to track if the main product details are currently being loaded. Default is true.
+
   const [loading, setLoading] = useState(true);
-  // State to manage the quantity of the product the user wants to buy. Default is 1.
+
   const [quantity, setQuantity] = useState(1);
   // State to hold an array of products related to the current one.
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -75,12 +75,10 @@ const ProductDetails = () => {
     if (!product) return;
     // Define an async function to fetch related products.
     const fetchRelated = async () => {
-      setRelatedLoading(true); // Start the loading state for related products.
+      setRelatedLoading(true);
       // Fetch all products from the API.
       const res = await fetch("http://localhost:5000/api/products");
-      // If the fetch is successful...
       if (res.ok) {
-        // Parse the list of all products.
         const allProducts = await res.json();
         // Filter the list to find related products.
         const related = allProducts

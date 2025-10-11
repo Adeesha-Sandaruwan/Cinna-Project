@@ -114,7 +114,7 @@ export default function ProductManagement() { // Main inventory management page
   // Draw header bar first (full width dynamic)
   doc.setFillColor(204,119,34); // cinnamon tone
   doc.rect(0,0,PAGE_WIDTH,HEADER_HEIGHT,'F');
-    // Attempt to add logo (synchronous assumption since bundler provides resolved path)
+    // Attempt to add logo
     try {
       const img = new Image();
       img.src = logo;
