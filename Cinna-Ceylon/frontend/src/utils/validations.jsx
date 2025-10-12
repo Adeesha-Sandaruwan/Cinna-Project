@@ -85,23 +85,22 @@ export const sanitizePhone = (raw = '') => {
   return cleaned;
 };
 
-// Phone validation (updated):
-//  Requirement change: user wants to allow up to 11 digits (no '+') or up to 12 digits after '+'.
-//  We now enforce ONLY the max length + numeric/+ format, not exact length.
+// Phone validation (min + max length):
+//  New requirement: enforce a minimum number of digits (short inputs like "1234" should fail).
 //  Rules:
-//   - If starts with '+': pattern ^\+\d{1,12}$ (plus followed by 1–12 digits)
-//   - Else: pattern ^\d{1,11}$ (1–11 digits)
-//  You can tighten minimum length later if business rules require.
+//   - If starts with '+': must be '+' followed by 11–12 digits => ^\+\d{11,12}$
+//   - Else: must be 10–11 digits => ^\d{10,11}$
+//  Adjust the ranges if your business rules change (e.g., country-specific formats).
 export const validatePhone = (phone) => {
   const value = sanitizePhone(phone);
   if (!value) throw new Error('Phone is required');
   if (value.startsWith('+')) {
-    if (!/^\+\d{1,12}$/.test(value)) {
-      throw new Error('Phone with + must be + followed by up to 12 digits');
+    if (!/^\+\d{11,12}$/.test(value)) {
+      throw new Error('Phone with + must have 11–12 digits');
     }
   } else {
-    if (!/^\d{1,11}$/.test(value)) {
-      throw new Error('Phone must be up to 11 digits');
+    if (!/^\d{10,11}$/.test(value)) {
+      throw new Error('Phone must have 10–11 digits');
     }
   }
   return true;
