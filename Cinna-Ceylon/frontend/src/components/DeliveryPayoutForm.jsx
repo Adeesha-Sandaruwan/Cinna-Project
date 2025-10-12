@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   PlusIcon,
@@ -21,18 +22,22 @@ import {
   BanknotesIcon
 } from '@heroicons/react/24/outline';
 
-const DeliveryPayoutForm = ({ onBackToDashboard }) => {
+// DeliveryPayoutForm component manages creation, editing, and display of delivery payouts
+// Includes validation, calculation of stats, and UI for maintenance/emergency payouts
+const DeliveryPayoutForm = () => {
+  const navigate = useNavigate();
   const [payouts, setPayouts] = useState([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState([]);
   const [emergencyRecords, setEmergencyRecords] = useState([]);
+  // formData holds all form fields for payout creation/editing
   const [formData, setFormData] = useState({
-    referenceType: 'Maintenance',
-    referenceId: '',
-    payoutDate: new Date().toISOString().split('T')[0],
-    amount: '',
-    paymentStatus: 'Pending',
-    notes: '',
-    approvedBy: ''
+    referenceType: 'Maintenance', // Type of payout: Maintenance or Emergency
+    referenceId: '', // Reference record ID (maintenance/emergency)
+    payoutDate: new Date().toISOString().split('T')[0], // Default to today
+    amount: '', // Amount to be paid
+    paymentStatus: 'Pending', // Status of payment
+    notes: '', // Optional notes
+    approvedBy: '' // Name of approver
   });
   const [editingId, setEditingId] = useState(null);
   const [errors, setErrors] = useState({});
@@ -52,17 +57,24 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
 
   const API_BASE_URL = 'http://localhost:5000/api';
 
+  // Fetch initial data for payouts, maintenance, and emergency records
   useEffect(() => {
     fetchPayouts();
     fetchMaintenanceRecords();
     fetchEmergencyRecords();
   }, []);
 
+  // Recalculate stats whenever payouts change
   useEffect(() => {
     calculateStats();
   }, [payouts]);
 
   // ---------- Fetch Data ----------
+  // Fetch all delivery payouts from backend
+  /**
+   * Fetches all delivery payout records from the backend and updates state.
+   * Handles loading and error states.
+   */
   const fetchPayouts = async () => {
     setIsLoading(true);
     try {
@@ -76,6 +88,10 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     }
   };
 
+  /**
+   * Fetches all maintenance records for reference selection in the payout form.
+   * Handles loading and error states.
+   */
   const fetchMaintenanceRecords = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/maintenance`);
@@ -86,6 +102,10 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     }
   };
 
+  /**
+   * Fetches all emergency records for reference selection in the payout form.
+   * Handles loading and error states.
+   */
   const fetchEmergencyRecords = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/emergencies`);
@@ -97,6 +117,10 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   };
 
   // ---------- PDF Download ----------
+  /**
+   * Downloads the PDF for a given delivery payout record by ID.
+   * Fetches the PDF from the backend and triggers a download in the browser.
+   */
   const handleDownloadPDF = async (payoutId) => {
     try {
       const response = await axios.get(
@@ -127,6 +151,17 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   };
 
   // ---------- Stats ----------
+  // Calculate statistics for stat cards
+  // totalPayouts: number of payouts
+  // totalAmount: sum of all payout amounts
+  // maintenancePayouts: count of maintenance payouts
+  // emergencyPayouts: count of emergency payouts
+  // pendingPayouts: count of payouts with status 'Pending'
+  /**
+   * Calculates summary statistics for delivery payouts:
+   * - Total payouts, total amount, maintenance/emergency/pending counts.
+   * Updates the stats state for display in stat cards.
+   */
   const calculateStats = () => {
     const totalPayouts = payouts.length;
     const totalAmount = payouts.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
@@ -138,6 +173,9 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   };
 
   // ---------- Helpers ----------
+  /**
+   * Returns the available reference records (maintenance or emergency) based on the selected reference type.
+   */
   const getAvailableReferences = () =>
     formData.referenceType === 'Maintenance'
       ? maintenanceRecords
@@ -145,6 +183,9 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
       ? emergencyRecords
       : [];
 
+  /**
+   * Returns the appropriate CSS class for a given payout status for colored badges.
+   */
   const getStatusColor = (status) => {
     switch (status) {
       case 'Completed': return 'bg-green-100 text-green-800';
@@ -155,6 +196,9 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     }
   };
 
+  /**
+   * Returns a string describing the reference details for a payout (maintenance or emergency).
+   */
   const getReferenceDetails = (payout) => {
     if (payout.referenceType === 'Maintenance') {
       const record = maintenanceRecords.find(m => m._id === (payout.referenceId?._id || payout.referenceId));
@@ -168,8 +212,22 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   };
 
   // ---------- Form ----------
+  // Handle form field changes
+  // - Removes digits from 'approvedBy'
+  // - Resets referenceId and amount when referenceType changes
+  // - Auto-fills amount for selected maintenance record
+  // - Clears error for changed field
+  /**
+   * Handles changes to form fields in the payout form.
+   * Special logic for 'approvedBy' (removes digits), resets fields on type change, and auto-fills amount.
+   * Clears errors for the edited field.
+   */
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === 'approvedBy') {
+      // Remove digits from input
+      value = value.replace(/\d+/g, '');
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
 
     if (name === 'referenceType') {
@@ -199,11 +257,26 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
+  // Validate form fields before submit
+  // - referenceId: must be selected
+  // - amount: must be positive number
+  // - payoutDate: required, not in future
+  // - paymentStatus: required
+  // - approvedBy: required, no digits allowed
   const validateForm = () => {
     const newErrors = {};
     if (!formData.referenceId) newErrors.referenceId = 'Reference record is required';
     if (!formData.amount || formData.amount <= 0) newErrors.amount = 'Valid amount is required';
-    if (!formData.payoutDate) newErrors.payoutDate = 'Payout date is required';
+    if (!formData.payoutDate) newErrors.payoutDate = 'Please select a payout date';
+    // Validate date is not in the future
+    const today = new Date();
+    const selectedDate = new Date(formData.payoutDate);
+    if (selectedDate > today) {
+      newErrors.payoutDate = 'Payout date cannot be in the future';
+    }
+    if (!formData.paymentStatus) newErrors.paymentStatus = 'Please select a payment status';
+    if (!formData.approvedBy) newErrors.approvedBy = 'Approver name is required';
+    else if (/\d/.test(formData.approvedBy)) newErrors.approvedBy = 'Numbers are not allowed in approver name';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -305,12 +378,12 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen p-6" style={{ backgroundColor: '#fdf6e3' }}>
       <div className="max-w-7xl mx-auto">
         {/* Header with Back Button */}
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={onBackToDashboard}
+            onClick={() => navigate('/financial-officer-dashboard')}
             className="flex items-center text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 bg-white/80 rounded-xl shadow-sm"
           >
             <ArrowLeftIcon className="w-5 h-5 mr-2" />
@@ -330,7 +403,7 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
         </div>
 
         {/* Glassy Header Card */}
-        <div className="bg-gradient-to-r from-blue-400/20 to-indigo-300/20 backdrop-blur-2xl rounded-3xl p-8 mb-10 shadow-2xl border border-white/30 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-300/20 backdrop-blur-2xl rounded-3xl p-8 mb-10 shadow-2xl border border-white/30 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/30 rounded-full -translate-y-16 translate-x-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-200/30 rounded-full translate-y-12 -translate-x-12"></div>
           
@@ -536,6 +609,7 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
                 name="payoutDate"
                 value={formData.payoutDate}
                 onChange={handleChange}
+                max={new Date().toISOString().split('T')[0]} // Prevent future date selection
                 className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                   errors.payoutDate ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -566,31 +640,38 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
 
             {/* Payment Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status *</label>
               <select
                 name="paymentStatus"
                 value={formData.paymentStatus}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.paymentStatus ? 'border-red-500' : 'border-gray-300'
+                }`}
               >
+                <option value="">Select Payment Status</option>
                 <option value="Pending">Pending</option>
                 <option value="Processing">Processing</option>
                 <option value="Completed">Completed</option>
                 <option value="Failed">Failed</option>
               </select>
+              {errors.paymentStatus && <p className="text-red-500 text-xs mt-1">{errors.paymentStatus}</p>}
             </div>
 
             {/* Approved By */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Approved By</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Approved By *</label>
               <input
                 type="text"
                 name="approvedBy"
                 value={formData.approvedBy}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.approvedBy ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Name of approver"
               />
+              {errors.approvedBy && <p className="text-red-500 text-xs mt-1">{errors.approvedBy}</p>}
             </div>
 
             {/* Notes */}
@@ -645,7 +726,7 @@ const DeliveryPayoutForm = ({ onBackToDashboard }) => {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center disabled:opacity-50"
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center disabled:opacity-50"
               >
                 {isLoading ? (
                   <ArrowPathIcon className="w-5 h-5 mr-2 animate-spin" />

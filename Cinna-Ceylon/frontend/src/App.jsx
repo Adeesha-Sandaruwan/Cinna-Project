@@ -36,6 +36,7 @@ import AttendanceRecords from './components/dashboard/AttendanceRecords';
 import LeaveQuickActions from './components/leave/LeaveQuickActions.jsx';
 import MyLeaves from './components/leave/MyLeaves.jsx';
 import LeaveAnalytics from './components/leave/LeaveAnalytics.jsx';
+import FinancialOfficerDashboard from './components/dashboard/FinancialOfficerDashboard.jsx';
 
 // E-commerce
 import Cart from "./components/Cart.jsx";
@@ -140,6 +141,7 @@ function AppContent() {
             <Route path="/vehicle/:id/update" element={<VehicleUpdatePage />} />
             <Route path="/delivery" element={<DeliveryManagerDashboard />} />
             <Route path="/delivery-manager" element={<DeliveryManagerDashboard />} />
+            <Route path="/financial-officer-dashboard" element={<FinancialOfficerDashboard />} />
 
             {/* Management Systems */}
             <Route path="/maintenance" element={<MaintenanceManagement />} />

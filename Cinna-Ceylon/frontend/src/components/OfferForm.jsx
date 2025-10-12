@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
 
-// Offer Form Component
 const OfferForm = ({ offer, products, onClose, onSave }) => {
+  // formData holds all form fields for offer creation/editing
   const [formData, setFormData] = useState({
-    name: offer?.name || '',
-    description: offer?.description || '',
-    products: offer?.products?.map(p => p._id) || [],
-    discountedPrice: offer?.discountedPrice || '',
-    expiryDate: offer?.expiryDate ? new Date(offer.expiryDate).toISOString().split('T')[0] : '',
-    status: offer?.status || 'Active',
-    image: offer?.image || ''
+    name: offer?.name || '', // Offer name
+    description: offer?.description || '', // Offer description
+    products: offer?.products?.map(p => p._id) || [], // Array of product IDs
+    discountedPrice: offer?.discountedPrice || '', // Discounted bundle price
+    expiryDate: offer?.expiryDate ? new Date(offer.expiryDate).toISOString().split('T')[0] : '', // Expiry date
+    status: offer?.status || 'Active', // Offer status
+    image: offer?.image || '' // Custom image URL
   });
 
   const [selectedProducts, setSelectedProducts] = useState(offer?.products || []);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   
+  // Calculate total price of selected products
   const totalPrice = selectedProducts.reduce((sum, product) => sum + product.price, 0);
 
   useEffect(() => {
@@ -24,9 +25,14 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
     }
   }, [offer]);
 
+  /**
+   * Validates the offer form fields before submit.
+   * Checks for required fields, price logic, and expiry date rules.
+   * Returns true if valid, false otherwise.
+   */
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) newErrors.name = 'Offer name is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.expiryDate) newErrors.expiryDate = 'Expiry date is required';
@@ -36,31 +42,35 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
     if (selectedProducts.length === 0) {
       newErrors.products = 'At least one product is required';
     }
-    
-    // Validate discounted price is less than total
+
+    // Discounted price must be less than total price
     if (formData.discountedPrice && totalPrice > 0 && formData.discountedPrice >= totalPrice) {
       newErrors.discountedPrice = 'Discounted price must be less than the total price';
     }
-    
-    // Validate expiry date is in the future for active offers
+
+    // Expiry date must be in the future for active offers
     if (formData.status === 'Active' && formData.expiryDate) {
       const expiryDate = new Date(formData.expiryDate);
       if (expiryDate <= new Date()) {
         newErrors.expiryDate = 'Expiry date must be in the future for active offers';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Adds a selected product to the offer bundle.
+   * Clears products error if any.
+   */
   const handleProductSelect = (productId) => {
     const product = products.find(p => p._id === productId);
     if (product) {
       const updatedProducts = [...selectedProducts, product];
       setSelectedProducts(updatedProducts);
       setFormData({...formData, products: updatedProducts.map(p => p._id)});
-      
+
       // Clear products error if any
       if (errors.products) {
         setErrors({...errors, products: ''});
@@ -68,42 +78,54 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
     }
   };
 
+  /**
+   * Removes a product from the offer bundle by product ID.
+   */
   const removeProduct = (productId) => {
     const updatedProducts = selectedProducts.filter(p => p._id !== productId);
     setSelectedProducts(updatedProducts);
     setFormData({...formData, products: updatedProducts.map(p => p._id)});
   };
 
+  /**
+   * Handles input field changes in the offer form.
+   * Clears error for the edited field.
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({...formData, [name]: value});
-    
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors({...errors, [name]: ''});
     }
   };
 
+  // Handle form submit for create/update offer
+  /**
+   * Handles form submission for creating or updating an offer.
+   * Validates the form, sends API request, and handles errors.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setSubmitting(true);
-    
+
     try {
       const url = offer ? `http://localhost:5000/api/offers/${offer._id}` : 'http://localhost:5000/api/offers';
       const method = offer ? 'PUT' : 'POST';
-      
+
       // Prepare data for API - include full product data for images
       const apiData = {
         ...formData,
         discountedPrice: parseFloat(formData.discountedPrice),
         products: selectedProducts // Send full product objects, not just IDs
       };
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -111,12 +133,12 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
         },
         body: JSON.stringify(apiData)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `Failed to ${offer ? 'update' : 'create'} offer`);
       }
-      
+
       onSave();
     } catch (err) {
       console.error('Error saving offer:', err);
@@ -126,7 +148,10 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
     }
   };
 
-  // Function to get correct image path
+  /**
+   * Returns the correct image path for a product or offer image.
+   * Handles local and remote images.
+   */
   const getImagePath = (image) => {
     if (!image) return '';
     if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:')) {
@@ -163,7 +188,6 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
                 <input
                   type="text"
                   name="name"
-                  required
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ${
                     errors.name ? 'border-red-500' : ''
                   }`}
@@ -178,7 +202,6 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
                 <input
                   type="number"
                   name="discountedPrice"
-                  required
                   min="1"
                   step="0.01"
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ${
@@ -195,7 +218,6 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
                 <input
                   type="date"
                   name="expiryDate"
-                  required
                   min={new Date().toISOString().split('T')[0]}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ${
                     errors.expiryDate ? 'border-red-500' : ''
@@ -224,7 +246,6 @@ const OfferForm = ({ offer, products, onClose, onSave }) => {
                 <textarea
                   rows="3"
                   name="description"
-                  required
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ${
                     errors.description ? 'border-red-500' : ''
                   }`}

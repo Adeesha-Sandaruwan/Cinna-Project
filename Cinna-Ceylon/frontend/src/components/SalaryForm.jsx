@@ -1,4 +1,6 @@
+// SalaryForm.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   PlusIcon, 
@@ -27,45 +29,53 @@ const COLORS = {
   SOFT_WHITE: "#FCFBF8",
 };
 
-const SalaryForm = ({ onBackToDashboard }) => {
-  const [salaries, setSalaries] = useState([]);
-  const [employees, setEmployees] = useState([]);
+// Main SalaryForm component
+const SalaryForm = () => {
+  const navigate = useNavigate();
+  // State declarations
+  const [salaries, setSalaries] = useState([]); // All salary records
+  const [users, setUsers] = useState([]); // All users (employees)
   const [formData, setFormData] = useState({
-    Emp_id: '',   
-    Base_Salary: '',
-    Bonus: '',
-    Overtime: '',
-    OT_Type: 'weekday',
-    OT_Hours: 0,
-    Tax: '',
-    EPF: '',
-    ETF: '',
-    Leave_Deduction: '',
-    Leave_Type: 'full_pay',
-    No_Pay_Leave_Days: 0,
-    Net_Salary: '',
-    Month: ''
+    Emp_id: '',   // Selected employee
+    Base_Salary: '', // Base salary
+    Bonus: '', // Bonus
+    Overtime: '', // Overtime pay (calculated)
+    OT_Type: 'weekday', // Overtime type
+    OT_Hours: 0, // Overtime hours
+    Tax: '', // Tax deduction (calculated)
+    EPF: '', // EPF deduction (calculated)
+    ETF: '', // ETF deduction (calculated)
+    Leave_Deduction: '', // Leave deduction (calculated)
+    Leave_Type: 'full_pay', // Leave type
+    No_Pay_Leave_Days: 0, // No pay leave days
+    Net_Salary: '', // Net salary (calculated)
+    Month: '' // Salary month
   });
-  const [editingId, setEditingId] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null); // Editing record ID
+  const [errors, setErrors] = useState({}); // Validation errors
+  const [successMessage, setSuccessMessage] = useState(''); // Success message
+  const [isLoading, setIsLoading] = useState(false); // Loading state
   const [showBreakdown, setShowBreakdown] = useState({
     tax: false,
     overtime: false,
     leave: false
-  });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterMonth, setFilterMonth] = useState('');
+  }); // Show calculation breakdowns
+  const [searchTerm, setSearchTerm] = useState(''); // Search term for table
+  const [filterMonth, setFilterMonth] = useState(''); // Month filter for table
   const [stats, setStats] = useState({
     totalRecords: 0,
     totalSalary: 0,
     averageSalary: 0,
     thisMonthRecords: 0
-  });
+  }); // Stat cards
 
   const API_BASE_URL = 'http://localhost:5000/api';
+  const USERS_URL = `${API_BASE_URL}/admin/users`;
 
+  /**
+   * Downloads the payslip PDF for a given salary record by ID.
+   * Fetches the PDF from the backend and triggers a download in the browser.
+   */
   const handleDownloadPayslip = async (salaryId) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/salaries/${salaryId}/payslip`, {
@@ -83,15 +93,21 @@ const SalaryForm = ({ onBackToDashboard }) => {
     }
   };
 
+  // Fetch all salary records and user list on component mount
   useEffect(() => {
     fetchSalaries();
-    fetchEmployees();
-  }, []); // Removed salaries dependency to prevent infinite loop
+    fetchUsers();
+  }, []);
 
+  // Recalculate stats whenever the salaries list changes
   useEffect(() => {
     calculateStats();
   }, [salaries]); // Only calculate stats when salaries change
 
+  /**
+   * Fetches all salary records from the backend and updates state.
+   * Handles loading and error states.
+   */
   const fetchSalaries = async () => {
     setIsLoading(true);
     try {
@@ -99,23 +115,46 @@ const SalaryForm = ({ onBackToDashboard }) => {
       setSalaries(response.data);
     } catch (error) {
       console.error('Error fetching salaries:', error);
-      // Set empty array instead of showing error for better UX
+      
       setSalaries([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchEmployees = async () => {
+  /**
+   * Fetches all users (employees) from the backend, filters out buyers and suppliers.
+   * Used for employee selection in the salary form.
+   */
+  const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/employees`);
-      setEmployees(response.data);
+      // Get the token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Make the request with the authorization header
+      const response = await axios.get(USERS_URL, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // Filter out buyers and suppliers based on userType
+      const filteredUsers = response.data.filter(user => 
+        user.userType !== 'buyer' && user.userType !== 'supplier'
+      );
+      setUsers(filteredUsers);
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      setEmployees([]);
+      console.error('Error fetching users:', error);
+      setUsers([]);
     }
   };
 
+  // Calculate stat card values (total records, total paid, average salary, records for current month)
+  /**
+   * Calculates summary statistics for salary records:
+   * - Total records, total salary paid, average salary, and records for the current month.
+   * Updates the stats state for display in stat cards.
+   */
   const calculateStats = () => {
     const totalRecords = salaries.length;
     const totalSalary = salaries.reduce((sum, salary) => sum + parseFloat(salary.Net_Salary || 0), 0);
@@ -131,10 +170,26 @@ const SalaryForm = ({ onBackToDashboard }) => {
     });
   };
 
+  /**
+   * Calculate tax based on gross salary using Sri Lankan brackets:
+   *  - First 100,000: 0%
+   *  - Next 50,000: 6%
+   *  - Next 50,000: 12%
+   *  - Above 200,000: 18%
+   * Returns tax amount and breakdown for UI.
+   */
+  /**
+   * Calculate tax based on gross salary using Sri Lankan brackets:
+   *  - First 100,000: 0%
+   *  - Next 50,000: 6%
+   *  - Next 50,000: 12%
+   *  - Above 200,000: 18%
+   * Returns tax amount and breakdown for UI.
+   */
   const calculateTax = (grossSalary) => {
     let tax = 0;
     let taxBreakdown = [];
-    
+    // Tax brackets
     if (grossSalary <= 100000) {
       taxBreakdown.push("First Rs. 100,000: Tax Free (0%)");
     } else if (grossSalary <= 150000) {
@@ -159,10 +214,21 @@ const SalaryForm = ({ onBackToDashboard }) => {
       taxBreakdown.push(`Next Rs. 50,000: 12% = Rs. ${(secondTaxable * 0.12).toFixed(2)}`);
       taxBreakdown.push(`Remaining Rs. ${thirdTaxable.toLocaleString()}: 18% = Rs. ${(thirdTaxable * 0.18).toFixed(2)}`);
     }
-    
     return { tax: parseFloat(tax.toFixed(2)), breakdown: taxBreakdown };
   };
 
+  /**
+    Calculate leave deduction:
+     Full pay leave: no deduction
+     No pay leave: daily rate (base/28) * no-pay days
+    Returns deduction amount and breakdown for UI.
+   */
+  /**
+   * Calculate leave deduction:
+   *  - Full pay leave: no deduction
+   *  - No pay leave: daily rate (base/28) * no-pay days
+   * Returns deduction amount and breakdown for UI.
+   */
   const calculateLeaveDeduction = (baseSalary, leaveType, noPayLeaveDays) => {
     if (leaveType === 'full_pay') {
       return { deduction: 0, breakdown: ["Full pay leave: No deduction"] };
@@ -180,22 +246,24 @@ const SalaryForm = ({ onBackToDashboard }) => {
     }
   };
 
+  /**
+   * Calculate overtime pay:
+   *  Weekday: hourly rate (base/28/8) * hours
+   *  Weekend/Holiday: hourly rate * hours * 1.5
+   * Returns overtime amount and breakdown for UI.
+   */
   const calculateOvertime = (baseSalary, otType, otHours) => {
     if (otHours <= 0) {
       return { overtime: 0, breakdown: ["No overtime hours"] };
     }
-    
     const hourlyRate = baseSalary / 28 / 8;
     let otRateMultiplier = 1.0;
     let otTypeLabel = "Weekday";
-    
     if (otType === 'weekend_holiday') {
       otRateMultiplier = 1.5;
       otTypeLabel = "Weekend/Holiday";
     }
-    
     const overtime = hourlyRate * otHours * otRateMultiplier;
-    
     return { 
       overtime: parseFloat(overtime.toFixed(2)), 
       breakdown: [
@@ -220,6 +288,16 @@ const SalaryForm = ({ onBackToDashboard }) => {
     }
   };
 
+  /**
+   * Calculate all salary deductions and update formData:
+   *  - Overtime
+   *  - Gross salary
+   *  - Tax
+   *  - EPF (8%)
+   *  - ETF (3%)
+   *  - Leave deduction
+   *  - Net salary
+   */
   const calculateAllDeductions = (data) => {
     const base = parseFloat(data.Base_Salary) || 0;
     const bonus = parseFloat(data.Bonus) || 0;
@@ -228,6 +306,7 @@ const SalaryForm = ({ onBackToDashboard }) => {
     const leaveType = data.Leave_Type;
     const noPayLeaveDays = parseInt(data.No_Pay_Leave_Days) || 0;
 
+    // Calculate overtime, gross salary, tax, EPF, ETF, leave deduction, net salary
     const { overtime } = calculateOvertime(base, otType, otHours);
     const grossSalary = base + bonus + overtime;
     const { tax } = calculateTax(grossSalary);
@@ -247,14 +326,52 @@ const SalaryForm = ({ onBackToDashboard }) => {
     }));
   };
 
+  // Validate form fields and show errors
+  // 1. Employee selection required
+  // 2. Base salary must be positive
+  // 3. Month must be selected and within allowed range
+  // 4. Net salary must be positive
+  // 5. No-pay leave days must be valid if leave type is 'no_pay'
+  // 6. OT hours cannot be negative
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.Base_Salary || formData.Base_Salary <= 0) newErrors.Base_Salary = 'Valid base salary is required';
-    if (!formData.Month) newErrors.Month = 'Month is required';
-    if (!formData.Net_Salary || formData.Net_Salary < 0) newErrors.Net_Salary = 'Net salary must be positive';
+
+    // 1. Employee selection required
+    if (!formData.Emp_id) {
+      newErrors.Emp_id = 'Please select a user (employee)';
+    }
+
+    // 2. Base salary must be positive
+    if (!formData.Base_Salary || formData.Base_Salary <= 0) {
+      newErrors.Base_Salary = 'Valid base salary is required';
+    }
+
+    // 3. Month validation: only allow this month and previous month
+    if (!formData.Month) {
+      newErrors.Month = 'Month is required';
+    } else {
+      const selectedMonth = formData.Month;
+      const now = new Date();
+      const thisMonth = now.toISOString().slice(0, 7);
+      // Calculate previous month
+      const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonth = prevMonthDate.toISOString().slice(0, 7);
+      if (selectedMonth !== thisMonth && selectedMonth !== prevMonth) {
+        newErrors.Month = 'Only this month and previous month are allowed';
+      }
+    }
+
+    // 4. Net salary must be positive
+    if (!formData.Net_Salary || formData.Net_Salary < 0) {
+      newErrors.Net_Salary = 'Net salary must be positive';
+    }
+
+    // 5. No-pay leave days validation
     if (formData.Leave_Type === 'no_pay' && (!formData.No_Pay_Leave_Days || formData.No_Pay_Leave_Days < 0)) {
       newErrors.No_Pay_Leave_Days = 'Valid number of no-pay leave days is required';
     }
+
+    // 6. OT hours cannot be negative
     if (formData.OT_Hours < 0) {
       newErrors.OT_Hours = 'OT hours cannot be negative';
     }
@@ -329,6 +446,27 @@ const SalaryForm = ({ onBackToDashboard }) => {
     }
   };
 
+  const handleSendEmail = async (salaryId) => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_BASE_URL}/salaries/${salaryId}/send-email`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setSuccessMessage('Payslip email sent successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error sending payslip email:', error);
+      setErrors({ submit: error.response?.data?.error || 'Failed to send payslip email' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       Emp_id: '',
@@ -369,8 +507,30 @@ const SalaryForm = ({ onBackToDashboard }) => {
   ).breakdown;
 
   const filteredSalaries = salaries.filter(salary => {
-    const matchesSearch = salary.Emp_id?.EmpName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         salary.Month.toLowerCase().includes(searchTerm.toLowerCase());
+    const term = (searchTerm || '').trim().toLowerCase();
+
+    // Helper to get employee display fields: username or email
+    const findUser = () => {
+      // If Emp_id is populated as an object use that, otherwise find in users list
+      const empObj = salary.Emp_id && typeof salary.Emp_id === 'object' ? salary.Emp_id : null;
+      if (empObj && (empObj.username || empObj.email)) return empObj;
+      return users.find(u => u._id === (salary.Emp_id?._id || salary.Emp_id));
+    };
+
+    const emp = findUser() || {};
+    const empName = (emp.username || emp.EmpName || '') .toString().toLowerCase();
+    const empEmail = (emp.email || '') .toString().toLowerCase();
+    const monthStr = (salary.Month || '').toString().toLowerCase();
+    const netSalaryStr = (salary.Net_Salary || '').toString().toLowerCase();
+
+    // If no search term, match everything (subject to month filter)
+    const matchesSearch = !term || (
+      empName.includes(term) ||
+      empEmail.includes(term) ||
+      monthStr.includes(term) ||
+      netSalaryStr.includes(term)
+    );
+
     const matchesMonth = !filterMonth || salary.Month === filterMonth;
     return matchesSearch && matchesMonth;
   });
@@ -394,7 +554,7 @@ const SalaryForm = ({ onBackToDashboard }) => {
         {/* Header with Back Button */}
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={onBackToDashboard}
+            onClick={() => navigate('/financial-officer-dashboard')}
             className="flex items-center text-amber-600 hover:text-amber-700 transition-colors px-4 py-2 bg-white/80 rounded-xl shadow-sm"
           >
             <ArrowLeftIcon className="w-5 h-5 mr-2" />
@@ -434,25 +594,25 @@ const SalaryForm = ({ onBackToDashboard }) => {
               <StatCard
                 icon={BanknotesIcon}
                 title="Total Records"
-                value={stats.totalRecords}
+                value={stats.totalRecords || 0}
                 color="bg-amber-500"
               />
               <StatCard
                 icon={CurrencyDollarIcon}
                 title="Total Paid"
-                value={`Rs. ${(stats.totalSalary / 1000000).toFixed(1)}M`}
+                value={`Rs. ${stats.totalSalary ? (stats.totalSalary / 1000000).toFixed(1) : '0.0'}M`}
                 color="bg-green-500"
               />
               <StatCard
                 icon={CalculatorIcon}
                 title="Average Salary"
-                value={`Rs. ${stats.averageSalary.toLocaleString()}`}
+                value={`Rs. ${stats.averageSalary ? stats.averageSalary.toLocaleString() : '0'}`}
                 color="bg-blue-500"
               />
               <StatCard
                 icon={CalendarIcon}
                 title="This Month"
-                value={stats.thisMonthRecords}
+                value={stats.thisMonthRecords || 0}
                 color="bg-purple-500"
               />
             </div>
@@ -525,25 +685,28 @@ const SalaryForm = ({ onBackToDashboard }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Employee Selection */}
+            {/* User Selection */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                 <UserIcon className="w-4 h-4 mr-2" />
-                Employee (Optional)
+                User (Employee) *
               </label>
               <select
                 name="Emp_id"
                 value={formData.Emp_id}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 ${errors.Emp_id ? 'border-red-500' : 'border-gray-300'}`}
               >
-                <option value="">Select Employee (Optional)</option>
-                {employees.map(emp => (
-                  <option key={emp._id} value={emp._id}>
-                    {emp.EmpName} - {emp.Position}
+                <option value="">Select User</option>
+                {users.map(user => (
+                  <option key={user._id} value={user._id}>
+                    {user.username} - {user.userType} {user.role ? `(${user.role})` : ''}
                   </option>
                 ))}
               </select>
+              {errors.Emp_id && (
+                <p className="text-red-500 text-xs mt-1">{errors.Emp_id}</p>
+              )}
             </div>
 
             {/* Base Salary */}
@@ -578,6 +741,15 @@ const SalaryForm = ({ onBackToDashboard }) => {
                 name="Month"
                 value={formData.Month}
                 onChange={handleChange}
+                min={(function(){
+                  const now = new Date();
+                  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                  return prevMonthDate.toISOString().slice(0,7);
+                })()}
+                max={(function(){
+                  const now = new Date();
+                  return now.toISOString().slice(0,7);
+                })()}
                 className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 ${
                   errors.Month ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -879,10 +1051,16 @@ const SalaryForm = ({ onBackToDashboard }) => {
                   {filteredSalaries.map(salary => (
                     <tr key={salary._id} className="hover:bg-amber-50 transition-colors duration-150">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {salary.Emp_id?.EmpName || salary.Emp_id || 'No Employee Assigned'}
-                        </div>
-                        <div className="text-sm text-gray-500">{salary.Emp_id?.Position || ''}</div>
+                        {(() => {
+                          const user = users.find(u => u._id === (salary.Emp_id?._id || salary.Emp_id));
+                          if (user) {
+                            return <>
+                              <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                              <div className="text-sm text-gray-500">{user.role ? user.role : user.userType}</div>
+                            </>;
+                          }
+                          return <div className="text-sm text-gray-500">No Employee Assigned</div>;
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">{salary.Month}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">Rs. {parseFloat(salary.Base_Salary).toLocaleString()}</td>
@@ -932,6 +1110,13 @@ const SalaryForm = ({ onBackToDashboard }) => {
                           >
                             <DocumentArrowDownIcon className="w-3 h-3 mr-1" />
                             Pay Slip
+                          </button>
+                          <button
+                            onClick={() => handleSendEmail(salary._1d || salary._id)}
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-lg shadow hover:shadow-lg transition-all duration-200 flex items-center justify-center text-xs"
+                          >
+                            <DocumentArrowDownIcon className="w-3 h-3 mr-1" />
+                            Send Email
                           </button>
                         </div>
                       </td>

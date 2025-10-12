@@ -1,39 +1,25 @@
-// models/DeliveryPayout.js
 import mongoose from "mongoose";
-
 const deliveryPayoutSchema = new mongoose.Schema({
   referenceType: {
-    type: String,
-    enum: ["Maintenance", "Emergency"],
-    required: true,
+    type: String, enum: ["Maintenance", "Emergency"], required: true,
   },
   referenceId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    refPath: 'referenceType'
+    type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'referenceType'
   },
   payoutDate: {
-    type: Date,
-    default: Date.now,
-    required: true,
+    type: Date, default: Date.now, required: true,
   },
   amount: {
-    type: Number,
-    required: true,
-    min: 0,
+    type: Number, required: true, min: 0,
   },
   paymentStatus: {
-    type: String,
-    enum: ["Pending", "Processing", "Completed", "Failed"],
-    default: "Pending",
+    type: String, enum: ["Pending", "Processing", "Completed", "Failed"], default: "Pending",
   },
   notes: {
-    type: String,
-    trim: true,
+    type: String, trim: true,
   },
   approvedBy: {
-    type: String,
-    trim: true,
+    type: String, trim: true,
   },
 }, { timestamps: true });
 

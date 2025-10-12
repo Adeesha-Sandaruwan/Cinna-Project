@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+// import HeaderAfterLogin from './HeaderAfterLogin';
+// import Footer from './Footer';
 import OfferCard from './OfferCard';
 
 const COLORS = {
@@ -11,6 +13,8 @@ const COLORS = {
 };
 
 const BuyerOffersPage = () => {
+// BuyerOffersPage component displays all bundle offers for buyers
+// Handles data fetching, filtering, cart logic, notifications, and UI rendering
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,10 +22,12 @@ const BuyerOffersPage = () => {
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
   useEffect(() => {
+  // Fetch offers when filter changes
     fetchOffers();
-  }, []);
+  }, [filter]);
 
   const showNotification = (message, type = 'success') => {
+  // Show notification for cart actions
     setNotification({ show: true, message, type });
     setTimeout(() => {
       setNotification({ show: false, message: '', type: '' });
@@ -29,9 +35,10 @@ const BuyerOffersPage = () => {
   };
 
   const fetchOffers = async () => {
+  // Fetch offers from backend with filter
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/offers');
+      const response = await fetch(`http://localhost:5000/api/offers?filter=${filter}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch offers');
@@ -49,6 +56,7 @@ const BuyerOffersPage = () => {
   };
 
   const handleAddToCart = async (offer) => {
+  // Add offer to cart and update cart count
     try {
       // Get the current user ID
       const userId = localStorage.getItem('userId') || 'default';
@@ -93,73 +101,72 @@ const BuyerOffersPage = () => {
   };
 
   const handleBuyNow = async (offer) => {
+  // Buy offer now: add to cart, update count, redirect to checkout
     try {
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
-      if (!token || !userId) {
-        showNotification('Please log in first', 'error');
-        return;
-      }
-
-      // Directly create a one-off order for the offer (bypassing cart stock mixing)
-      const orderPayload = {
-        items: [{
-          offer: offer._id,
-          qty: 1,
-          price: offer.discountedPrice || offer.price || 0,
-          itemType: 'offer',
-          originalPrice: offer.products ? offer.products.reduce((s,p)=> s + (p.price||0),0) : undefined
-        }],
-        total: offer.discountedPrice || offer.price || 0,
-        shippingAddress: {}, // will be filled at checkout update
-        paymentMethod: 'Pay at Delivery'
-      };
-
-      const res = await fetch('http://localhost:5000/api/orders', {
+      // Get the current user ID
+      const userId = localStorage.getItem('userId') || 'default';
+      
+      // Add the offer to cart first
+      const response = await fetch('http://localhost:5000/api/cart/offer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(orderPayload)
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: userId,
+          offerId: offer._id,
+          qty: 1,
+        }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(()=>({}));
-        throw new Error(errData.error || errData.message || 'Failed to create quick order');
+      
+      if (!response.ok) {
+        throw new Error('Failed to add offer to cart');
       }
-
-      const newOrder = await res.json();
+      
+      // Show success notification
       showNotification('Redirecting to checkout...', 'success');
-      // Navigate to checkout in buy-now mode with orderId
+      
+      // Update cart count by fetching the updated cart
+      const cartResponse = await fetch(`http://localhost:5000/api/cart/${userId || 'default'}`);
+      if (cartResponse.ok) {
+        const cartData = await cartResponse.json();
+        const offerCount = cartData.offerItems ? cartData.offerItems.reduce((sum, item) => sum + (item.qty || 0), 0) : 0;
+        const productCount = cartData.items ? cartData.items.reduce((sum, item) => sum + (item.qty || 0), 0) : 0;
+        const totalCount = offerCount + productCount;
+        window.dispatchEvent(new CustomEvent('cartCountUpdate', { detail: totalCount }));
+      }
+      
+      // Redirect to checkout page after a brief delay
       setTimeout(() => {
-        window.location.href = `/checkout?orderId=${newOrder._id}&buyNow=true`;
-      }, 600);
+        window.location.href = '/checkout';
+      }, 1000);
+      
     } catch (err) {
       console.error('Error in buy now:', err);
-      showNotification(err.message || 'Failed to process your request.', 'error');
+      showNotification('Failed to process your request. Please try again.', 'error');
     }
   };
 
-  const filteredOffers = offers.filter(offer => {
-    if (filter === 'all') return true;
-    if (filter === 'active') return offer.status === 'Active';
-    if (filter === 'expired') return offer.status === 'Expired';
-    return true;
-  });
+  // Filtering is now handled on the backend
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+ 
         <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading offers...</p>
           </div>
         </div>
+
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+ 
       
       {/* Notification */}
       {notification.show && (
@@ -221,7 +228,7 @@ const BuyerOffersPage = () => {
 
         {/* Offers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {filteredOffers.map(offer => (
+          {offers.map(offer => (
             <OfferCard 
               key={offer._id} 
               offer={offer} 
@@ -232,7 +239,7 @@ const BuyerOffersPage = () => {
           ))}
         </div>
 
-        {filteredOffers.length === 0 && (
+        {offers.length === 0 && (
           <div className="text-center py-12 bg-white rounded-xl shadow-md">
             <svg className="w-16 h-16 text-amber-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -248,6 +255,7 @@ const BuyerOffersPage = () => {
           </div>
         )}
       </div>
+
 
     </div>
   );

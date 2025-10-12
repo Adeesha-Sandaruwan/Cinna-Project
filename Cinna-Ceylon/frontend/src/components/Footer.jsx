@@ -9,6 +9,7 @@ const quickLinks = [
   { name: 'Wholesale', href: '/wholesale' },
   { name: 'About Us', href: '/about' },
   { name: 'Contact Us', href: '/contact' },
+  { name: 'Special Offers', href: '/buyer-offers' },
 ];
 
 export default function Footer() {

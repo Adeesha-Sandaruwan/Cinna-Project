@@ -55,10 +55,10 @@ const AdminDashboard = () => {
     { name: "Attendance", icon: ClipboardList, path: "/dashboard/attendance-records" },
     { name: "Leave Request", icon: CalendarCheck, path: "/leaverequestform" },
     { name: "HR Manager", icon: CalendarCheck, path: "/dashboard/hr" },
-  { name: "Product Manager", icon: Package, path: "/admin/dashboard" }, // points to ProductManagerDashboard component
+    { name: "Product Manager", icon: Package, path: "/admin/dashboard" }, // points to ProductManagerDashboard component
     { name: "Delivery Manager", icon: Truck, path: "/delivery-manager" },
     { name: "Vehicle Manager", icon: Truck, path: "/vehicle-manager" },
-    { name: "Financial Manager", icon: DollarSign, path: "/dashboard/finance" },
+    { name: "Financial Manager", icon: DollarSign, path: "/financial-officer-dashboard" },
   ];
 
   const token = localStorage.getItem('token');

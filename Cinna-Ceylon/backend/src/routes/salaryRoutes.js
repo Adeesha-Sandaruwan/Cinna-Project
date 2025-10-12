@@ -8,6 +8,8 @@ import {
   getSalaryById,
   updateSalary,
   deleteSalary
+  ,
+  sendSalaryEmail
 } from "../controllers/salaryController.js";
 import Salary from "../models/Salary.js";
 
@@ -90,10 +92,22 @@ router.get("/:id/payslip", async (req, res) => {
     const col2 = 250;
     
     doc.text("Employee ID:", col1, employeeDetailsTop + 35);
-    doc.text(salary.Emp_id || "N/A", col2, employeeDetailsTop + 35);
-    
-    doc.text("Employee Name:", col1, employeeDetailsTop + 55);
-    doc.text(salary.Employee_Name || "N/A", col2, employeeDetailsTop + 55);
+doc.text(salary.Emp_id || "N/A", col2, employeeDetailsTop + 35);
+// Find user by Emp_id
+let employeeName = "N/A";
+let employeePosition = "N/A";
+try {
+  const User = (await import('../models/User.js')).default;
+  const user = await User.findById(salary.Emp_id);
+  if (user) {
+    employeeName = user.username;
+    employeePosition = user.role || user.userType;
+  }
+} catch (err) {}
+doc.text("Employee Name:", col1, employeeDetailsTop + 55);
+doc.text(employeeName, col2, employeeDetailsTop + 55);
+doc.text("Position:", col1, employeeDetailsTop + 75);
+doc.text(employeePosition, col2, employeeDetailsTop + 75);
     
     // Salary details section
     const salaryDetailsTop = employeeDetailsTop + 90;
@@ -269,6 +283,10 @@ router.get("/:id/payslip", async (req, res) => {
     res.status(500).send("Error generating pay slip");
   }
 });
+
+// Send payslip via email (protected)
+import auth from '../middleware/auth.js';
+router.post('/:id/send-email', auth, sendSalaryEmail);
 
 // Get One
 router.get("/:id", getSalaryById);

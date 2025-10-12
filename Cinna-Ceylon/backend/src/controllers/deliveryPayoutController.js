@@ -6,31 +6,34 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 
-// CREATE
+// CREATE Delivery Payout
+// 1. referenceType must be 'Maintenance' or 'Emergency'
+// 2. referenceId must exist in corresponding collection
+// 3. Other fields validated by Mongoose schema
 export const createDeliveryPayout = async (req, res) => {
   try {
     const { referenceType, referenceId, ...payoutData } = req.body;
-    
-    // Verify the reference exists
+
+    // 1. Verify the reference exists (maintenance/emergency)
     let reference;
     if (referenceType === "Maintenance") {
       reference = await Maintenance.findById(referenceId);
     } else if (referenceType === "Emergency") {
       reference = await Emergency.findById(referenceId);
     }
-    
+
     if (!reference) {
       return res.status(404).json({ message: `${referenceType} record not found` });
     }
-    
-    // Create the payout
+
+    // 2. Create the payout record
     const payout = await DeliveryPayout.create({
       referenceType,
       referenceId,
       ...payoutData
     });
-    
-    // Populate the payout with all necessary data
+
+    // 3. Populate reference details for response
     const populatedPayout = await DeliveryPayout.findById(payout._id)
       .populate({
         path: 'referenceId',
@@ -39,14 +42,16 @@ export const createDeliveryPayout = async (req, res) => {
           select: 'make model licensePlate'
         }
       });
-    
+
     res.status(201).json(populatedPayout);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-// READ all with filtering
+// READ all delivery payouts with filtering and pagination
+// Filters: referenceType, paymentStatus, payoutDate range
+// Returns paginated results with reference details populated
 export const getDeliveryPayouts = async (req, res) => {
   try {
     const { 
@@ -57,27 +62,27 @@ export const getDeliveryPayouts = async (req, res) => {
       page = 1, 
       limit = 10 
     } = req.query;
-    
+
     const filter = {};
-    
+
     if (referenceType) filter.referenceType = referenceType;
     if (paymentStatus) filter.paymentStatus = paymentStatus;
-    
+
     if (startDate || endDate) {
       filter.payoutDate = {};
       if (startDate) filter.payoutDate.$gte = new Date(startDate);
       if (endDate) filter.payoutDate.$lte = new Date(endDate);
     }
-    
-    // Calculate pagination
+
+    // Pagination logic
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
-    
+
     // Get total count for pagination info
     const total = await DeliveryPayout.countDocuments(filter);
-    
-    // Get paginated results
+
+    // Get paginated results with reference details
     const payouts = await DeliveryPayout.find(filter)
       .populate({
         path: 'referenceId',
@@ -89,7 +94,7 @@ export const getDeliveryPayouts = async (req, res) => {
       .sort({ payoutDate: -1 })
       .skip(skip)
       .limit(limitNum);
-    
+
     res.json({
       docs: payouts,
       total,
@@ -102,7 +107,8 @@ export const getDeliveryPayouts = async (req, res) => {
   }
 };
 
-// READ one
+// READ one delivery payout by ID
+// Returns payout with reference details populated
 export const getDeliveryPayoutById = async (req, res) => {
   try {
     const payout = await DeliveryPayout.findById(req.params.id)
@@ -113,7 +119,7 @@ export const getDeliveryPayoutById = async (req, res) => {
           select: 'make model licensePlate'
         }
       });
-      
+
     if (!payout) return res.status(404).json({ message: "Payout not found" });
     res.json(payout);
   } catch (error) {
@@ -121,7 +127,8 @@ export const getDeliveryPayoutById = async (req, res) => {
   }
 };
 
-// UPDATE
+// UPDATE delivery payout by ID
+// Validates and updates payout, returns updated payout with reference details
 export const updateDeliveryPayout = async (req, res) => {
   try {
     const payout = await DeliveryPayout.findByIdAndUpdate(
@@ -136,7 +143,7 @@ export const updateDeliveryPayout = async (req, res) => {
         select: 'make model licensePlate'
       }
     });
-    
+
     if (!payout) return res.status(404).json({ message: "Payout not found" });
     res.json(payout);
   } catch (error) {
@@ -144,7 +151,8 @@ export const updateDeliveryPayout = async (req, res) => {
   }
 };
 
-// DELETE
+// DELETE delivery payout by ID
+// Deletes payout and returns success message
 export const deleteDeliveryPayout = async (req, res) => {
   try {
     const payout = await DeliveryPayout.findByIdAndDelete(req.params.id);
@@ -156,12 +164,13 @@ export const deleteDeliveryPayout = async (req, res) => {
 };
 
 // Get available maintenance and emergency records for dropdown
+// Used for populating reference selection in frontend
 export const getAvailableReferences = async (req, res) => {
   try {
     const { type } = req.query;
-    
+
     let references = [];
-    
+
     if (type === 'Maintenance') {
       references = await Maintenance.find({})
       .populate('vehicle', 'make model licensePlate')
@@ -172,25 +181,26 @@ export const getAvailableReferences = async (req, res) => {
       .populate('driver', 'name')
       .select('description accidentDate vehicle driver');
     }
-    
+
     res.json(references);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get payout statistics
+// Get payout statistics for dashboard
+// Aggregates payout counts and amounts by type and status
 export const getPayoutStatistics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     const matchStage = {};
     if (startDate || endDate) {
       matchStage.payoutDate = {};
       if (startDate) matchStage.payoutDate.$gte = new Date(startDate);
       if (endDate) matchStage.payoutDate.$lte = new Date(endDate);
     }
-    
+
     const stats = await DeliveryPayout.aggregate([
       { $match: matchStage },
       {
@@ -218,7 +228,7 @@ export const getPayoutStatistics = async (req, res) => {
         }
       }
     ]);
-    
+
     res.json(stats);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -226,6 +236,7 @@ export const getPayoutStatistics = async (req, res) => {
 };
 
 // Generate PDF for Delivery Payout
+// Generates a PDF receipt for a delivery payout, including payout and reference details
 export const generateDeliveryPayoutPDF = async (req, res) => {
   try {
     const payout = await DeliveryPayout.findById(req.params.id)
@@ -236,7 +247,7 @@ export const generateDeliveryPayoutPDF = async (req, res) => {
           select: 'make model licensePlate'
         }
       });
-      
+
     if (!payout) return res.status(404).send("Delivery payout not found");
 
     const companyName = "Cinna-Ceylon";
@@ -260,23 +271,23 @@ export const generateDeliveryPayoutPDF = async (req, res) => {
     // Background - light green theme
     doc.rect(0, 0, doc.page.width, doc.page.height).fill("#F0FFF0");
 
-    // Header
+    // Header with company info and logo
     const __dirname = path.resolve();
     const logoPath = path.join(__dirname, "frontend/public/cinnamon-bg.jpeg");
-    
+
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, 40, 40, { width: 70 });
       doc.fontSize(18).fillColor("#007B8A").text(companyName, 120, 45);
     } else {
       doc.fontSize(18).fillColor("#007B8A").text(companyName, 40, 45);
     }
-    
+
     doc.fontSize(10).fillColor("#333333");
     doc.text(companyAddress, 40, 70);
     doc.text(`Phone: ${companyPhone}`, 40, 85);
     doc.text(`Email: ${companyEmail}`, 40, 100);
 
-    // Title
+    // Title for PDF receipt
     doc.fontSize(16).fillColor("#005580").text(
       `DELIVERY PAYOUT RECEIPT - ${new Date(payout.payoutDate).toLocaleDateString()}`,
       40,
@@ -289,13 +300,13 @@ export const generateDeliveryPayoutPDF = async (req, res) => {
     doc.rect(40, detailsTop, doc.page.width - 80, 80).fill("#D1FFBD");
     doc.fontSize(12).fillColor("#005580").text("PAYOUT DETAILS", 50, detailsTop + 10);
     doc.fontSize(10).fillColor("#333333");
-    
+
     // Payout Type and Status
     doc.text("Payout Type:", 50, detailsTop + 30);
     doc.text(payout.referenceType, 150, detailsTop + 30);
     doc.text("Payment Status:", 50, detailsTop + 45);
     doc.text(payout.paymentStatus, 150, detailsTop + 45);
-    
+
     // Approved By
     doc.text("Approved By:", 50, detailsTop + 60);
     doc.text(payout.approvedBy || "N/A", 150, detailsTop + 60);
@@ -308,21 +319,21 @@ export const generateDeliveryPayoutPDF = async (req, res) => {
     // Reference details
     const referenceDetailsTop = referenceTop + 40;
     doc.fontSize(10).fillColor("#333333");
-    
+
     if (payout.referenceType === 'Maintenance' && payout.referenceId) {
       doc.text("Description:", 50, referenceDetailsTop);
       doc.text(payout.referenceId.description || "N/A", 150, referenceDetailsTop);
-      
+
       doc.text("Service Date:", 50, referenceDetailsTop + 15);
       doc.text(new Date(payout.referenceId.serviceDate).toLocaleDateString(), 150, referenceDetailsTop + 15);
-      
+
     } else if (payout.referenceType === 'Emergency' && payout.referenceId) {
       doc.text("Description:", 50, referenceDetailsTop);
       doc.text(payout.referenceId.description || "N/A", 150, referenceDetailsTop);
-      
+
       doc.text("Accident Date:", 50, referenceDetailsTop + 15);
       doc.text(new Date(payout.referenceId.accidentDate).toLocaleDateString(), 150, referenceDetailsTop + 15);
-      
+
     } else {
       doc.text("No reference details available", 50, referenceDetailsTop);
     }
@@ -336,12 +347,12 @@ export const generateDeliveryPayoutPDF = async (req, res) => {
     doc.text("Particulars", 50, tableTop + 8);
     doc.text("Amount (Rs.)", 40 + colWidth + 10, tableTop + 8);
 
-    // Table rows
+    // Table rows for payout amount
     const rows = [
       { label: "Payout Amount", value: payout.amount || 0 }
     ];
     let rowY = tableTop + 25;
-    
+
     rows.forEach((row) => {
       doc.rect(40, rowY, colWidth, 20).fill("#F0FFF0");
       doc.rect(40 + colWidth, rowY, colWidth, 20).fill("#F0FFF0");
@@ -361,6 +372,7 @@ export const generateDeliveryPayoutPDF = async (req, res) => {
       rowY += 50;
     }
 
+    // Footer note for PDF receipt
     doc.fontSize(10).fillColor("#007B8A").text(
       "This is a system generated delivery payout receipt.",
       40,

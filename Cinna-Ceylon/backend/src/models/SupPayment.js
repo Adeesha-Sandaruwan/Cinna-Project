@@ -4,7 +4,7 @@ const { Schema, model, Types } = mongoose;
 const supplierPaymentSchema = new Schema({
   Sup_id: { 
     type: Types.ObjectId, 
-    ref: "Supplier", 
+    ref: "User", 
     required: false
   },
   Date: { type: Date, default: Date.now },

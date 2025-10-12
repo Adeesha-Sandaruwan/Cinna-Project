@@ -13,14 +13,26 @@ export const createAnnouncement = async (req, res) => {
     // Decide recipients
     let recipientsQuery = {};
     if (target === 'admin') {
-      recipientsQuery = { isAdmin: true };
+      recipientsQuery = {
+        $or: [
+          { isAdmin: true },
+          { role: 'finance_manager' }
+        ]
+      };
     } else if (target === 'users') {
-      recipientsQuery = { isAdmin: { $ne: true } };
+      recipientsQuery = { 
+        $and: [
+          { isAdmin: { $ne: true } },
+          { role: { $ne: 'finance_manager' } }
+        ]
+      };
     } else {
       recipientsQuery = {}; // all
     }
 
-    const recipients = await User.find(recipientsQuery).select('_id');
+    console.log('Finding recipients with query:', recipientsQuery);
+    const recipients = await User.find(recipientsQuery);
+    console.log('Found recipients:', recipients.map(r => ({ id: r._id, role: r.role, isAdmin: r.isAdmin })));
 
     const notification = {
       message,
@@ -30,7 +42,14 @@ export const createAnnouncement = async (req, res) => {
     };
 
     // Push notification to each recipient
-    const ops = recipients.map(r => ({ updateOne: { filter: { _id: r._id }, update: { $push: { notifications: notification } } } }));
+    const ops = recipients.map(r => ({ 
+      updateOne: { 
+        filter: { _id: r._id }, 
+        update: { $push: { notifications: notification } } 
+      } 
+    }));
+    
+    console.log('Bulk write operations:', ops);
     if (ops.length > 0) await User.bulkWrite(ops);
 
     res.status(201).json({ message: 'Announcement created and notifications sent', announcement });
@@ -43,10 +62,25 @@ export const createAnnouncement = async (req, res) => {
 // Get current user's notifications
 export const getNotifications = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('notifications');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user.notifications.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)));
+    console.log('Getting notifications for user:', req.user.id);
+    const user = await User.findById(req.user.id)
+      .select('notifications role isAdmin')
+      .populate('notifications.announcement');
+      
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('User role:', user.role, 'isAdmin:', user.isAdmin);
+    console.log('Raw notifications:', user.notifications);
+
+    const sortedNotifications = user.notifications
+      .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json(sortedNotifications);
   } catch (err) {
+    console.error('Error getting notifications:', err);
     res.status(500).json({ message: err.message });
   }
 };

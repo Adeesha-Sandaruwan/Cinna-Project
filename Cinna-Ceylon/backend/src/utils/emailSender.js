@@ -88,6 +88,32 @@ export const sendDeliveryStatusEmail = async (to, buyerName, status, orderDetail
   }
 };
 
+// Generic email sender with attachments
+export const sendEmailWithAttachments = async (to, subject, html, attachments = []) => {
+  try {
+    if (!to || typeof to !== 'string' || !to.includes('@')) {
+      console.log('Invalid recipient email:', to);
+      return { success: false, message: 'Invalid recipient email' };
+    }
+
+    const transporter = createTransporter();
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'noreply@cinnaceylon.com',
+      to,
+      subject,
+      html,
+      attachments
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Generic email sent:', info.messageId);
+    return { success: true, messageId: info.messageId, info };
+  } catch (error) {
+    console.error('❌ sendEmailWithAttachments error:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 // Create email content with product details
 const createEmailContent = (status, buyerName, orderDetails) => {
   const productsList = orderDetails?.items?.map(item => 
