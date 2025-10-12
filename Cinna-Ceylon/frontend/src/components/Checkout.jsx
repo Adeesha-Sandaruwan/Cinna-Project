@@ -16,7 +16,6 @@ import {
   sanitizePhone,
   allowPhoneKey,
   handlePhonePaste,
-  // numeric-only helpers
   allowPostalCodeKey,
   handlePostalCodePaste,
   sanitizePostalCodeInput,
@@ -31,6 +30,7 @@ import {
   sanitizeCVVInput
 } from '../utils/validations.jsx';
 
+// Theme colors used for buttons and highlights
 const COLORS = {
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
@@ -38,40 +38,43 @@ const COLORS = {
 };
 
 const Checkout = () => {
-  const { userId } = useParams();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { userId } = useParams(); // Get userId from URL params
+  const navigate = useNavigate(); // Navigation hook
+  const [searchParams] = useSearchParams(); // For query params (buyNow, orderId)
 
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [orderComplete, setOrderComplete] = useState(false);
-  const [orderDetails, setOrderDetails] = useState(null);
-  const [isBuyNow, setIsBuyNow] = useState(false);
-  const [buyNowOrder, setBuyNowOrder] = useState(null);
+  // ----- State variables -----
+  const [cart, setCart] = useState(null); // Stores cart items
+  const [loading, setLoading] = useState(true); // Loading state for UI
+  const [processing, setProcessing] = useState(false); // Checkout button processing state
+  const [orderComplete, setOrderComplete] = useState(false); // Whether checkout completed
+  const [orderDetails, setOrderDetails] = useState(null); // Stores order info after checkout
+  const [isBuyNow, setIsBuyNow] = useState(false); // Flag for "Buy Now" flow
+  const [buyNowOrder, setBuyNowOrder] = useState(null); // Stores single buyNow order
 
+  // Controlled form data
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", phone: "",
     address: "", city: "", postalCode: "",
     cardNumber: "", cardName: "", expiryDate: "", cvv: ""
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({}); // Field-specific validation errors
+  const [paymentMethod, setPaymentMethod] = useState("payNow"); // Default payment method
 
-  const [paymentMethod, setPaymentMethod] = useState("payNow");
-
+  // ----- Initial Load -----
   useEffect(() => {
     const orderId = searchParams.get("orderId");
     const buyNow = searchParams.get("buyNow");
 
     if (orderId && buyNow === "true") {
-      setIsBuyNow(true);
-      loadBuyNowOrder(orderId);
+      setIsBuyNow(true); // Enable buyNow mode
+      loadBuyNowOrder(orderId); // Load a single order
     } else {
-      loadCart();
+      loadCart(); // Load full cart
     }
   }, [userId, searchParams]);
 
+  // ----- Fetch "Buy Now" order -----
   const loadBuyNowOrder = async (id) => {
     try {
       setLoading(true);
@@ -79,6 +82,7 @@ const Checkout = () => {
       if (!res.ok) throw new Error("Failed to fetch order");
       const order = await res.json();
 
+      // Set order details and simulate cart for UI
       setBuyNowOrder(order);
       setCart({
         items: order.items.map(i => ({
@@ -91,12 +95,13 @@ const Checkout = () => {
       });
     } catch {
       alert("Error loading order");
-      navigate("/");
+      navigate("/"); // Redirect home if fetch fails
     } finally {
       setLoading(false);
     }
   };
 
+  // ----- Fetch Cart -----
   const loadCart = async () => {
     try {
       setLoading(true);
@@ -104,29 +109,27 @@ const Checkout = () => {
       if (!res.ok) throw new Error("Cart not found");
       const cartData = await res.json();
 
-      // Calculate total with discounts
+      // Calculate total including offer items
       const productSubtotal = cartData.items ? cartData.items.reduce((sum, item) => sum + (item.priceAtAdd || item.product.price) * item.qty, 0) : 0;
       const offerSubtotal = cartData.offerItems ? cartData.offerItems.reduce((sum, item) => sum + (item.discountedPrice || item.offer.discountedPrice) * item.qty, 0) : 0;
       const total = productSubtotal + offerSubtotal;
 
-      setCart({
-        ...cartData,
-        total: total,
-        subtotal: total
-      });
+      setCart({ ...cartData, total, subtotal: total });
     } catch {
-      navigate("/cart");
+      navigate("/cart"); // Redirect if cart not found
     } finally {
       setLoading(false);
     }
   };
 
+  // ----- Handle Input Change -----
   const handleChange = (e) => {
     const { name, value } = e.target;
     let nextVal = value;
+
+    // Sanitize phone input
     if (name === 'phone') {
       let sanitized = sanitizePhone(value);
-      // Enforce trimming here as a hard fallback regardless of key/paste guards
       if (sanitized.startsWith('+')) {
         sanitized = sanitized.replace(/^(\+\d{0,11}).*/, '$1');
       } else {
@@ -134,16 +137,19 @@ const Checkout = () => {
       }
       nextVal = sanitized;
     }
+
+    // Update form data
     setFormData(prev => ({ ...prev, [name]: nextVal }));
-    // Clear the field-specific error as user types
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
+
+    // Clear any existing error for the field
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: undefined }));
   };
+
+  // ----- Validate Form -----
   const validateForm = () => {
     const newErrors = {};
 
-    // Shipping validations
+    // Shipping info validation
     try { validateName(formData.firstName); } catch (e) { newErrors.firstName = e.message; }
     try { validateName(formData.lastName); } catch (e) { newErrors.lastName = e.message; }
     try { validateEmail(formData.email); } catch (e) { newErrors.email = e.message; }
@@ -152,7 +158,7 @@ const Checkout = () => {
     if (!formData.city || formData.city.trim().length < 2) newErrors.city = 'City must be at least 2 characters long';
     try { validatePostalCode(formData.postalCode); } catch (e) { newErrors.postalCode = e.message; }
 
-    // Payment validations when paying now
+    // Payment info validation if paying now
     if (paymentMethod === 'payNow') {
       try { validateCardNumber(formData.cardNumber); } catch (e) { newErrors.cardNumber = e.message; }
       try { validateName(formData.cardName); } catch (e) { newErrors.cardName = e.message; }
@@ -160,29 +166,31 @@ const Checkout = () => {
       try { validateCVV(formData.cvv); } catch (e) { newErrors.cvv = e.message; }
     }
 
-    // If there are any errors, set them and return false
+    // If errors exist, show them and focus first invalid field
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      // Focus first invalid field if running in browser
       const firstInvalid = Object.keys(newErrors)[0];
       const el = document.querySelector(`[name="${firstInvalid}"]`);
       if (el && typeof el.focus === 'function') el.focus();
       return false;
     }
 
-    // Clear previous errors
+    // Clear errors if form is valid
     setErrors({});
     return true;
   };
 
+  // ----- Handle Checkout -----
   const handleCheckout = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) return; // Stop if form invalid
     setProcessing(true);
 
     try {
+      // Simulate payment processing delay
       if (paymentMethod === "payNow") await new Promise(r => setTimeout(r, 2000));
 
       if (isBuyNow && buyNowOrder) {
+        // Update existing buyNow order
         const res = await fetch(`http://localhost:5000/api/orders/${buyNowOrder._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -195,14 +203,13 @@ const Checkout = () => {
         if (!res.ok) throw new Error("Failed to update order");
         setOrderDetails(await res.json());
       } else {
-        // Merge product and offer items with proper itemType
+        // Create new order from cart
         const productItems = cart.items ? cart.items.map(i => ({
           product: i.product._id,
           qty: i.qty,
           price: i.priceAtAdd || i.product.price,
           itemType: 'product'
         })) : [];
-
         const offerItems = cart.offerItems ? cart.offerItems.map(i => ({
           offer: i.offer._id,
           qty: i.qty,
@@ -210,26 +217,15 @@ const Checkout = () => {
           itemType: 'offer',
           originalPrice: i.originalPrice || i.offer.products.reduce((sum, product) => sum + product.price, 0)
         })) : [];
-
         const allItems = [...productItems, ...offerItems];
 
         const orderData = {
           items: allItems,
           total: cart.total,
-          shippingAddress: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
-            address: formData.address,
-            city: formData.city,
-            postalCode: formData.postalCode
-          },
+          shippingAddress: { ...formData },
           paymentMethod: paymentMethod === "payNow" ? "Credit Card" : "Pay at Delivery",
           status: paymentMethod === "payNow" ? "paid" : "pending"
         };
-
-        console.log("Sending order data:", orderData);
 
         const token = localStorage.getItem('token');
         const res = await fetch("http://localhost:5000/api/orders", {
@@ -237,23 +233,11 @@ const Checkout = () => {
           headers: { "Content-Type": "application/json", ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
           body: JSON.stringify(orderData),
         });
-
-        if (!res.ok) {
-          let errorText = 'Failed to create order';
-          try {
-            const errorData = await res.json();
-            console.error("Order creation error:", errorData);
-            errorText = errorData.error || errorData.message || errorText;
-          } catch (parseErr) {
-            console.error('Failed to parse error response', parseErr);
-          }
-          throw new Error(errorText);
-        }
-
+        if (!res.ok) throw new Error('Failed to create order');
         const newOrder = await res.json();
         setOrderDetails(newOrder);
 
-        // Clear the cart after placing order
+        // Clear cart after successful checkout
         await fetch(`http://localhost:5000/api/cart/${userId || "default"}`, { method: "DELETE" });
         window.dispatchEvent(new Event("cartUpdated"));
       }
@@ -267,9 +251,11 @@ const Checkout = () => {
     }
   };
 
+  // ----- Loading or Empty Cart -----
   if (loading) return <p className="text-center p-10">Loading checkout...</p>;
   if (!cart?.items?.length && !cart?.offerItems?.length) return navigate("/cart");
 
+  // ----- Order Completed UI -----
   if (orderComplete && orderDetails) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -308,14 +294,15 @@ const Checkout = () => {
     );
   }
 
+  // ----- Checkout Form UI -----
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 p-6">
-
+        {/* Shipping + Payment Form */}
         <div className="space-y-8">
+          {/* Shipping Info */}
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h2 className="font-semibold text-xl mb-4 border-b pb-2">📦 Shipping Information</h2>
-            {/* Removed duplicate uncontrolled input loop to ensure single controlled set with validation guards */}
             {['firstName','lastName','email','phone','address','city','postalCode'].map(f => {
               const isPhone = f === 'phone';
               const isPostal = f === 'postalCode';
@@ -333,7 +320,6 @@ const Checkout = () => {
                     onKeyDown={isPhone ? allowPhoneKey : isPostal ? (e)=>allowPostalCodeKey(e) : undefined}
                     onPaste={isPhone ? (e)=>handlePhonePaste(e, (val)=> setFormData(prev=>({...prev, phone: sanitizePhone(val)}))) : isPostal ? (e)=>handlePostalCodePaste(e, (val)=> setFormData(prev=>({...prev, postalCode: sanitizePostalCodeInput(val)}))) : undefined}
                     inputMode={isPhone ? 'tel' : isPostal ? 'numeric' : undefined}
-                    // New rule: up to 11 digits (no plus) OR plus sign followed by up to 12 digits (total length 13 including +)
                     maxLength={isPhone ? (formData.phone.startsWith('+') ? 13 : 11) : undefined}
                     title={isPhone ? 'Up to 11 digits, or + followed by up to 12 digits.' : undefined}
                     placeholder={f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')}
@@ -346,6 +332,7 @@ const Checkout = () => {
             })}
           </div>
 
+          {/* Payment Method */}
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h2 className="font-semibold text-xl mb-4 border-b pb-2">💳 Payment Method</h2>
             <div className="space-y-3">
@@ -359,8 +346,10 @@ const Checkout = () => {
               </label>
             </div>
 
+            {/* Card Info if paying now */}
             {paymentMethod==="payNow" && (
               <div className="mt-4 space-y-3">
+                {/* Card Number */}
                 <div>
                   <input
                     name="cardNumber"
@@ -376,10 +365,12 @@ const Checkout = () => {
                   />
                   {errors.cardNumber && <p className="text-sm text-red-600 mt-1">{errors.cardNumber}</p>}
                 </div>
+                {/* Card Name */}
                 <div>
                   <input name="cardName" placeholder="Cardholder Name" value={formData.cardName} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
                   {errors.cardName && <p className="text-sm text-red-600 mt-1">{errors.cardName}</p>}
                 </div>
+                {/* Expiry + CVV */}
                 <div className="flex gap-3">
                   <div className="w-1/2">
                     <input
@@ -417,9 +408,11 @@ const Checkout = () => {
           </div>
         </div>
 
+        {/* ----- Order Summary ----- */}
         <div className="bg-white p-6 rounded-2xl shadow-md h-fit">
           <h2 className="font-semibold text-xl mb-4 border-b pb-2">🧾 Order Summary</h2>
           <div className="space-y-3">
+            {/* Product Items */}
             {cart.items && cart.items.map((i, idx) => (
               <div key={`product-${idx}`} className="flex justify-between text-gray-700">
                 <span>{i.product.name} <span className="text-sm text-gray-500">x{i.qty}</span></span>
@@ -427,6 +420,7 @@ const Checkout = () => {
               </div>
             ))}
 
+            {/* Offer Items */}
             {cart.offerItems && cart.offerItems.map((i, idx) => {
               const discountedPrice = i.discountedPrice || i.offer.discountedPrice;
               const originalPrice = i.originalPrice || i.offer.products.reduce((sum, p) => sum + p.price, 0);
@@ -450,6 +444,7 @@ const Checkout = () => {
             <span>LKR {cart.total.toLocaleString()}</span>
           </div>
 
+          {/* Checkout Button */}
           <button onClick={handleCheckout} disabled={processing}
             className="w-full mt-6 p-3 rounded-xl text-white font-semibold shadow-md hover:opacity-90"
             style={{ background: COLORS.DEEP_CINNAMON }}>

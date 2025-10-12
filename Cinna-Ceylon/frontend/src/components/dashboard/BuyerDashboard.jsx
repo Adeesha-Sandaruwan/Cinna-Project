@@ -5,24 +5,25 @@ import { useCart } from '../../context/CartContext';
 import { safeRequest, isOk } from '../../utils/api';
 import { generateReceiptPDF } from '../../components/ReceiptPDF';
 
-// Simple utility to format currency (fallback to raw number if invalid)
+// Utility function to format numbers as currency
 const fmt = (v) => {
   if (typeof v !== 'number') return v;
   return v.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 };
 
 export default function BuyerDashboard() {
-  const { user } = useAuth();
-  const userId = user?._id || user?.id || user?.user?._id; // fallback patterns
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [products, setProducts] = useState([]);
-  const [prodError, setProdError] = useState('');
-  const [loadingProducts, setLoadingProducts] = useState(false);
-  const { addToCart } = useCart?.() || {}; // optional chaining in case context shape differs
-  const navigate = useNavigate();
+  const { user } = useAuth(); // Get authenticated user from context
+  const userId = user?._id || user?.id || user?.user?._id; // Extract user ID with multiple fallbacks
+  const [orders, setOrders] = useState([]); // Store user orders
+  const [loading, setLoading] = useState(false); // Loading state for orders
+  const [error, setError] = useState(''); // Error state for orders
+  const [products, setProducts] = useState([]); // Store products for "Start Shopping" section
+  const [prodError, setProdError] = useState(''); // Error state for products
+  const [loadingProducts, setLoadingProducts] = useState(false); // Loading state for products
+  const { addToCart } = useCart?.() || {}; // Get addToCart function from CartContext (optional chaining)
+  const navigate = useNavigate(); // Hook for programmatic navigation
 
+  // Fetch user orders on component mount or when userId changes
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
@@ -31,13 +32,13 @@ export default function BuyerDashboard() {
       .then(({ res, data }) => {
         if (!isOk(res)) throw new Error(data?.message || data?.error || 'Failed to load orders');
         if (!Array.isArray(data)) throw new Error('Unexpected orders response');
-        setOrders(data);
+        setOrders(data); // Save orders to state
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [userId]);
 
-  // Fetch a small list of products for quick start shopping (public, non-expired already enforced server-side)
+  // Fetch a small list of products for quick shopping
   useEffect(() => {
     setLoadingProducts(true);
     setProdError('');
@@ -45,43 +46,47 @@ export default function BuyerDashboard() {
       .then(({ res, data }) => {
         if (!isOk(res)) throw new Error(data?.message || data?.error || 'Failed to load products');
         if (!Array.isArray(data)) throw new Error('Unexpected products response');
-        // Take first 6 newest products for a concise display
-        setProducts(data.slice(0, 6));
+        setProducts(data.slice(0, 6)); // Only show first 6 products
       })
       .catch(e => setProdError(e.message))
       .finally(() => setLoadingProducts(false));
   }, []);
 
+  // Add product to cart or redirect to login/product page
   const handleAddToCart = (product) => {
     if (!user) {
-      navigate('/login');
+      navigate('/login'); // Redirect if user is not logged in
       return;
     }
     if (addToCart) {
       try {
-        addToCart(product, 1);
+        addToCart(product, 1); // Add 1 quantity to cart
       } catch (e) {
         console.error('Add to cart failed', e);
       }
     } else {
-      // Fallback: navigate to product page
-      navigate(`/products/${product._id}`);
+      navigate(`/products/${product._id}`); // Fallback if addToCart is unavailable
     }
   };
 
+  // Prepare quick stats
   const totalOrders = orders.length;
   const pending = orders.filter(o => o.status === 'pending').length;
   const paid = orders.filter(o => o.status === 'paid').length;
-  const lastOrder = orders[0];
+  const lastOrder = orders[0]; // Most recent order
   const totalSpent = orders.reduce((sum, o) => sum + (typeof o.total === 'number' ? o.total : 0), 0);
-  const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+  const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5); // Last 5 orders
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto">
+
+      {/* Header with greeting and navigation buttons */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Buyer Dashboard</h1>
-          <p className="text-gray-600 text-sm md:text-base mt-1">Welcome{user?.username ? `, ${user.username}` : ''}! Track your orders & explore products.</p>
+          <p className="text-gray-600 text-sm md:text-base mt-1">
+            Welcome{user?.username ? `, ${user.username}` : ''}! Track your orders & explore products.
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link to="/products" className="px-4 py-2 bg-[#8B4513] text-white rounded-lg text-sm hover:bg-[#A0522D] transition">Browse Products</Link>
@@ -90,7 +95,7 @@ export default function BuyerDashboard() {
         </div>
       </div>
 
-      {/* Quick stats */}
+      {/* Quick Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
         <div className="bg-white rounded-xl shadow p-4">
           <p className="text-xs text-gray-500">Total Orders</p>
@@ -110,21 +115,18 @@ export default function BuyerDashboard() {
         </div>
       </div>
 
-      {/* Recent Orders */}
+      {/* Recent Orders Section */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Recent Orders</h2>
-          {/* Placeholder for a 'View All' if an orders page exists */}
         </div>
-        {loading && (
-          <div className="text-sm text-gray-500">Loading orders...</div>
-        )}
-        {error && !loading && (
-          <div className="text-sm text-red-600">{error}</div>
-        )}
-        {!loading && !error && recentOrders.length === 0 && (
-          <div className="text-sm text-gray-500">You have not placed any orders yet.</div>
-        )}
+
+        {/* Loading & Error states */}
+        {loading && <div className="text-sm text-gray-500">Loading orders...</div>}
+        {error && !loading && <div className="text-sm text-red-600">{error}</div>}
+        {!loading && !error && recentOrders.length === 0 && <div className="text-sm text-gray-500">You have not placed any orders yet.</div>}
+
+        {/* Orders List */}
         <div className="space-y-3">
           {recentOrders.map(o => (
             <div key={o._id} className="p-4 rounded-xl border border-amber-100 bg-white hover:shadow transition flex justify-between items-start gap-4">
@@ -141,6 +143,7 @@ export default function BuyerDashboard() {
                 <p className="text-sm font-bold text-amber-800">LKR {typeof o.total === 'number' ? o.total.toLocaleString() : o.total}</p>
               </div>
               <div className="flex flex-col gap-2">
+                {/* Generate PDF receipt */}
                 <button
                   onClick={() => generateReceiptPDF(o, { items: o.items?.filter(i=>i.product), offerItems: o.items?.filter(i=>i.offer) })}
                   className="text-xs px-3 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
@@ -157,15 +160,13 @@ export default function BuyerDashboard() {
           <h2 className="text-xl font-semibold">Start Shopping</h2>
           <Link to="/products" className="text-sm text-[#8B4513] hover:underline">View All</Link>
         </div>
-        {loadingProducts && (
-          <div className="text-sm text-gray-500">Loading products...</div>
-        )}
-        {prodError && !loadingProducts && (
-          <div className="text-sm text-red-600">{prodError}</div>
-        )}
-        {!loadingProducts && !prodError && products.length === 0 && (
-          <div className="text-sm text-gray-500">No products available yet.</div>
-        )}
+
+        {/* Loading & Error states for products */}
+        {loadingProducts && <div className="text-sm text-gray-500">Loading products...</div>}
+        {prodError && !loadingProducts && <div className="text-sm text-red-600">{prodError}</div>}
+        {!loadingProducts && !prodError && products.length === 0 && <div className="text-sm text-gray-500">No products available yet.</div>}
+
+        {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map(product => (
             <div
