@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaTrash, FaMinus, FaPlus, FaTag } from 'react-icons/fa';
 
+// Color constants for styling
 const COLORS = {
   RICH_GOLD: "#c5a35a",
   DEEP_CINNAMON: "#CC7722",
@@ -12,35 +13,33 @@ const COLORS = {
 };
 
 const Cart = () => {
+  // Extract user ID from route or context
   const { userId: routeUserId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const userId = user?._id || routeUserId;
 
+  // State management
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartItemCount, setCartItemCount] = useState(0);
 
+  // Fetch cart on mount or when userId changes
   useEffect(() => {
     fetchCart();
-    
-    const handleCartUpdate = () => {
-      fetchCart();
-    };
-    
+    const handleCartUpdate = () => fetchCart();
     window.addEventListener('cartUpdated', handleCartUpdate);
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, [userId]);
 
+  // Fetch user cart data from backend
   const fetchCart = async () => {
     try {
       setLoading(true);
-      // If there's no authenticated user and no route userId, show an empty cart page
       if (!user && !routeUserId) {
         setCart(null);
         setCartItemCount(0);
-        // Ensure header badge clears
         window.dispatchEvent(new CustomEvent('cartCountUpdate', { detail: 0 }));
         setLoading(false);
         return;
@@ -50,13 +49,13 @@ const Cart = () => {
       if (response.ok) {
         const data = await response.json();
         setCart(data);
-        
-        // Calculate total items count for badge
+
+        // Calculate total cart count
         const productCount = data.items ? data.items.reduce((sum, item) => sum + (item.qty || 0), 0) : 0;
         const offerCount = data.offerItems ? data.offerItems.reduce((sum, item) => sum + (item.qty || 0), 0) : 0;
         setCartItemCount(productCount + offerCount);
-        
-        // Update cart badge in header
+
+        // Update header badge
         window.dispatchEvent(new CustomEvent('cartCountUpdate', { detail: productCount + offerCount }));
       } else {
         setError('Failed to fetch cart');
@@ -68,12 +67,11 @@ const Cart = () => {
     }
   };
 
+  // Update item quantity in cart
   const updateQuantity = async (itemId, newQty, itemType = 'product') => {
     if (newQty < 1) return;
-
     try {
       const endpoint = itemType === 'offer' ? 'http://localhost:5000/api/cart/offer' : 'http://localhost:5000/api/cart';
-      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,7 +81,6 @@ const Cart = () => {
           qty: newQty 
         }),
       });
-      
       if (response.ok) {
         fetchCart();
         window.dispatchEvent(new Event('cartUpdated'));
@@ -93,10 +90,10 @@ const Cart = () => {
     }
   };
 
+  // Remove item from cart
   const removeItem = async (itemId, itemType = 'product') => {
     try {
       const endpoint = itemType === 'offer' ? 'http://localhost:5000/api/cart/offer' : 'http://localhost:5000/api/cart';
-      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +103,6 @@ const Cart = () => {
           qty: 0 
         }),
       });
-      
       if (response.ok) {
         fetchCart();
         window.dispatchEvent(new Event('cartUpdated'));
@@ -116,6 +112,7 @@ const Cart = () => {
     }
   };
 
+  // Clear entire cart
   const clearCart = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/cart/${userId || 'default'}`, {
@@ -132,29 +129,26 @@ const Cart = () => {
     }
   };
 
+  // Navigate to checkout or login
   const handleCheckout = () => {
-    if (!user) {
-      navigate('/login');
-    } else {
-      navigate('/checkout');
-    }
+    if (!user) navigate('/login');
+    else navigate('/checkout');
   };
 
-  // Safe price formatting function
+  // Format numbers safely to two decimals
   const formatPrice = (price) => {
     if (price === undefined || price === null) return '0.00';
     return typeof price === 'number' ? price.toFixed(2) : parseFloat(price || 0).toFixed(2);
   };
 
-  // Function to get correct image path
+  // Return proper image path or placeholder
   const getImagePath = (image) => {
     if (!image) return '';
-    if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:')) {
-      return image;
-    }
+    if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:')) return image;
     return `http://localhost:5000/uploads/${image}`;
   };
 
+  // Loading state UI
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
@@ -168,6 +162,7 @@ const Cart = () => {
     );
   }
 
+  // Error state UI
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
@@ -180,6 +175,7 @@ const Cart = () => {
     );
   }
 
+  // Empty cart UI
   if (!cart || (!cart.items && !cart.offerItems) || 
       (cart.items && cart.items.length === 0 && cart.offerItems && cart.offerItems.length === 0)) {
     return (
@@ -212,7 +208,7 @@ const Cart = () => {
     );
   }
 
-  // Calculate subtotal with discounts safely
+  // Calculate subtotal for all items
   const productSubtotal = cart.items ? cart.items.reduce((sum, item) => {
     const price = item.priceAtAdd || (item.product && item.product.price) || 0;
     const qty = item.qty || 0;
@@ -227,6 +223,7 @@ const Cart = () => {
 
   const subtotal = productSubtotal + offerSubtotal;
 
+  // Render cart items and summary
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
       <div className="container mx-auto px-4 py-8">
@@ -239,7 +236,7 @@ const Cart = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
+            {/* Cart items section */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
@@ -249,17 +246,18 @@ const Cart = () => {
                 </div>
                 
                 <div className="divide-y divide-gray-200">
-                  {/* Regular Products */}
+                  {/* Regular product items */}
                   {cart.items && cart.items.map((item, index) => {
                     const productPrice = item.priceAtAdd || (item.product && item.product.price) || 0;
-                    const productName = item.product && item.product.name ? item.product.name : 'Unknown Product';
-                    const productType = item.product && item.product.type ? item.product.type : '';
-                    const productGrade = item.product && item.product.grade ? item.product.grade : '';
-                    const productImage = item.product && item.product.image ? item.product.image : null;
+                    const productName = item.product?.name || 'Unknown Product';
+                    const productType = item.product?.type || '';
+                    const productGrade = item.product?.grade || '';
+                    const productImage = item.product?.image || null;
                     
                     return (
                       <div key={`product-${index}`} className="p-6">
                         <div className="flex items-center space-x-4">
+                          {/* Product image */}
                           <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
                             {productImage ? (
                               <img
@@ -279,6 +277,7 @@ const Cart = () => {
                             )}
                           </div>
                           
+                          {/* Product details */}
                           <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-semibold text-gray-900 truncate">
                               {productName}
@@ -291,9 +290,10 @@ const Cart = () => {
                             </p>
                           </div>
                           
+                          {/* Quantity controls */}
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => updateQuantity(item.product && item.product._id, (item.qty || 1) - 1, 'product')}
+                              onClick={() => updateQuantity(item.product?._id, (item.qty || 1) - 1, 'product')}
                               className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                               disabled={(item.qty || 1) <= 1}
                             >
@@ -303,19 +303,20 @@ const Cart = () => {
                             <span className="w-12 text-center font-semibold">{item.qty || 1}</span>
                             
                             <button
-                              onClick={() => updateQuantity(item.product && item.product._id, (item.qty || 1) + 1, 'product')}
+                              onClick={() => updateQuantity(item.product?._id, (item.qty || 1) + 1, 'product')}
                               className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                             >
                               <FaPlus size={12} />
                             </button>
                           </div>
                           
+                          {/* Item total and remove */}
                           <div className="text-right">
                             <p className="text-lg font-semibold" style={{ color: COLORS.DEEP_CINNAMON }}>
                               Rs: {formatPrice((item.qty || 1) * productPrice)}
                             </p>
                             <button
-                              onClick={() => removeItem(item.product && item.product._id, 'product')}
+                              onClick={() => removeItem(item.product?._id, 'product')}
                               className="mt-2 p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
                             >
                               <FaTrash size={14} />
@@ -325,19 +326,20 @@ const Cart = () => {
                       </div>
                     );
                   })}
-                  
-                  {/* Offer Items */}
+
+                  {/* Offer items */}
                   {cart.offerItems && cart.offerItems.map((item, index) => {
                     const offer = item.offer || {};
                     const offerProducts = offer.products || [];
-                    const originalPrice = item.originalPrice || offerProducts.reduce((sum, product) => sum + (product.price || 0), 0);
-                    const discountedPrice = item.discountedPrice || (offer.discountedPrice || 0);
+                    const originalPrice = item.originalPrice || offerProducts.reduce((sum, p) => sum + (p.price || 0), 0);
+                    const discountedPrice = item.discountedPrice || offer.discountedPrice || 0;
                     const savings = originalPrice - discountedPrice;
                     const offerName = offer.name || 'Special Offer';
                     const offerImage = offer.image || null;
                     
                     return (
                       <div key={`offer-${index}`} className="p-6 bg-amber-50">
+                        {/* Offer header */}
                         <div className="flex items-start mb-4">
                           <div className="flex-shrink-0 w-16 h-16 bg-white rounded-lg overflow-hidden mr-4 border border-amber-200">
                             {offerImage ? (
@@ -371,77 +373,64 @@ const Cart = () => {
                           </div>
                         </div>
                         
+                        {/* Offer products list */}
                         <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {offerProducts.map((product, idx) => {
-                            const productName = product.name || 'Product';
-                            const productPrice = product.price || 0;
-                            const productImage = product.image || null;
-                            
-                            return (
-                              <div key={idx} className="flex items-center bg-white p-2 rounded-lg border">
-                                <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden mr-2">
-                                  {productImage ? (
-                                    <img
-                                      src={getImagePath(productImage)}
-                                      alt={productName}
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.target.src = 'https://via.placeholder.com/48x48/f5efe6/cc7722?text=Cinnamon';
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate">{productName}</p>
-                                  <p className="text-xs text-gray-500">Rs: {formatPrice(productPrice)}</p>
-                                </div>
+                          {offerProducts.map((product, idx) => (
+                            <div key={idx} className="flex items-center bg-white p-2 rounded-lg border">
+                              <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden mr-2">
+                                {product.image ? (
+                                  <img
+                                    src={getImagePath(product.image)}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.src = 'https://via.placeholder.com/48x48/f5efe6/cc7722?text=Cinnamon';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16" />
+                                    </svg>
+                                  </div>
+                                )}
                               </div>
-                            );
-                          })}
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                                <p className="text-xs text-gray-500 truncate">{product.type} • {product.grade}</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                         
+                        {/* Offer price and quantity */}
                         <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm text-gray-500 line-through">
-                              Original: Rs: {formatPrice(originalPrice)}
-                            </div>
-                            <div className="text-lg font-semibold" style={{ color: COLORS.DEEP_CINNAMON }}>
-                              Discounted: Rs: {formatPrice(discountedPrice)}
-                            </div>
-                          </div>
-                          
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => updateQuantity(offer._id, (item.qty || 1) - 1, 'offer')}
-                              className="p-2 rounded-full hover:bg-amber-100 transition-colors"
+                              onClick={() => updateQuantity(item.offer?._id, (item.qty || 1) - 1, 'offer')}
+                              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                               disabled={(item.qty || 1) <= 1}
                             >
                               <FaMinus size={12} />
                             </button>
-                            
                             <span className="w-12 text-center font-semibold">{item.qty || 1}</span>
-                            
                             <button
-                              onClick={() => updateQuantity(offer._id, (item.qty || 1) + 1, 'offer')}
-                              className="p-2 rounded-full hover:bg-amber-100 transition-colors"
+                              onClick={() => updateQuantity(item.offer?._id, (item.qty || 1) + 1, 'offer')}
+                              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                             >
                               <FaPlus size={12} />
                             </button>
                           </div>
-                          
                           <div className="text-right">
-                            <div className="text-lg font-semibold" style={{ color: COLORS.DEEP_CINNAMON }}>
+                            <p className="text-lg font-semibold" style={{ color: COLORS.DEEP_CINNAMON }}>
                               Rs: {formatPrice((item.qty || 1) * discountedPrice)}
-                            </div>
+                            </p>
+                            <p className="text-sm text-green-600">
+                              Saved Rs: {formatPrice(savings * (item.qty || 1))}
+                            </p>
                             <button
-                              onClick={() => removeItem(offer._id, 'offer')}
-                              className="mt-1 p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                              onClick={() => removeItem(item.offer?._id, 'offer')}
+                              className="mt-2 p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
                             >
                               <FaTrash size={14} />
                             </button>
@@ -451,19 +440,10 @@ const Cart = () => {
                     );
                   })}
                 </div>
-                
-                <div className="p-6 border-t border-gray-200">
-                  <button
-                    onClick={clearCart}
-                    className="text-red-600 hover:text-red-800 font-medium transition-colors"
-                  >
-                    Clear Cart
-                  </button>
-                </div>
               </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Cart summary section */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-8">
                 <h2 className="text-xl font-semibold mb-4" style={{ color: COLORS.DARK_SLATE }}>
@@ -471,72 +451,43 @@ const Cart = () => {
                 </h2>
                 
                 <div className="space-y-3 mb-6">
-                  {cart.items && cart.items.length > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Products Subtotal</span>
-                      <span className="font-semibold">Rs: {formatPrice(productSubtotal)}</span>
-                    </div>
-                  )}
-                  
-                  {cart.offerItems && cart.offerItems.length > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Offers Subtotal</span>
-                      <span className="font-semibold">Rs: {formatPrice(offerSubtotal)}</span>
-                    </div>
-                  )}
-                  
-                  {cart.offerItems && cart.offerItems.length > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Total Savings from Offers</span>
-                      <span className="font-semibold">
-                        Rs: {formatPrice(cart.offerItems.reduce((sum, item) => {
-                          const originalPrice = item.originalPrice || ((item.offer && item.offer.products) ? item.offer.products.reduce((sum, product) => sum + (product.price || 0), 0) : 0);
-                          const discountedPrice = item.discountedPrice || (item.offer && item.offer.discountedPrice) || 0;
-                          return sum + (originalPrice - discountedPrice) * (item.qty || 1);
-                        }, 0))}
-                      </span>
-                    </div>
-                  )}
-                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-semibold">Rs: {formatPrice(subtotal)}</span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
-                    <span className="font-semibold">Free</span>
+                    <span className="font-semibold text-green-600">Free</span>
                   </div>
-                  
-                  <div className="border-t border-gray-200 pt-3">
-                    <div className="flex justify-between">
-                      <span className="text-lg font-semibold" style={{ color: COLORS.DARK_SLATE }}>
-                        Total
-                      </span>
-                      <span className="text-lg font-bold" style={{ color: COLORS.DEEP_CINNAMON }}>
-                        Rs: {formatPrice(subtotal)}
-                      </span>
-                    </div>
+                  <div className="border-t pt-3 flex justify-between">
+                    <span className="text-lg font-semibold" style={{ color: COLORS.DARK_SLATE }}>Total</span>
+                    <span className="text-lg font-bold" style={{ color: COLORS.DEEP_CINNAMON }}>
+                      Rs: {formatPrice(subtotal)}
+                    </span>
                   </div>
                 </div>
-                
-                <button
-                  onClick={handleCheckout}
-                  className="w-full py-3 px-6 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-                  style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
-                  disabled={(!cart.items || cart.items.length === 0) && (!cart.offerItems || cart.offerItems.length === 0)}
-                >
-                  Proceed to Checkout
-                </button>
-                
-                <div className="mt-4 text-center">
-                  <a
-                    href="/products"
-                    className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+
+                {/* Action buttons */}
+                <div className="space-y-3">
+                  <button
+                    onClick={handleCheckout}
+                    className="w-full py-3 rounded-lg font-semibold text-white transition-colors"
+                    style={{ backgroundColor: COLORS.DEEP_CINNAMON }}
                   >
-                    Continue Shopping
-                  </a>
+                    Proceed to Checkout
+                  </button>
+                  <button
+                    onClick={clearCart}
+                    className="w-full py-3 rounded-lg font-semibold border border-red-500 text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    Clear Cart
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </div>  
     </div>
   );
 };
